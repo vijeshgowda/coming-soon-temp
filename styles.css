@@ -17,12 +17,12 @@
     display: inline-block;
   }
   .left {
-    color: lightgreen;
+    color: darkred;
     transform: skew(0deg, -15deg);
   }
   .right {
-    color: black;
     transform: skew(0deg, 15deg);
+    color: navajowhite;
   }
   .left .content {
     width: 100vw;
