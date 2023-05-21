@@ -1,36 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Solar System in Pure Web Animations API (WAAPI)</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@proyecto26/animatable-component@1.1.10/dist/animatable-component/animatable-component.esm.js"></script> 
+  </head>
+  <body>
+    <!-- STARS -->
+    <div class="stars"></div>
+
+    <!-- SOLAR SYSTEM ANIMATABLE -->
+    <div class="solar-system"></div>
+
+    <!-- SHOOTING STARS -->
+    <animatable-component
+      class='shooting-star'
+      autoplay
+      fill="both"
+      iterations="1"
+      easing="linear"
+      duration="3000"
+      delay="2600"
+    >
+    </animatable-component>
     
-    <link rel="stylesheet" href="./styles.css">
-    <script src="./app.js" defer></script>
-</head>
-<body>
-    <div class="wrap">
-        <div class="line">
-          <div class="left">
-            <div class="content">
-              <span class="spanSlow">Vijesh</span>
-            </div>
-          </div><!--
-          --><div class="right">
-            <div class="content">
-              <span class="spanSlow">Vijesh</span>
-            </div>
-          </div>
-          </div>
-          <div class="line">
-              <div class="left">
-                <div class="content">
-                  <span class="spanFast">Gowda</span>
-                </div>
-              </div><!--
-              --><div class="right">
-                <div class="content">
-                  <span class="spanFast">Gowda</span>
-                </div>
-              </div>
-            </div>
-    </div>
-</body>
+    <audio class="audio-universe" autoplay></audio>
+  </body>
 </html>
