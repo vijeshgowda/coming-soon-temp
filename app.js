@@ -1,23 +1,25 @@
-// window.addEventListener('mousemove', handleMouseMove);
-// window.addEventListener('resize', handleWindowResize);
-
-// const spansSlow = document.querySelectorAll('.spanSlow');
-// const spansFast = document.querySelectorAll('.spanFast');
-
-// let width = window.innerWidth;
-
-// function handleMouseMove(e) {
-//   let normalizedPosition = e.pageX / (width/2) - 1;
-//   let speedSlow = 100 * normalizedPosition;
-//   let speedFast = 200 * normalizedPosition;
-//   spansSlow.forEach((span) => {
-//     span.style.transform = `translate(${speedSlow}px)`;
-//   });
-//   spansFast.forEach((span) => {
-//     span.style.transform = `translate(${speedFast}px)`
-//   })
-// }
-// //we need to recalculate width when the window is resized
-// function handleWindowResize() {
-//   width = window.innerWidth;
-// }
+(function(){
+	$('.flex-container').waitForImages(function() {
+		$('.spinner').fadeOut();
+	}, $.noop, true);
+	
+	$(".flex-slide").each(function(){
+		$(this).hover(function(){
+			$(this).find('.flex-title').css({
+				transform: 'rotate(0deg)',
+				top: '10%'
+			});
+			$(this).find('.flex-about').css({
+				opacity: '1'
+			});
+		}, function(){
+			$(this).find('.flex-title').css({
+				transform: 'rotate(90deg)',
+				top: '15%'
+			});
+			$(this).find('.flex-about').css({
+				opacity: '0'
+			});
+		})
+	});
+})();
