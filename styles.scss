@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css?family=Raleway');
 
-/* $defaultSeconds: 3s; */
+$defaultSeconds: 3s;
 
 body {
 	margin: 0;
@@ -194,6 +194,8 @@ textarea {
 }
 
 
+
+// Preloader
 .spinner {
 	position: fixed;
 	top: 0;
