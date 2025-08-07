@@ -18,7 +18,7 @@
     display: inline-block;
   }
   .left {
-    color: black;
+    color: green;
     transform: skew(0deg, -15deg);
   }
   .right {
