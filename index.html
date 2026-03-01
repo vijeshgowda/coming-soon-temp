@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wedding Invitation</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;600&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <style>
   :root {
     --cream: #f5f0e8;
@@ -511,7 +512,7 @@ opacity: 1;
 transform: translateY(0);
 }
 
-/* ─── PETAL ANIMATION ─── */
+/* ─── CHERRY BLOSSOM PETALS ─── */
 .petals {
 position: fixed;
 top: 0; left: 0;
@@ -521,18 +522,205 @@ z-index: 0;
 overflow: hidden;
 }
 
-.petal {
+.blossom {
 position: absolute;
-top: -60px;
+top: -80px;
 opacity: 0;
-animation: petalFall linear infinite;
+will-change: transform, opacity;
+animation: blossomFall linear infinite;
 }
 
-@keyframes petalFall {
-0%   { transform: translateY(0) rotate(0deg) translateX(0); opacity: 0; }
-5%   { opacity: 0.6; }
-90%  { opacity: 0.4; }
-100% { transform: translateY(110vh) rotate(720deg) translateX(40px); opacity: 0; }
+@keyframes blossomFall {
+0%   { opacity: 0;   transform: translateY(0)     rotate(0deg)   translateX(0px)   scale(1); }
+4%   { opacity: 0.75; }
+30%  { transform: translateY(28vh)  rotate(120deg)  translateX(25px)  scale(0.95); }
+60%  { transform: translateY(58vh)  rotate(270deg)  translateX(-20px) scale(1.02); }
+88%  { opacity: 0.5; }
+100% { opacity: 0;   transform: translateY(112vh)  rotate(480deg)  translateX(15px)  scale(0.9); }
+}
+
+/* ─── CAMERA MODAL ─── */
+.camera-modal {
+display: none;
+position: fixed;
+inset: 0;
+z-index: 9999;
+background: rgba(20, 6, 10, 0.88);
+backdrop-filter: blur(6px);
+align-items: center;
+justify-content: center;
+animation: modalIn 0.35s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.camera-modal.open { display: flex; }
+
+@keyframes modalIn {
+from { opacity: 0; transform: scale(0.96); }
+to   { opacity: 1; transform: scale(1); }
+}
+
+.camera-box {
+background: var(–cream-light);
+border: 1px solid rgba(109,26,42,0.2);
+max-width: 480px;
+width: calc(100% - 40px);
+padding: 36px 32px 40px;
+text-align: center;
+position: relative;
+box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+}
+
+.camera-box-tag {
+font-family: ‘Cinzel’, serif;
+font-size: 0.62rem;
+letter-spacing: 0.3em;
+text-transform: uppercase;
+color: var(–burgundy-pale);
+margin-bottom: 10px;
+}
+
+.camera-box-title {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.6rem;
+font-style: italic;
+color: var(–burgundy);
+margin-bottom: 24px;
+}
+
+.camera-viewport {
+position: relative;
+width: 100%;
+aspect-ratio: 1;
+background: #1a0a0e;
+overflow: hidden;
+margin-bottom: 20px;
+}
+
+#cam-video {
+width: 100%;
+height: 100%;
+object-fit: cover;
+display: block;
+}
+
+/* scanning line */
+.scan-line {
+display: none;
+position: absolute;
+left: 0; right: 0;
+height: 2px;
+background: linear-gradient(90deg, transparent, var(–burgundy-pale), transparent);
+animation: scanMove 2.2s ease-in-out infinite;
+box-shadow: 0 0 10px var(–burgundy-pale);
+}
+
+.scanning .scan-line { display: block; }
+
+@keyframes scanMove {
+0%   { top: 8%; }
+50%  { top: 88%; }
+100% { top: 8%; }
+}
+
+/* corner brackets on viewport */
+.vp-corners span {
+position: absolute;
+width: 24px;
+height: 24px;
+border-color: var(–burgundy-pale);
+border-style: solid;
+opacity: 0.8;
+}
+.vp-corners span:nth-child(1) { top: 8px; left: 8px;  border-width: 2px 0 0 2px; }
+.vp-corners span:nth-child(2) { top: 8px; right: 8px; border-width: 2px 2px 0 0; }
+.vp-corners span:nth-child(3) { bottom: 8px; left: 8px;  border-width: 0 0 2px 2px; }
+.vp-corners span:nth-child(4) { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+#cam-canvas { display: none; }
+
+.cam-status {
+font-family: ‘Jost’, sans-serif;
+font-size: 0.8rem;
+color: var(–text-mid);
+letter-spacing: 0.08em;
+min-height: 22px;
+margin-bottom: 20px;
+transition: color 0.3s;
+}
+
+.cam-status.success { color: #2a6d3a; font-style: italic; }
+.cam-status.error   { color: var(–burgundy); }
+
+.cam-result {
+display: none;
+background: var(–cream-dark);
+border: 1px solid rgba(109,26,42,0.15);
+padding: 14px 18px;
+margin-bottom: 20px;
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1rem;
+color: var(–text-dark);
+word-break: break-all;
+line-height: 1.6;
+}
+
+.cam-result.show { display: block; }
+
+.cam-result a {
+color: var(–burgundy);
+text-decoration: underline;
+text-underline-offset: 3px;
+}
+
+.cam-buttons {
+display: flex;
+gap: 12px;
+justify-content: center;
+flex-wrap: wrap;
+}
+
+.btn-cam-close {
+padding: 12px 28px;
+background: transparent;
+border: 1px solid rgba(109,26,42,0.3);
+color: var(–text-mid);
+cursor: pointer;
+font-family: ‘Cinzel’, serif;
+font-size: 0.65rem;
+letter-spacing: 0.22em;
+text-transform: uppercase;
+transition: all 0.25s;
+}
+.btn-cam-close:hover { border-color: var(–burgundy); color: var(–burgundy); }
+
+.btn-cam-flip {
+padding: 12px 28px;
+background: var(–burgundy);
+border: 1px solid var(–burgundy);
+color: var(–cream-light);
+cursor: pointer;
+font-family: ‘Cinzel’, serif;
+font-size: 0.65rem;
+letter-spacing: 0.22em;
+text-transform: uppercase;
+transition: all 0.25s;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.btn-cam-flip:hover { background: var(–burgundy-light); }
+
+.cam-permission-denied {
+display: none;
+padding: 20px;
+text-align: center;
+}
+.cam-permission-denied p {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.05rem;
+font-style: italic;
+color: var(–text-mid);
+line-height: 1.7;
 }
 
 @media (max-width: 600px) {
@@ -920,38 +1108,167 @@ animation: petalFall linear infinite;
 
 </div><!-- /page -->
 
+<!-- ═══════════════ CAMERA MODAL ═══════════════ -->
+
+<div class="camera-modal" id="cameraModal" role="dialog" aria-modal="true" aria-label="QR Code Scanner">
+  <div class="camera-box">
+    <p class="camera-box-tag">Scan Invitation</p>
+    <h3 class="camera-box-title">Point at a QR Code</h3>
+
+```
+<div class="camera-viewport scanning" id="camViewport">
+  <video id="cam-video" autoplay muted playsinline></video>
+  <canvas id="cam-canvas"></canvas>
+  <div class="scan-line"></div>
+  <div class="vp-corners">
+    <span></span><span></span><span></span><span></span>
+  </div>
+</div>
+
+<div class="cam-permission-denied" id="camDenied">
+  <p>Camera access was denied.<br>Please allow camera permission in your browser settings and try again.</p>
+</div>
+
+<p class="cam-status" id="camStatus">Starting camera…</p>
+<div class="cam-result" id="camResult"></div>
+
+<div class="cam-buttons">
+  <button class="btn-cam-close" onclick="closeCamera()">Close</button>
+  <button class="btn-cam-flip" id="btnFlip" onclick="flipCamera()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+    </svg>
+    Flip Camera
+  </button>
+</div>
+```
+
+  </div>
+</div>
+
 <script>
-  /* ── Petal rain ── */
+  /* ══════════════════════════════════════════
+     CHERRY BLOSSOM PETALS
+     Each petal is an inline SVG with a realistic
+     5-lobed petal shape, in the existing palette.
+  ══════════════════════════════════════════ */
   (function(){
     const container = document.getElementById('petals');
-    const colors = ['#c4748a','#e8c0c8','#d4a0aa','#b88a98'];
-    for(let i = 0; i < 18; i++){
-      const el = document.createElement('div');
-      el.className = 'petal';
-      const size = Math.random()*8+6;
-      el.style.cssText = `
-        left:${Math.random()*100}vw;
-        width:${size}px;
-        height:${size*0.7}px;
-        border-radius:50% 0 50% 0;
-        background:${colors[Math.floor(Math.random()*colors.length)]};
-        animation-duration:${10+Math.random()*14}s;
-        animation-delay:${Math.random()*16}s;
-        opacity:0;
-      `;
-      container.appendChild(el);
+
+    // Palette stays true to original cream/burgundy
+    const fills = [
+      ['#d4869a','#c4748a'],  // dusty rose
+      ['#e8bfc8','#d4a0b0'],  // pale blush
+      ['#c97a90','#b86278'],  // mid rose
+      ['#f0d0d8','#e0b0bc'],  // very pale
+      ['#b85e76','#9a4a60'],  // deeper
+    ];
+
+    // Single cherry blossom petal path (heart-like with notch at top)
+    // Centered at 0,0, roughly 20×24px
+    function petalPath(w, h) {
+      const hw = w / 2, fh = h;
+      return `M 0,${fh*0.9}
+              C ${-hw*0.5},${fh*0.6} ${-hw},${fh*0.3} ${-hw*0.85},0
+              C ${-hw*0.7},${-fh*0.25} ${-hw*0.3},${-fh*0.32} 0,${-fh*0.18}
+              C ${hw*0.3},${-fh*0.32} ${hw*0.7},${-fh*0.25} ${hw*0.85},0
+              C ${hw},${fh*0.3} ${hw*0.5},${fh*0.6} 0,${fh*0.9}
+              Z`;
     }
+
+    // Subtle center stamen lines
+    function stamens(h) {
+      const lines = [];
+      const angles = [-25,-12,0,12,25];
+      angles.forEach(a => {
+        const rad = a * Math.PI / 180;
+        const len = h * 0.28;
+        const x2 = Math.sin(rad) * len;
+        const y2 = -Math.cos(rad) * len * 0.5;
+        lines.push(`<line x1="0" y1="${h*0.05}" x2="${x2.toFixed(2)}" y2="${(h*0.05+y2).toFixed(2)}"
+                      stroke="rgba(109,26,42,0.35)" stroke-width="0.5" stroke-linecap="round"/>`);
+      });
+      return lines.join('');
+    }
+
+    const COUNT = 28;
+    for (let i = 0; i < COUNT; i++) {
+      const w  = 10 + Math.random() * 14;        // 10–24 px wide
+      const h  = w * (1.1 + Math.random() * 0.3); // slightly taller
+      const [fill1, fill2] = fills[Math.floor(Math.random() * fills.length)];
+      const gradId = `pg${i}`;
+      const rotate = Math.random() * 360;
+      const duration = 12 + Math.random() * 18;
+      const delay    = Math.random() * 22;
+      const left     = Math.random() * 105 - 2;   // slightly off-screen edges
+      const swayAmt  = 20 + Math.random() * 40;
+      const swayDir  = Math.random() > 0.5 ? 1 : -1;
+
+      // Build SVG element
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const vb = w + 4;
+      svg.setAttribute('width',  vb);
+      svg.setAttribute('height', h + 4);
+      svg.setAttribute('viewBox', `${-vb/2} ${-h*0.1} ${vb} ${h + 4}`);
+      svg.style.overflow = 'visible';
+      svg.innerHTML = `
+        <defs>
+          <radialGradient id="${gradId}" cx="40%" cy="35%" r="65%">
+            <stop offset="0%"   stop-color="${fill1}"/>
+            <stop offset="100%" stop-color="${fill2}"/>
+          </radialGradient>
+        </defs>
+        <g transform="rotate(${rotate})">
+          <path d="${petalPath(w, h)}" fill="url(#${gradId})" stroke="${fill2}" stroke-width="0.4"/>
+          ${stamens(h)}
+          <circle cx="0" cy="${h*0.05}" r="${w*0.06}" fill="rgba(184,150,90,0.5)"/>
+        </g>`;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'blossom';
+      wrapper.style.cssText = `
+        left: ${left}vw;
+        animation-duration: ${duration}s;
+        animation-delay: -${delay}s;
+        --sway: ${swayAmt * swayDir}px;
+      `;
+      wrapper.appendChild(svg);
+      container.appendChild(wrapper);
+    }
+
+    // Override the CSS translateX with per-petal sway using a custom property
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes blossomFall {
+        0%   { opacity:0;    transform: translateY(0)      translateX(0)            rotate(0deg)   scale(1); }
+        4%   { opacity:0.75; }
+        28%  { transform: translateY(26vh)   translateX(calc(var(--sway) * 0.4))  rotate(110deg)  scale(0.97); }
+        55%  { transform: translateY(55vh)   translateX(calc(var(--sway) * -0.3)) rotate(240deg)  scale(1.03); }
+        80%  { transform: translateY(82vh)   translateX(calc(var(--sway) * 0.6))  rotate(380deg)  scale(0.95); }
+        92%  { opacity:0.45; }
+        100% { opacity:0;    transform: translateY(112vh)  translateX(calc(var(--sway) * 0.1)) rotate(490deg) scale(0.88); }
+      }`;
+    document.head.appendChild(style);
   })();
 
-  /* ── Scroll reveal ── */
+
+  /* ══════════════════════════════════════════
+     SCROLL REVEAL
+  ══════════════════════════════════════════ */
   const reveals = document.querySelectorAll('.reveal');
-  const observer = new IntersectionObserver((entries)=>{
-    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+    });
   }, { threshold: 0.12 });
   reveals.forEach(el => observer.observe(el));
 
-  /* ── RSVP mock submit ── */
-  function handleRsvp(e){
+
+  /* ══════════════════════════════════════════
+     RSVP SUBMIT
+  ══════════════════════════════════════════ */
+  function handleRsvp(e) {
     e.preventDefault();
     const msg = document.getElementById('rsvp-msg');
     msg.style.display = 'block';
@@ -960,9 +1277,146 @@ animation: petalFall linear infinite;
     e.target.style.pointerEvents = 'none';
   }
 
-  /* ── Camera placeholder ── */
-  function openCamera(){
-    alert('📸 Camera QR feature — connect your QR scanning logic here.\n\nThis button is a placeholder for camera / QR code scanning functionality.');
+
+  /* ══════════════════════════════════════════
+     CAMERA & QR SCANNER
+  ══════════════════════════════════════════ */
+  let camStream    = null;
+  let scanInterval = null;
+  let facingMode   = 'environment';   // start with rear camera
+  let scanning     = false;
+
+  const modal     = document.getElementById('cameraModal');
+  const video     = document.getElementById('cam-video');
+  const canvas    = document.getElementById('cam-canvas');
+  const status    = document.getElementById('camStatus');
+  const result    = document.getElementById('camResult');
+  const viewport  = document.getElementById('camViewport');
+  const denied    = document.getElementById('camDenied');
+  const btnFlip   = document.getElementById('btnFlip');
+  const ctx       = canvas.getContext('2d', { willReadFrequently: true });
+
+  function setStatus(msg, cls = '') {
+    status.textContent = msg;
+    status.className = 'cam-status ' + cls;
+  }
+
+  async function startCamera() {
+    stopCamera();
+    denied.style.display = 'none';
+    viewport.style.display = 'block';
+    setStatus('Starting camera…');
+    result.classList.remove('show');
+
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode, width: { ideal: 640 }, height: { ideal: 640 } },
+        audio: false
+      });
+      video.srcObject = camStream;
+      await video.play();
+      setStatus('Align a QR code in the frame…');
+      beginScan();
+    } catch (err) {
+      stopCamera();
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        viewport.style.display = 'none';
+        denied.style.display = 'block';
+        setStatus('Camera permission denied.', 'error');
+      } else if (err.name === 'NotFoundError') {
+        setStatus('No camera found on this device.', 'error');
+      } else {
+        setStatus('Could not access camera: ' + err.message, 'error');
+      }
+    }
+  }
+
+  function stopCamera() {
+    if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+    if (camStream) {
+      camStream.getTracks().forEach(t => t.stop());
+      camStream = null;
+    }
+    video.srcObject = null;
+    scanning = false;
+  }
+
+  function beginScan() {
+    scanning = true;
+    scanInterval = setInterval(() => {
+      if (!scanning || video.readyState < video.HAVE_ENOUGH_DATA) return;
+
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      let imageData;
+      try {
+        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      } catch { return; }
+
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert'
+      });
+
+      if (code && code.data) {
+        onQRDetected(code.data);
+      }
+    }, 200);
+  }
+
+  function onQRDetected(data) {
+    stopCamera();
+    setStatus('✓ QR Code detected!', 'success');
+
+    // Determine if it's a URL
+    const isURL = /^https?:\/\//i.test(data);
+    result.innerHTML = isURL
+      ? `<strong style="font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--burgundy-pale);text-transform:uppercase;">Scanned Link</strong><br><br>
+         <a href="${data}" target="_blank" rel="noopener noreferrer">${data}</a>`
+      : `<strong style="font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--burgundy-pale);text-transform:uppercase;">Scanned Content</strong><br><br>${data}`;
+    result.classList.add('show');
+
+    // ── Hook for your DB / RSVP validation ──────────────────────
+    // Example: fetch('/api/validate-qr', { method:'POST', body: JSON.stringify({ qr: data }) })
+    //          .then(r => r.json()).then(guest => { /* greet guest */ });
+    // ────────────────────────────────────────────────────────────
+  }
+
+  function openCamera() {
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    startCamera();
+  }
+
+  function closeCamera() {
+    stopCamera();
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+    setStatus('Starting camera…');
+    result.classList.remove('show');
+  }
+
+  async function flipCamera() {
+    facingMode = facingMode === 'environment' ? 'user' : 'environment';
+    btnFlip.disabled = true;
+    await startCamera();
+    btnFlip.disabled = false;
+  }
+
+  // Close modal on backdrop click
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeCamera(); });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCamera(); });
+
+  // Graceful degradation if MediaDevices not available
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.querySelectorAll('.btn-qr').forEach(b => {
+      b.addEventListener('click', () => {
+        alert('Camera access is not supported in this browser.\nPlease use a modern browser like Chrome or Safari.');
+      });
+    });
   }
 </script>
 
