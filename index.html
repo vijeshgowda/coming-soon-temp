@@ -1,38 +1,970 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    
-    <link rel="stylesheet" href="./styles.css">
-    <script src="./app.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wedding Invitation</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;600&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-dark: #ede5d4;
+    --cream-light: #faf7f2;
+    --burgundy: #6d1a2a;
+    --burgundy-light: #8b2a3d;
+    --burgundy-pale: #c4748a;
+    --gold: #b8965a;
+    --text-dark: #2a1a1e;
+    --text-mid: #5a3a42;
+  }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+background-color: var(–cream);
+color: var(–text-dark);
+font-family: ‘Jost’, sans-serif;
+font-weight: 300;
+overflow-x: hidden;
+}
+
+/* ─── DECORATIVE SVG BACKGROUND ─── */
+.bg-pattern {
+position: fixed;
+inset: 0;
+pointer-events: none;
+z-index: 0;
+opacity: 0.07;
+}
+
+/* ─── PAGE WRAPPER ─── */
+.page {
+position: relative;
+z-index: 1;
+}
+
+/* ─── HERO ─── */
+.hero {
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+text-align: center;
+padding: 60px 20px;
+position: relative;
+overflow: hidden;
+}
+
+/* Corner botanical SVG ornaments */
+.corner-svg {
+position: absolute;
+width: 260px;
+opacity: 0.55;
+animation: floatSoft 8s ease-in-out infinite;
+}
+.corner-svg.tl { top: 0; left: 0; transform-origin: top left; }
+.corner-svg.tr { top: 0; right: 0; transform: scaleX(-1); transform-origin: top right; }
+.corner-svg.bl { bottom: 0; left: 0; transform: scaleY(-1); transform-origin: bottom left; }
+.corner-svg.br { bottom: 0; right: 0; transform: scale(-1); transform-origin: bottom right; }
+
+@keyframes floatSoft {
+0%, 100% { transform-origin: inherit; opacity: 0.55; }
+50% { opacity: 0.45; }
+}
+
+.hero-inner {
+position: relative;
+z-index: 2;
+animation: riseIn 1.4s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+@keyframes riseIn {
+from { opacity: 0; transform: translateY(40px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+
+.prelude {
+font-family: ‘Jost’, sans-serif;
+font-weight: 200;
+letter-spacing: 0.35em;
+font-size: 0.72rem;
+text-transform: uppercase;
+color: var(–burgundy);
+margin-bottom: 28px;
+animation: riseIn 1.4s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.divider-line {
+width: 60px;
+height: 1px;
+background: var(–burgundy);
+display: inline-block;
+vertical-align: middle;
+margin: 0 14px;
+opacity: 0.5;
+}
+
+.couple-names {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: clamp(3.8rem, 10vw, 7.5rem);
+font-weight: 300;
+line-height: 0.95;
+color: var(–burgundy);
+letter-spacing: -0.01em;
+animation: riseIn 1.4s 0.35s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.couple-names .ampersand {
+font-style: italic;
+color: var(–burgundy-pale);
+display: block;
+font-size: 0.65em;
+margin: -4px 0;
+}
+
+.wedding-sub {
+margin-top: 32px;
+font-family: ‘Cinzel’, serif;
+font-size: 0.78rem;
+letter-spacing: 0.3em;
+color: var(–gold);
+text-transform: uppercase;
+animation: riseIn 1.4s 0.5s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.hero-date {
+margin-top: 14px;
+font-family: ‘Cormorant Garamond’, serif;
+font-size: clamp(1.2rem, 3vw, 1.8rem);
+color: var(–text-mid);
+letter-spacing: 0.12em;
+font-style: italic;
+animation: riseIn 1.4s 0.65s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+/* center SVG flourish */
+.hero-flourish {
+margin: 36px auto 0;
+display: block;
+animation: riseIn 1.4s 0.8s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+/* ─── SECTION SHARED ─── */
+section {
+padding: 90px 20px;
+position: relative;
+}
+
+.section-inner {
+max-width: 780px;
+margin: 0 auto;
+text-align: center;
+}
+
+.section-tag {
+font-family: ‘Cinzel’, serif;
+font-size: 0.68rem;
+letter-spacing: 0.35em;
+text-transform: uppercase;
+color: var(–burgundy-pale);
+margin-bottom: 18px;
+}
+
+.section-title {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: clamp(2rem, 5vw, 3.2rem);
+font-weight: 300;
+color: var(–burgundy);
+line-height: 1.15;
+margin-bottom: 24px;
+}
+
+.section-body {
+font-size: 1rem;
+line-height: 1.9;
+color: var(–text-mid);
+max-width: 560px;
+margin: 0 auto;
+}
+
+/* ─── SEPARATOR SVG ─── */
+.sep {
+display: block;
+margin: 0 auto 60px;
+opacity: 0.35;
+}
+
+/* ─── DETAILS BAND ─── */
+.details-band {
+background: var(–burgundy);
+color: var(–cream-light);
+padding: 80px 20px;
+}
+
+.details-band .section-tag { color: var(–burgundy-pale); }
+.details-band .section-title { color: var(–cream-light); }
+.details-band .section-body { color: rgba(245,240,232,0.75); }
+
+.details-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 48px;
+margin-top: 52px;
+max-width: 720px;
+margin-left: auto;
+margin-right: auto;
+}
+
+.detail-item {
+text-align: center;
+}
+
+.detail-icon {
+display: block;
+margin: 0 auto 16px;
+}
+
+.detail-label {
+font-family: ‘Cinzel’, serif;
+font-size: 0.62rem;
+letter-spacing: 0.3em;
+text-transform: uppercase;
+color: var(–burgundy-pale);
+margin-bottom: 8px;
+}
+
+.detail-value {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.4rem;
+font-style: italic;
+line-height: 1.4;
+color: var(–cream-light);
+}
+
+/* ─── TIMELINE / SCHEDULE ─── */
+.timeline {
+list-style: none;
+margin-top: 48px;
+display: flex;
+flex-direction: column;
+gap: 0;
+position: relative;
+}
+
+.timeline::before {
+content: ‘’;
+position: absolute;
+left: 50%;
+top: 0; bottom: 0;
+width: 1px;
+background: linear-gradient(to bottom, transparent, var(–burgundy-pale) 10%, var(–burgundy-pale) 90%, transparent);
+transform: translateX(-50%);
+opacity: 0.4;
+}
+
+.timeline-item {
+display: flex;
+align-items: center;
+gap: 32px;
+padding: 20px 0;
+}
+
+.timeline-item:nth-child(even) { flex-direction: row-reverse; }
+
+.tl-time {
+flex: 1;
+text-align: right;
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.1rem;
+font-style: italic;
+color: var(–text-mid);
+}
+
+.timeline-item:nth-child(even) .tl-time { text-align: left; }
+
+.tl-dot {
+width: 10px;
+height: 10px;
+border-radius: 50%;
+background: var(–burgundy);
+border: 2px solid var(–cream);
+box-shadow: 0 0 0 2px var(–burgundy);
+flex-shrink: 0;
+position: relative;
+z-index: 1;
+}
+
+.tl-event {
+flex: 1;
+text-align: left;
+}
+
+.timeline-item:nth-child(even) .tl-event { text-align: right; }
+
+.tl-event-name {
+font-family: ‘Cinzel’, serif;
+font-size: 0.72rem;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+color: var(–burgundy);
+margin-bottom: 4px;
+}
+
+.tl-event-desc {
+font-size: 0.88rem;
+color: var(–text-mid);
+line-height: 1.5;
+}
+
+/* ─── RSVP ─── */
+.rsvp-section {
+background: var(–cream-dark);
+padding: 90px 20px;
+position: relative;
+overflow: hidden;
+}
+
+.rsvp-card {
+background: var(–cream-light);
+border: 1px solid rgba(109,26,42,0.12);
+border-radius: 2px;
+padding: 56px 48px;
+max-width: 520px;
+margin: 40px auto 0;
+position: relative;
+box-shadow: 0 20px 60px rgba(109,26,42,0.08);
+animation: riseIn 1s ease both;
+}
+
+.form-group {
+margin-bottom: 24px;
+text-align: left;
+}
+
+.form-label {
+display: block;
+font-family: ‘Cinzel’, serif;
+font-size: 0.62rem;
+letter-spacing: 0.25em;
+text-transform: uppercase;
+color: var(–burgundy-pale);
+margin-bottom: 8px;
+}
+
+.form-input, .form-select {
+width: 100%;
+border: none;
+border-bottom: 1px solid rgba(109,26,42,0.25);
+background: transparent;
+padding: 10px 0;
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.05rem;
+color: var(–text-dark);
+outline: none;
+transition: border-color 0.3s;
+appearance: none;
+}
+
+.form-input:focus, .form-select:focus {
+border-bottom-color: var(–burgundy);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+.btn-rsvp {
+width: 100%;
+margin-top: 16px;
+padding: 16px;
+background: var(–burgundy);
+color: var(–cream-light);
+border: none;
+cursor: pointer;
+font-family: ‘Cinzel’, serif;
+font-size: 0.75rem;
+letter-spacing: 0.3em;
+text-transform: uppercase;
+transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+}
+
+.btn-rsvp:hover {
+background: var(–burgundy-light);
+transform: translateY(-2px);
+box-shadow: 0 8px 24px rgba(109,26,42,0.25);
+}
+
+.btn-rsvp:active { transform: translateY(0); }
+
+/* ─── QR SECTION ─── */
+.qr-section {
+padding: 90px 20px;
+text-align: center;
+}
+
+.qr-wrap {
+display: inline-flex;
+flex-direction: column;
+align-items: center;
+gap: 28px;
+margin-top: 40px;
+}
+
+.qr-placeholder {
+width: 160px;
+height: 160px;
+border: 2px solid rgba(109,26,42,0.2);
+display: flex;
+align-items: center;
+justify-content: center;
+position: relative;
+background: var(–cream-light);
+}
+
+/* corner accents on QR box */
+.qr-placeholder::before,
+.qr-placeholder::after {
+content: ‘’;
+position: absolute;
+width: 22px;
+height: 22px;
+border-color: var(–burgundy);
+border-style: solid;
+}
+.qr-placeholder::before { top: -4px; left: -4px; border-width: 3px 0 0 3px; }
+.qr-placeholder::after  { bottom: -4px; right: -4px; border-width: 0 3px 3px 0; }
+
+.qr-inner-corners::before,
+.qr-inner-corners::after {
+content: ‘’;
+position: absolute;
+width: 22px;
+height: 22px;
+border-color: var(–burgundy);
+border-style: solid;
+}
+.qr-inner-corners::before { top: -4px; right: -4px; border-width: 3px 3px 0 0; }
+.qr-inner-corners::after  { bottom: -4px; left: -4px; border-width: 0 0 3px 3px; }
+
+.qr-inner-corners {
+position: absolute;
+inset: 0;
+}
+
+.btn-qr {
+padding: 14px 36px;
+background: transparent;
+border: 1px solid var(–burgundy);
+color: var(–burgundy);
+cursor: pointer;
+font-family: ‘Cinzel’, serif;
+font-size: 0.7rem;
+letter-spacing: 0.28em;
+text-transform: uppercase;
+transition: all 0.3s;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.btn-qr:hover {
+background: var(–burgundy);
+color: var(–cream-light);
+}
+
+.btn-qr svg { transition: transform 0.3s; }
+.btn-qr:hover svg { transform: scale(1.15); }
+
+/* ─── FOOTER ─── */
+footer {
+background: var(–cream-dark);
+padding: 48px 20px;
+text-align: center;
+border-top: 1px solid rgba(109,26,42,0.1);
+}
+
+.footer-names {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.5rem;
+font-style: italic;
+color: var(–burgundy);
+margin-bottom: 12px;
+}
+
+.footer-note {
+font-size: 0.8rem;
+color: var(–text-mid);
+letter-spacing: 0.1em;
+}
+
+/* ─── SCROLL REVEAL ─── */
+.reveal {
+opacity: 0;
+transform: translateY(30px);
+transition: opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1);
+}
+
+.reveal.visible {
+opacity: 1;
+transform: translateY(0);
+}
+
+/* ─── PETAL ANIMATION ─── */
+.petals {
+position: fixed;
+top: 0; left: 0;
+width: 100%; height: 100%;
+pointer-events: none;
+z-index: 0;
+overflow: hidden;
+}
+
+.petal {
+position: absolute;
+top: -60px;
+opacity: 0;
+animation: petalFall linear infinite;
+}
+
+@keyframes petalFall {
+0%   { transform: translateY(0) rotate(0deg) translateX(0); opacity: 0; }
+5%   { opacity: 0.6; }
+90%  { opacity: 0.4; }
+100% { transform: translateY(110vh) rotate(720deg) translateX(40px); opacity: 0; }
+}
+
+@media (max-width: 600px) {
+.corner-svg { width: 150px; }
+.rsvp-card { padding: 36px 24px; }
+.form-row { grid-template-columns: 1fr; }
+.timeline::before { left: 16px; }
+.timeline-item, .timeline-item:nth-child(even) { flex-direction: column; align-items: flex-start; padding-left: 36px; }
+.tl-time, .timeline-item:nth-child(even) .tl-time,
+.tl-event, .timeline-item:nth-child(even) .tl-event { text-align: left; }
+.tl-dot { position: absolute; left: 12px; }
+.timeline-item { position: relative; }
+}
+</style>
+
 </head>
 <body>
-    <div class="wrap">
-        <div class="line">
-          <div class="left">
-            <div class="content">
-              <span class="spanSlow">Vijesh</span>
-            </div>
-          </div><!--
-          --><div class="right">
-            <div class="content">
-              <span class="spanSlow">Vijesh</span>
-            </div>
+
+<!-- Petal rain -->
+
+<div class="petals" id="petals"></div>
+
+<!-- Tiling background pattern SVG -->
+
+<svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="bg" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+      <!-- diamond grid -->
+      <path d="M60 0 L120 60 L60 120 L0 60 Z" fill="none" stroke="#6d1a2a" stroke-width="0.5"/>
+      <circle cx="60" cy="60" r="3" fill="#6d1a2a"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+</svg>
+
+<div class="page">
+
+  <!-- ═══════════════ HERO ═══════════════ -->
+
+  <section class="hero">
+    <!-- Corner botanicals -->
+    <svg class="corner-svg tl" viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 10 Q80 40 40 120 Q20 170 60 200" stroke="#6d1a2a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M40 10 Q60 60 20 90" stroke="#6d1a2a" stroke-width="1" fill="none"/>
+      <!-- leaves -->
+      <ellipse cx="55" cy="55" rx="18" ry="9" fill="#c4748a" opacity="0.4" transform="rotate(-35 55 55)"/>
+      <ellipse cx="28" cy="88" rx="15" ry="7" fill="#6d1a2a" opacity="0.3" transform="rotate(-60 28 88)"/>
+      <ellipse cx="48" cy="115" rx="20" ry="8" fill="#c4748a" opacity="0.35" transform="rotate(-20 48 115)"/>
+      <ellipse cx="38" cy="148" rx="16" ry="7" fill="#6d1a2a" opacity="0.3" transform="rotate(-50 38 148)"/>
+      <!-- flowers -->
+      <circle cx="62" cy="190" r="6" fill="#c4748a" opacity="0.5"/>
+      <circle cx="62" cy="190" r="3" fill="#6d1a2a" opacity="0.6"/>
+      <circle cx="58" cy="184" r="4" fill="#c4748a" opacity="0.4"/>
+      <circle cx="70" cy="186" r="4" fill="#c4748a" opacity="0.4"/>
+      <circle cx="66" cy="196" r="4" fill="#c4748a" opacity="0.4"/>
+      <circle cx="54" cy="194" r="4" fill="#c4748a" opacity="0.4"/>
+      <!-- tiny blooms -->
+      <circle cx="22" cy="55" r="3.5" fill="#c4748a" opacity="0.4"/>
+      <circle cx="22" cy="55" r="1.5" fill="#6d1a2a" opacity="0.5"/>
+    </svg>
+    <svg class="corner-svg tr" viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 10 Q80 40 40 120 Q20 170 60 200" stroke="#6d1a2a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="55" cy="55" rx="18" ry="9" fill="#c4748a" opacity="0.4" transform="rotate(-35 55 55)"/>
+      <ellipse cx="28" cy="88" rx="15" ry="7" fill="#6d1a2a" opacity="0.3" transform="rotate(-60 28 88)"/>
+      <ellipse cx="48" cy="115" rx="20" ry="8" fill="#c4748a" opacity="0.35" transform="rotate(-20 48 115)"/>
+      <circle cx="62" cy="190" r="6" fill="#c4748a" opacity="0.5"/>
+      <circle cx="62" cy="190" r="3" fill="#6d1a2a" opacity="0.6"/>
+      <circle cx="58" cy="184" r="4" fill="#c4748a" opacity="0.4"/>
+      <circle cx="70" cy="186" r="4" fill="#c4748a" opacity="0.4"/>
+    </svg>
+    <svg class="corner-svg bl" viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 10 Q80 40 40 120 Q20 170 60 200" stroke="#6d1a2a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="55" cy="55" rx="18" ry="9" fill="#c4748a" opacity="0.4" transform="rotate(-35 55 55)"/>
+      <ellipse cx="48" cy="115" rx="20" ry="8" fill="#c4748a" opacity="0.35" transform="rotate(-20 48 115)"/>
+      <circle cx="62" cy="190" r="6" fill="#c4748a" opacity="0.5"/>
+      <circle cx="62" cy="190" r="3" fill="#6d1a2a" opacity="0.6"/>
+    </svg>
+    <svg class="corner-svg br" viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 10 Q80 40 40 120 Q20 170 60 200" stroke="#6d1a2a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="55" cy="55" rx="18" ry="9" fill="#c4748a" opacity="0.4" transform="rotate(-35 55 55)"/>
+      <ellipse cx="48" cy="115" rx="20" ry="8" fill="#c4748a" opacity="0.35" transform="rotate(-20 48 115)"/>
+      <circle cx="62" cy="190" r="6" fill="#c4748a" opacity="0.5"/>
+    </svg>
+
+```
+<div class="hero-inner">
+  <p class="prelude">
+    <span class="divider-line"></span>
+    Together with their families
+    <span class="divider-line"></span>
+  </p>
+
+  <h1 class="couple-names">
+    Eleanor
+    <span class="ampersand">&amp;</span>
+    Sebastian
+  </h1>
+
+  <p class="wedding-sub">Request the pleasure of your company</p>
+  <p class="hero-date">Saturday, the Fourteenth of June, Two Thousand Twenty-Five</p>
+
+  <!-- Hero flourish SVG -->
+  <svg class="hero-flourish" width="240" height="36" viewBox="0 0 240 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="0" y1="18" x2="90" y2="18" stroke="#6d1a2a" stroke-width="0.8" opacity="0.4"/>
+    <line x1="150" y1="18" x2="240" y2="18" stroke="#6d1a2a" stroke-width="0.8" opacity="0.4"/>
+    <!-- center ornament -->
+    <path d="M120 4 L124 14 L120 18 L116 14 Z" fill="#c4748a" opacity="0.6"/>
+    <path d="M120 18 L124 22 L120 32 L116 22 Z" fill="#c4748a" opacity="0.6"/>
+    <path d="M106 18 L110 14 L120 18 L110 22 Z" fill="#6d1a2a" opacity="0.4"/>
+    <path d="M120 18 L130 14 L134 18 L130 22 Z" fill="#6d1a2a" opacity="0.4"/>
+    <circle cx="120" cy="18" r="4" fill="#6d1a2a" opacity="0.5"/>
+    <!-- small diamonds -->
+    <path d="M96 18 L98 16 L100 18 L98 20 Z" fill="#c4748a" opacity="0.5"/>
+    <path d="M140 18 L142 16 L144 18 L142 20 Z" fill="#c4748a" opacity="0.5"/>
+  </svg>
+</div>
+```
+
+  </section>
+
+  <!-- ═══════════════ STORY ═══════════════ -->
+
+  <section>
+    <div class="section-inner reveal">
+      <svg class="sep" width="180" height="24" viewBox="0 0 180 24"><path d="M0 12 Q45 0 90 12 Q135 24 180 12" stroke="#6d1a2a" stroke-width="0.8" fill="none" opacity="0.5"/><circle cx="90" cy="12" r="3" fill="#c4748a" opacity="0.5"/></svg>
+      <p class="section-tag">Our Story</p>
+      <h2 class="section-title">A Love Worth Celebrating</h2>
+      <p class="section-body">
+        From a serendipitous meeting in an old bookshop on a rainy afternoon, to building a life full of adventure, laughter, and quiet mornings together — we are overjoyed to celebrate our love surrounded by those who matter most.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════ DETAILS BAND ═══════════════ -->
+
+  <section class="details-band">
+    <div class="section-inner reveal">
+      <p class="section-tag">The Details</p>
+      <h2 class="section-title">When &amp; Where</h2>
+
+```
+  <div class="details-grid">
+    <!-- Date -->
+    <div class="detail-item">
+      <svg class="detail-icon" width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <rect x="4" y="8" width="28" height="24" rx="1" stroke="#c4748a" stroke-width="1.2"/>
+        <line x1="4" y1="14" x2="32" y2="14" stroke="#c4748a" stroke-width="1"/>
+        <line x1="11" y1="4" x2="11" y2="12" stroke="#c4748a" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="25" y1="4" x2="25" y2="12" stroke="#c4748a" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="18" cy="24" r="2" fill="#c4748a"/>
+      </svg>
+      <p class="detail-label">Date</p>
+      <p class="detail-value">June 14, 2025<br>Saturday</p>
+    </div>
+    <!-- Time -->
+    <div class="detail-item">
+      <svg class="detail-icon" width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="13" stroke="#c4748a" stroke-width="1.2"/>
+        <line x1="18" y1="18" x2="18" y2="9" stroke="#c4748a" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="18" y1="18" x2="23" y2="21" stroke="#c4748a" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="18" cy="18" r="1.5" fill="#c4748a"/>
+      </svg>
+      <p class="detail-label">Ceremony</p>
+      <p class="detail-value">4:00 PM<br>Reception 7:00 PM</p>
+    </div>
+    <!-- Venue -->
+    <div class="detail-item">
+      <svg class="detail-icon" width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M18 4 C11 4 7 10 7 15 C7 23 18 33 18 33 C18 33 29 23 29 15 C29 10 25 4 18 4Z" stroke="#c4748a" stroke-width="1.2" fill="none"/>
+        <circle cx="18" cy="15" r="4" stroke="#c4748a" stroke-width="1"/>
+      </svg>
+      <p class="detail-label">Venue</p>
+      <p class="detail-value">Rose Garden Estate<br>123 Blossom Lane</p>
+    </div>
+    <!-- Dress Code -->
+    <div class="detail-item">
+      <svg class="detail-icon" width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M12 4 L18 10 L24 4 L28 8 L24 14 L28 32 L8 32 L12 14 L8 8 Z" stroke="#c4748a" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+      </svg>
+      <p class="detail-label">Dress Code</p>
+      <p class="detail-value">Black Tie<br>Optional</p>
+    </div>
+  </div>
+</div>
+```
+
+  </section>
+
+  <!-- ═══════════════ SCHEDULE ═══════════════ -->
+
+  <section>
+    <div class="section-inner reveal">
+      <svg class="sep" width="180" height="24" viewBox="0 0 180 24"><path d="M0 12 Q45 0 90 12 Q135 24 180 12" stroke="#6d1a2a" stroke-width="0.8" fill="none" opacity="0.5"/><circle cx="90" cy="12" r="3" fill="#c4748a" opacity="0.5"/></svg>
+      <p class="section-tag">Day of</p>
+      <h2 class="section-title">The Programme</h2>
+      <ul class="timeline">
+        <li class="timeline-item">
+          <span class="tl-time">3:30 PM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-name">Guests Arrive</p>
+            <p class="tl-event-desc">Welcome drinks in the garden</p>
           </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">4:00 PM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-name">Ceremony</p>
+            <p class="tl-event-desc">Rose Garden Chapel</p>
           </div>
-          <div class="line">
-              <div class="left">
-                <div class="content">
-                  <span class="spanFast">Gowda</span>
-                </div>
-              </div><!--
-              --><div class="right">
-                <div class="content">
-                  <span class="spanFast">Gowda</span>
-                </div>
-              </div>
-            </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">5:00 PM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-name">Cocktail Hour</p>
+            <p class="tl-event-desc">Terrace & Gardens</p>
+          </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">7:00 PM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-name">Dinner & Reception</p>
+            <p class="tl-event-desc">Grand Ballroom</p>
+          </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">11:30 PM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-name">Last Dance</p>
+            <p class="tl-event-desc">Carriages at Midnight</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═══════════════ RSVP ═══════════════ -->
+
+  <section class="rsvp-section">
+    <div class="section-inner reveal">
+      <svg class="sep" width="180" height="24" viewBox="0 0 180 24"><path d="M0 12 Q45 0 90 12 Q135 24 180 12" stroke="#6d1a2a" stroke-width="0.8" fill="none" opacity="0.5"/><circle cx="90" cy="12" r="3" fill="#c4748a" opacity="0.5"/></svg>
+      <p class="section-tag">Kindly Reply</p>
+      <h2 class="section-title">RSVP by May 15th</h2>
+      <p class="section-body">We would be honoured to have you celebrate with us. Please let us know if you are able to attend.</p>
+
+```
+  <div class="rsvp-card">
+    <form onsubmit="handleRsvp(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" class="form-input" placeholder="Eleanor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" class="form-input" placeholder="Smith">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Attendance</label>
+        <select class="form-select">
+          <option value="">Please select…</option>
+          <option>Joyfully accepts</option>
+          <option>Regretfully declines</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Number of Guests</label>
+        <input type="number" class="form-input" min="1" max="5" placeholder="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dietary Requirements</label>
+        <input type="text" class="form-input" placeholder="Any allergies or preferences">
+      </div>
+      <button type="submit" class="btn-rsvp">Send RSVP</button>
+    </form>
+    <p id="rsvp-msg" style="margin-top:18px;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--burgundy);font-size:1.05rem;display:none;"></p>
+  </div>
+</div>
+```
+
+  </section>
+
+  <!-- ═══════════════ QR CODE ═══════════════ -->
+
+  <section class="qr-section reveal">
+    <div class="section-inner">
+      <svg class="sep" width="180" height="24" viewBox="0 0 180 24"><path d="M0 12 Q45 0 90 12 Q135 24 180 12" stroke="#6d1a2a" stroke-width="0.8" fill="none" opacity="0.5"/><circle cx="90" cy="12" r="3" fill="#c4748a" opacity="0.5"/></svg>
+      <p class="section-tag">Digital Invitation</p>
+      <h2 class="section-title">Share &amp; Scan</h2>
+      <p class="section-body">Share this invitation with a scan. Open the camera on your phone and hold it to the code below.</p>
+
+```
+  <div class="qr-wrap">
+    <!-- QR placeholder pattern (SVG mosaic) -->
+    <div class="qr-placeholder" id="qr-box">
+      <div class="qr-inner-corners"></div>
+      <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- position squares -->
+        <rect x="4" y="4" width="32" height="32" rx="2" fill="none" stroke="#6d1a2a" stroke-width="3"/>
+        <rect x="10" y="10" width="20" height="20" rx="1" fill="#6d1a2a"/>
+        <rect x="84" y="4" width="32" height="32" rx="2" fill="none" stroke="#6d1a2a" stroke-width="3"/>
+        <rect x="90" y="10" width="20" height="20" rx="1" fill="#6d1a2a"/>
+        <rect x="4" y="84" width="32" height="32" rx="2" fill="none" stroke="#6d1a2a" stroke-width="3"/>
+        <rect x="10" y="90" width="20" height="20" rx="1" fill="#6d1a2a"/>
+        <!-- data cells mosaic -->
+        <rect x="44" y="4" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="54" y="4" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="64" y="4" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="44" y="14" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="64" y="14" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="54" y="24" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="4" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="14" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="24" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="4" y="54" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="24" y="54" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="14" y="64" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="44" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="54" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="64" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="74" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="44" y="54" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="64" y="54" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="54" y="64" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="74" y="54" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="84" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="94" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="104" y="44" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="84" y="54" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="104" y="54" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="94" y="64" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="44" y="84" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="54" y="84" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="44" y="94" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="64" y="94" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="74" y="94" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="54" y="104" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="74" y="84" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="84" y="84" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="94" y="84" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="104" y="84" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="84" y="94" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="104" y="94" width="6" height="6" fill="#6d1a2a"/>
+        <rect x="94" y="104" width="6" height="6" fill="#6d1a2a"/>
+      </svg>
     </div>
 
-    
+    <!-- Camera / QR scan button -->
+    <button class="btn-qr" onclick="openCamera()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Open Camera to Scan
+    </button>
+  </div>
+</div>
+```
+
+  </section>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+
+  <footer>
+    <!-- footer botanical -->
+    <svg width="200" height="32" viewBox="0 0 200 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:20px;opacity:0.35">
+      <path d="M0 16 Q50 4 100 16 Q150 28 200 16" stroke="#6d1a2a" stroke-width="1" fill="none"/>
+      <circle cx="100" cy="16" r="4" fill="#c4748a"/>
+      <circle cx="60" cy="10" r="2.5" fill="#c4748a"/>
+      <circle cx="140" cy="22" r="2.5" fill="#c4748a"/>
+    </svg>
+    <p class="footer-names">Eleanor &amp; Sebastian</p>
+    <p class="footer-note">14 June 2025 · Rose Garden Estate</p>
+    <p class="footer-note" style="margin-top:8px;opacity:0.5;font-size:0.7rem;letter-spacing:0.15em;">Made with love · Template</p>
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+  /* ── Petal rain ── */
+  (function(){
+    const container = document.getElementById('petals');
+    const colors = ['#c4748a','#e8c0c8','#d4a0aa','#b88a98'];
+    for(let i = 0; i < 18; i++){
+      const el = document.createElement('div');
+      el.className = 'petal';
+      const size = Math.random()*8+6;
+      el.style.cssText = `
+        left:${Math.random()*100}vw;
+        width:${size}px;
+        height:${size*0.7}px;
+        border-radius:50% 0 50% 0;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        animation-duration:${10+Math.random()*14}s;
+        animation-delay:${Math.random()*16}s;
+        opacity:0;
+      `;
+      container.appendChild(el);
+    }
+  })();
+
+  /* ── Scroll reveal ── */
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => observer.observe(el));
+
+  /* ── RSVP mock submit ── */
+  function handleRsvp(e){
+    e.preventDefault();
+    const msg = document.getElementById('rsvp-msg');
+    msg.style.display = 'block';
+    msg.textContent = 'Thank you! We look forward to celebrating with you. 🌸';
+    e.target.style.opacity = '0.4';
+    e.target.style.pointerEvents = 'none';
+  }
+
+  /* ── Camera placeholder ── */
+  function openCamera(){
+    alert('📸 Camera QR feature — connect your QR scanning logic here.\n\nThis button is a placeholder for camera / QR code scanning functionality.');
+  }
+</script>
+
 </body>
 </html>
