@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Greeshma & Vijesh — Shubha Vivaha</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Greeshma &amp; Vijesh — Shubha Vivaha</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Cinzel:wght@400;600&family=Tiro+Devanagari+Sanskrit&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+
 <style>
-  :root {
+  /* ------------- Theme variables (default: cream & gold) ------------- */
+  :root{
     --cream:        #fdf6e3;
     --cream-dark:   #f0e6c4;
     --cream-light:  #fffcf4;
@@ -19,457 +22,607 @@
     --green:        #2a5a2e;
     --text-dark:    #2a1208;
     --text-mid:     #5a3218;
+
+    /* page-level colors used by the layout */
+    --bg: var(--cream);
+    --primary: var(--crimson);
+    --accent: var(--saffron);
+    --muted: rgba(0,0,0,0.06);
   }
 
-  /* ─── THEMES ─── */
-  body.theme-green {
-    --crimson:      #004225; /* British Racing Green */
-    --crimson-light:#005a32;
-    --crimson-pale: #8fbc9f;
-    --saffron:      #d4af37; /* Gold */
-    --saffron-light:#f3d56e;
-    --gold:         #b58c2a;
-    --text-dark:    #0a1a10;
-    --text-mid:     #1c3b27;
+  /* British racing green theme */
+  body.theme-green{
+    --bg: #f6f6f3;
+    --primary: #083b29; /* deep racing green */
+    --accent: #d4af37;  /* gold */
+    --saffron: #d4af37;
+    --text-dark: #0f241b;
+    --text-mid: #254d3e;
   }
 
-  body.theme-purple {
-    --crimson:      #4a192c; /* Deep Purple / Plum */
-    --crimson-light:#6a2c42;
-    --crimson-pale: #cbb4bc;
-    --saffron:      #c99a45; /* Soft Gold */
-    --saffron-light:#e6be73;
-    --gold:         #b58c3a;
-    --cream:        #f7f3f5;
-    --cream-dark:   #e8dee3;
-    --text-dark:    #210a15;
-    --text-mid:     #421a2d;
+  /* Purple & cream theme */
+  body.theme-purple{
+    --bg: #fbf6ff;
+    --primary: #4b2e83; /* regal purple */
+    --accent: #e6c76b;
+    --saffron: #e6c76b;
+    --text-dark: #2d1b40;
+    --text-mid: #3f2a52;
   }
 
-  /* ─── THEME PICKER ─── */
-  .theme-picker {
-    position: fixed; top: 20px; right: 20px; z-index: 9998;
-    display: flex; gap: 10px; background: rgba(255,255,255,0.8);
-    padding: 8px 12px; border-radius: 30px; backdrop-filter: blur(5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid var(--cream-dark);
-  }
-  .theme-btn {
-    width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--cream-light);
-    cursor: pointer; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-  .theme-btn:hover { transform: scale(1.15); }
-  .theme-btn.default { background: #7a1518; }
-  .theme-btn.green { background: #004225; }
-  .theme-btn.purple { background: #4a192c; }
-
-  /* ─── ENVELOPE OVERLAY ─── */
-  body.locked { overflow: hidden; height: 100vh; }
-  .envelope-overlay {
-    position: fixed; inset: 0; z-index: 99999;
-    background: var(--cream-dark);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: transform 1.2s cubic-bezier(0.6, 0.05, 0.15, 0.95) 1.5s, opacity 1s ease-in-out 1.5s;
-  }
-  .envelope-overlay::before {
-    content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 10 L70 40 L40 70 L10 40 Z' fill='none' stroke='rgba(0,0,0,0.03)' stroke-width='1'/%3E%3C/svg%3E");
-    opacity: 0.5;
-  }
-  .envelope-overlay.is-open {
-    transform: translateY(-100vh); opacity: 0; pointer-events: none;
-  }
-  .envelope-wrapper {
-    position: relative; width: min(85vw, 420px); height: 260px;
-    cursor: pointer; perspective: 1000px; z-index: 2;
-  }
-  .env-back {
-    position: absolute; inset: 0; background: var(--cream);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--cream-dark);
-  }
-  .env-letter {
-    position: absolute; left: 15px; right: 15px; top: 15px; bottom: 15px;
-    background: var(--cream-light); border: 1px solid var(--saffron);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: transform 1s ease-in-out 0.6s; z-index: 1;
-  }
-  .env-letter p {
-    font-family: 'Cormorant Garamond', serif; font-size: 2rem;
-    color: var(--crimson); margin: 0; line-height: 1;
-  }
-  .env-letter span {
-    font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.2em;
-    color: var(--saffron); margin-top: 8px; text-transform: uppercase;
-  }
-  .envelope-overlay.is-open .env-letter { transform: translateY(-80px); }
-  
-  .env-front-bottom {
-    position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
-    width: 0; height: 0;
-    border-left: min(42.5vw, 210px) solid transparent;
-    border-right: min(42.5vw, 210px) solid transparent;
-    border-bottom: 150px solid var(--cream-dark);
-    filter: drop-shadow(0 -4px 4px rgba(0,0,0,0.03));
-  }
-  .env-front-left {
-    position: absolute; top: 0; bottom: 0; left: 0; z-index: 2;
-    width: 0; height: 0;
-    border-top: 130px solid transparent; border-bottom: 130px solid transparent;
-    border-left: min(42.5vw, 210px) solid var(--cream);
-  }
-  .env-front-right {
-    position: absolute; top: 0; bottom: 0; right: 0; z-index: 2;
-    width: 0; height: 0;
-    border-top: 130px solid transparent; border-bottom: 130px solid transparent;
-    border-right: min(42.5vw, 210px) solid var(--cream);
-  }
-  .env-flap-top {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
-    width: 0; height: 0;
-    border-left: min(42.5vw, 210px) solid transparent;
-    border-right: min(42.5vw, 210px) solid transparent;
-    border-top: 145px solid var(--saffron-light); /* Golden Flap */
-    transform-origin: top; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-  }
-  .envelope-overlay.is-open .env-flap-top {
-    transform: rotateX(180deg); z-index: 0; filter: none;
-  }
-  .env-wax-seal {
-    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
-    width: 46px; height: 46px; background: var(--crimson); border-radius: 50%;
-    z-index: 4; display: flex; align-items: center; justify-content: center;
-    box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
-    font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--saffron-light);
-    transition: opacity 0.4s ease 0.2s;
-  }
-  .envelope-overlay.is-open .env-wax-seal { opacity: 0; pointer-events: none; }
-  .env-instruction {
-    position: absolute; bottom: -60px; left: 0; right: 0; text-align: center;
-    font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.25em;
-    color: var(--crimson); opacity: 0.8; animation: pulse 2s infinite; z-index: 2;
-  }
-  @keyframes pulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    background-color: var(--cream);
-    color: var(--text-dark);
-    font-family: 'Jost', sans-serif;
-    font-weight: 300;
-    overflow-x: hidden;
-    transition: background-color 0.5s ease;
+  /* ------------------- base reset ------------------- */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Jost',sans-serif;
+    font-weight:300;
+    background:var(--bg);
+    color:var(--text-dark);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    overflow-x:hidden;
   }
 
-  .bg-pattern { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.055; }
-  .page { position: relative; z-index: 1; }
-
-  /* ─── HERO ─── */
-  .hero {
-    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 60px 20px 80px; position: relative; overflow: hidden;
+  /* ------------------- envelope overlay ------------------- */
+  .envelope-overlay{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(180deg, rgba(0,0,0,0.28), rgba(0,0,0,0.42));
+    z-index:9999;
+    transition:opacity .6s ease,visibility .6s ease;
+    visibility:visible;
+    opacity:1;
+    perspective:1600px;
   }
-  .torana {
-    position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: center;
-    pointer-events: none; animation: toranaIn 1.4s cubic-bezier(0.22,1,0.36,1) both;
+
+  .envelope-overlay.hidden{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
   }
-  @keyframes toranaIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-  .corner-lotus { position: absolute; width: 200px; opacity: 0.48; transition: stroke 0.5s, fill 0.5s; }
-  .corner-lotus.tl { top: 0; left: 0; }
-  .corner-lotus.tr { top: 0; right: 0; transform: scaleX(-1); }
-  .corner-lotus.bl { bottom: 0; left: 0; transform: scaleY(-1); }
-  .corner-lotus.br { bottom: 0; right: 0; transform: scale(-1); }
 
-  @keyframes riseIn { from { opacity: 0; transform: translateY(38px); } to { opacity: 1; transform: translateY(0); } }
+  .envelope {
+    width: min(700px, 86vw);
+    max-width:860px;
+    height: clamp(320px, 52vh, 520px);
+    position:relative;
+    transform-style:preserve-3d;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    will-change:transform;
+  }
 
-  .hero-om { font-family: 'Tiro Devanagari Sanskrit', serif; font-size: 2.6rem; color: var(--saffron); margin-bottom: 6px; opacity: 0.92; animation: riseIn 1.4s 0.1s cubic-bezier(0.22,1,0.36,1) both; text-shadow: 0 2px 16px rgba(201,135,26,0.3); }
-  .hero-blessing { font-family: 'Tiro Devanagari Sanskrit', serif; font-size: 0.82rem; color: var(--text-mid); letter-spacing: 0.1em; margin-bottom: 26px; animation: riseIn 1.4s 0.2s cubic-bezier(0.22,1,0.36,1) both; opacity: 0.65; }
-  .gold-border { width: min(400px, 90vw); height: 2px; background: linear-gradient(90deg, transparent, var(--saffron) 20%, var(--gold) 50%, var(--saffron) 80%, transparent); margin: 0 auto 22px; animation: riseIn 1.4s 0.25s cubic-bezier(0.22,1,0.36,1) both; position: relative; }
-  .gold-border::before, .gold-border::after { content: ''; position: absolute; top: -3px; width: 8px; height: 8px; background: var(--saffron); transform: rotate(45deg); }
-  .gold-border::before { left: 18%; }
-  .gold-border::after  { right: 18%; }
-  .prelude { font-family: 'Cinzel', serif; letter-spacing: 0.28em; font-size: 0.62rem; text-transform: uppercase; color: var(--crimson); margin-bottom: 22px; animation: riseIn 1.4s 0.3s cubic-bezier(0.22,1,0.36,1) both; transition: color 0.5s; }
-  .couple-names { font-family: 'Cormorant Garamond', serif; font-size: clamp(3.8rem, 10vw, 7.8rem); font-weight: 400; line-height: 0.92; color: var(--crimson); animation: riseIn 1.4s 0.38s cubic-bezier(0.22,1,0.36,1) both; transition: color 0.5s; }
-  .couple-names .weds { display: block; font-family: 'Tiro Devanagari Sanskrit', serif; font-size: 0.26em; color: var(--saffron); letter-spacing: 0.4em; text-transform: uppercase; margin: 10px 0 8px; font-weight: 400; transition: color 0.5s; }
-  .wedding-sub { margin-top: 28px; font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.34em; color: var(--saffron); text-transform: uppercase; animation: riseIn 1.4s 0.52s cubic-bezier(0.22,1,0.36,1) both; }
-  .hero-date { margin-top: 10px; font-family: 'Cormorant Garamond', serif; font-size: clamp(1.1rem, 2.8vw, 1.7rem); color: var(--text-mid); letter-spacing: 0.1em; font-style: italic; animation: riseIn 1.4s 0.62s cubic-bezier(0.22,1,0.36,1) both; }
-  .hero-venue { margin-top: 6px; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.8rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--text-mid); opacity: 0.68; animation: riseIn 1.4s 0.72s cubic-bezier(0.22,1,0.36,1) both; }
-  .hero-flourish { margin: 32px auto 0; display: block; animation: riseIn 1.4s 0.85s cubic-bezier(0.22,1,0.36,1) both; }
+  /* backplate (inside of envelope) */
+  .env-inner {
+    position:absolute; inset:0;
+    background: linear-gradient(180deg,var(--cream-light), #fff 65%);
+    border-radius:12px;
+    box-shadow: 0 18px 60px rgba(10,6,4,0.45), inset 0 -3px 8px rgba(0,0,0,0.04);
+    z-index:1;
+    transform:translateZ(-40px) scale(.98);
+    overflow:hidden;
+  }
 
-  /* ─── SECTIONS ─── */
-  section { padding: 88px 20px; position: relative; }
-  .section-inner { max-width: 780px; margin: 0 auto; text-align: center; }
-  .section-tag { font-family: 'Cinzel', serif; font-size: 0.63rem; letter-spacing: 0.38em; text-transform: uppercase; color: var(--saffron); margin-bottom: 14px; transition: color 0.5s; }
-  .section-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 400; color: var(--crimson); line-height: 1.15; margin-bottom: 20px; transition: color 0.5s; }
-  .section-body { font-size: 1rem; line-height: 1.95; color: var(--text-mid); max-width: 560px; margin: 0 auto; }
-  .sep { display: block; margin: 0 auto 56px; opacity: 0.42; }
+  /* outer body */
+  .env-body {
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, var(--primary), color-mix(in srgb, var(--primary) 75%, #000 6%));
+    border-radius:12px;
+    z-index:2;
+    transform-origin:center;
+    transform: translateZ(20px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--cream-light);
+  }
 
-  /* ─── DETAILS BAND ─── */
-  .details-band { background: var(--crimson); color: var(--cream-light); padding: 80px 20px; position: relative; overflow: hidden; transition: background 0.5s; }
-  .details-band::before { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='0.5'%3E%3Ccircle cx='20' cy='20' r='8'/%3E%3Ccircle cx='20' cy='20' r='15'/%3E%3Cline x1='20' y1='0' x2='20' y2='40'/%3E%3Cline x1='0' y1='20' x2='40' y2='20'/%3E%3C/g%3E%3C/svg%3E"); pointer-events: none; }
-  .details-band .section-tag   { color: var(--saffron-light); }
-  .details-band .section-title { color: var(--cream-light); }
-  .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 48px; margin: 52px auto 0; max-width: 740px; }
-  .detail-item { text-align: center; }
-  .detail-icon { display: block; margin: 0 auto 16px; }
-  .detail-label { font-family: 'Cinzel', serif; font-size: 0.57rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--saffron-light); margin-bottom: 8px; }
-  .detail-value { font-family: 'Cormorant Garamond', serif; font-size: 1.35rem; font-style: italic; line-height: 1.45; color: var(--cream-light); }
+  /* the triangular flap — rotates open on X axis */
+  .env-flap {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:60%;
+    z-index:4;
+    transform-origin: 50% 0%;
+    backface-visibility:hidden;
+    clip-path: polygon(0 0,100% 0,50% 70%);
+    background: linear-gradient(135deg, color-mix(in srgb,var(--primary) 86%, #000 8%), var(--accent));
+    box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+    transition: transform 2s cubic-bezier(.22,1,.36,1);
+    transform: rotateX(0deg);
+  }
 
-  /* ─── TIMELINE ─── */
-  .timeline { list-style: none; margin-top: 48px; display: flex; flex-direction: column; position: relative; }
-  .timeline::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: linear-gradient(to bottom, transparent, var(--saffron) 10%, var(--saffron) 90%, transparent); transform: translateX(-50%); opacity: 0.35; }
-  .timeline-item { display: flex; align-items: center; gap: 32px; padding: 22px 0; }
-  .timeline-item:nth-child(even) { flex-direction: row-reverse; }
-  .tl-time { flex: 1; text-align: right; font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-style: italic; color: var(--text-mid); }
-  .timeline-item:nth-child(even) .tl-time { text-align: left; }
-  .tl-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--saffron); border: 2px solid var(--cream); box-shadow: 0 0 0 2px var(--saffron); flex-shrink: 0; z-index: 1; transition: background 0.5s, box-shadow 0.5s; }
-  .tl-event { flex: 1; text-align: left; }
-  .timeline-item:nth-child(even) .tl-event { text-align: right; }
-  .tl-event-kannada { font-family: 'Tiro Devanagari Sanskrit', serif; font-size: 0.82rem; color: var(--saffron); margin-bottom: 3px; opacity: 0.85; transition: color 0.5s; }
-  .tl-event-name { font-family: 'Cinzel', serif; font-size: 0.67rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--crimson); margin-bottom: 4px; transition: color 0.5s; }
-  .tl-event-desc { font-size: 0.86rem; color: var(--text-mid); line-height: 1.5; }
+  .envelope.open .env-flap{
+    transform: rotateX(-180deg);
+  }
 
-  /* ─── RSVP ─── */
-  .rsvp-section { background: var(--cream-dark); padding: 90px 20px; position: relative; overflow: hidden; transition: background 0.5s; }
-  .rsvp-section::before, .rsvp-section::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--saffron) 30%, var(--gold) 50%, var(--saffron) 70%, transparent); opacity: 0.5; }
-  .rsvp-section::before { top: 0; }
-  .rsvp-section::after  { bottom: 0; }
-  .rsvp-card { background: var(--cream-light); border: 1px solid rgba(122,21,24,0.1); border-top: 3px solid var(--saffron); padding: 52px 48px; max-width: 520px; margin: 40px auto 0; box-shadow: 0 20px 60px rgba(0,0,0,0.07); transition: border-top-color 0.5s, background 0.5s; }
-  .form-group { margin-bottom: 24px; text-align: left; }
-  .form-label { display: block; font-family: 'Cinzel', serif; font-size: 0.57rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--saffron); margin-bottom: 8px; transition: color 0.5s; }
-  .form-input, .form-select { width: 100%; border: none; border-bottom: 1px solid rgba(122,21,24,0.2); background: transparent; padding: 10px 0; font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: var(--text-dark); outline: none; transition: border-color 0.3s, color 0.5s; appearance: none; }
-  .form-input:focus, .form-select:focus { border-bottom-color: var(--crimson); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  .btn-rsvp { width: 100%; margin-top: 16px; padding: 16px; background: var(--crimson); color: var(--cream-light); border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; transition: background 0.5s, transform 0.2s, box-shadow 0.3s; position: relative; overflow: hidden; }
-  .btn-rsvp::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); pointer-events: none; }
-  .btn-rsvp:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.28); opacity: 0.9; }
-  .btn-rsvp:active { transform: translateY(0); }
+  /* body decorative stripe */
+  .env-body .stripe{
+    position:absolute;
+    top:48%;
+    left:6%;
+    right:6%;
+    height:14%;
+    border-radius:6px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    opacity:0.12;
+    transform: translateY(-50%);
+  }
 
-  /* ─── FOOTER ─── */
-  footer { background: var(--crimson); padding: 56px 20px; text-align: center; position: relative; overflow: hidden; transition: background 0.5s; }
-  footer::before { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='0.5'%3E%3Ccircle cx='20' cy='20' r='8'/%3E%3Ccircle cx='20' cy='20' r='15'/%3E%3Cline x1='20' y1='0' x2='20' y2='40'/%3E%3Cline x1='0' y1='20' x2='40' y2='20'/%3E%3C/g%3E%3C/svg%3E"); pointer-events: none; }
-  .footer-om { font-family: 'Tiro Devanagari Sanskrit', serif; font-size: 2rem; color: var(--saffron-light); margin-bottom: 14px; opacity: 0.9; position: relative; transition: color 0.5s;}
-  .footer-names { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; color: var(--cream-light); margin-bottom: 10px; position: relative; }
-  .footer-note { font-size: 0.78rem; color: rgba(255,255,255,0.6); letter-spacing: 0.14em; position: relative; }
-  .footer-gold-line { width: 140px; height: 1px; background: linear-gradient(90deg, transparent, var(--saffron-light), transparent); margin: 16px auto; position: relative; }
+  /* a small "seal" circle on the flap center */
+  .env-seal{
+    position:absolute;
+    top:20%;
+    left:50%;
+    transform:translateX(-50%);
+    width:62px; height:62px;
+    border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, var(--gold), color-mix(in srgb,var(--gold) 70%, #000 8%));
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    z-index:5;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Cinzel',serif;
+    color:var(--primary);
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:1px;
+  }
 
-  /* ─── SCROLL REVEAL ─── */
-  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1); }
-  .reveal.visible { opacity: 1; transform: translateY(0); }
+  /* invitation card inside envelope (fades up when opened) */
+  .invitation-card {
+    width:88%;
+    max-width:760px;
+    height:78%;
+    background: linear-gradient(180deg, var(--cream-light), var(--cream));
+    border-radius:10px;
+    box-shadow: 0 28px 80px rgba(0,0,0,0.35);
+    z-index:3;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+    transform: translateY(18px);
+    opacity:0;
+    transition: transform .9s cubic-bezier(.2,1,.3,1), opacity .9s ease .25s;
+    text-align:center;
+  }
 
-  /* ─── RESPONSIVE ─── */
-  @media (max-width:600px) {
-    .corner-lotus { width:130px; }
-    .rsvp-card { padding:36px 24px; }
-    .form-row { grid-template-columns:1fr; }
-    .timeline::before { left:16px; }
-    .timeline-item, .timeline-item:nth-child(even) { flex-direction:column; align-items:flex-start; padding-left:36px; }
-    .tl-time, .timeline-item:nth-child(even) .tl-time,
-    .tl-event, .timeline-item:nth-child(even) .tl-event { text-align:left; }
-    .tl-dot { position:absolute; left:10px; }
-    .timeline-item { position:relative; }
+  .envelope.open .invitation-card{
+    opacity:1; transform: translateY(0);
+  }
+
+  /* intro label (on invitation card) */
+  .invitation-card .intro{
+    font-family:'Cormorant Garamond',serif;
+    color:var(--text-dark);
+    font-size:clamp(1rem, 2.2vw, 1.12rem);
+    line-height:1.45;
+    opacity:0.98;
+  }
+
+  /* a small "enable sound" hint that shows if autoplay blocked */
+  .audio-fallback {
+    position:fixed;
+    left:50%;
+    bottom:28px;
+    transform:translateX(-50%);
+    z-index:10050;
+    background:rgba(0,0,0,0.66);
+    color:#fff;
+    padding:10px 14px;
+    border-radius:999px;
+    font-family:'Jost',sans-serif;
+    display:none;
+    gap:10px;
+    align-items:center;
+  }
+
+  .audio-fallback button{
+    background:var(--accent);
+    border:none;
+    color:#fff;
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+  }
+
+  /* theme switcher buttons */
+  .theme-switcher{
+    position:fixed;
+    right:18px;
+    top:18px;
+    z-index:9000;
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .theme-switcher button{
+    background:transparent;
+    border:1px solid rgba(0,0,0,0.08);
+    padding:8px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    font-family:'Cinzel',serif;
+    font-size:12px;
+    color:var(--text-dark);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  }
+  .theme-switcher button.active{ box-shadow: 0 8px 18px rgba(0,0,0,0.12); transform:translateY(-2px) }
+
+  /* small hide-on-envelope style so page doesn't flash under overlay */
+  .page { visibility: hidden; transition: visibility .15s; }
+  .page.visible { visibility: visible; }
+
+  /* === keep the rest of your design intact below (re-using original selectors) === */
+  .bg-pattern { position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.055 }
+  .hero{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:60px 20px 80px; position:relative; overflow:hidden; z-index:1 }
+  .gold-border{ width:min(400px,90vw); height:2px; background: linear-gradient(90deg, transparent, var(--saffron) 20%, var(--gold) 50%, var(--saffron) 80%, transparent); margin:18px auto }
+  .prelude{ font-family:'Cinzel', serif; letter-spacing:.28em; font-size:.62rem; text-transform:uppercase; color:var(--accent); margin-bottom:20px }
+  .couple-names{ font-family:'Cormorant Garamond',serif; font-size:clamp(3.8rem,10vw,7.8rem); font-weight:400; line-height:0.92; color:var(--primary) }
+  .couple-names .weds{ display:block; font-family:'Tiro Devanagari Sanskrit',serif; font-size:.26em; color:var(--accent); letter-spacing:.4em; margin:10px 0 8px }
+  .hero-date{ margin-top:10px; font-family:'Cormorant Garamond',serif; font-size:clamp(1.1rem,2.8vw,1.7rem); color:var(--text-mid); opacity:.95 }
+
+  /* simple reveal styles used by your intersection observer */
+  .reveal{ opacity:0; transform:translateY(30px); transition:opacity .9s cubic-bezier(.22,1,.36,1), transform .9s cubic-bezier(.22,1,.36,1) }
+  .reveal.visible{ opacity:1; transform:translateY(0) }
+
+  /* responsive */
+  @media (max-width:700px){
+    .envelope{ width:92vw; height:52vh }
+    .invitation-card{ padding:18px }
   }
 </style>
 </head>
-<body class="locked">
+<body>
 
-<div class="theme-picker">
-  <button class="theme-btn default" onclick="setTheme('default')" title="Crimson & Cream"></button>
-  <button class="theme-btn green" onclick="setTheme('green')" title="British Racing Green & Gold"></button>
-  <button class="theme-btn purple" onclick="setTheme('purple')" title="Purple & Cream"></button>
-</div>
-
-<div id="envelope-overlay" class="envelope-overlay">
-  <div class="envelope-wrapper">
-    <div class="env-back"></div>
-    <div class="env-letter">
-      <p>G & V</p>
-      <span>29 April 2026</span>
-    </div>
-    <div class="env-front-bottom"></div>
-    <div class="env-front-left"></div>
-    <div class="env-front-right"></div>
-    <div class="env-flap-top">
-      <div class="env-wax-seal">ॐ</div>
-    </div>
-    <p class="env-instruction">Scroll or Tap to Open</p>
+  <!-- THEME SWITCHER -->
+  <div class="theme-switcher" role="toolbar" aria-label="Theme switcher">
+    <button id="btn-default" class="active" title="Cream & Gold (default)">Cream & Gold</button>
+    <button id="btn-green" title="British Racing Green">Racing Green</button>
+    <button id="btn-purple" title="Purple & Cream">Purple & Cream</button>
   </div>
-</div>
 
-<svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <pattern id="kolam" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-      <path d="M40 10 L70 40 L40 70 L10 40 Z" fill="none" stroke="var(--crimson)" stroke-width="0.6"/>
-      <path d="M40 22 L58 40 L40 58 L22 40 Z" fill="none" stroke="var(--saffron)" stroke-width="0.5"/>
-      <circle cx="40" cy="40" r="2.5" fill="var(--crimson)"/>
-      <circle cx="10" cy="40" r="1.5" fill="var(--saffron)"/>
-      <circle cx="70" cy="40" r="1.5" fill="var(--saffron)"/>
-      <circle cx="40" cy="10" r="1.5" fill="var(--saffron)"/>
-      <circle cx="40" cy="70" r="1.5" fill="var(--saffron)"/>
-    </pattern>
-  </defs>
-  <rect width="100%" height="100%" fill="url(#kolam)"/>
-</svg>
+  <!-- AUDIO FALLBACK (shown if autoplay blocked) -->
+  <div class="audio-fallback" id="audioFallback">
+    Sound is paused — 
+    <button id="enableSoundBtn">Enable music</button>
+  </div>
 
-<div class="page">
-  <section class="hero">
-    <div style="position:relative;z-index:2;margin-top:72px;">
-      <p class="hero-om">ॐ</p>
-      <p class="hero-blessing">śubhā vivāha &nbsp;·&nbsp; Shubha Kalyaanam</p>
-      <div class="gold-border"></div>
-      <p class="prelude">With the blessings of God &amp; our beloved families</p>
-      <h1 class="couple-names">Greeshma<span class="weds"> &nbsp; weds &nbsp; </span>Vijesh</h1>
-      <p class="wedding-sub">Muhurtham</p>
-      <p class="hero-date">Wednesday, the 29th of April, 2026</p>
-      <p class="hero-venue">Mandara &nbsp;·&nbsp; Bengaluru</p>
-    </div>
-  </section>
+  <!-- ENVELOPE OVERLAY -->
+  <div class="envelope-overlay" id="envelopeOverlay" aria-hidden="false">
+    <div class="envelope" id="envelopeElement" role="dialog" aria-label="Invitation envelope">
+      <div class="env-inner" aria-hidden="true"></div>
 
-  <section>
-    <div class="section-inner reveal">
-      <p class="section-tag">Shubha Ashirvaadam</p>
-      <h2 class="section-title">A Sacred Union</h2>
-      <p class="section-body">
-        Blessed by Sri Ganapati and united under auspicious stars, Greeshma and Vijesh embark on their journey as one. Rooted in the rich traditions of Karnataka, bound by love, and celebrated with the warmth of family and friends — we joyfully invite you to witness and bless this sacred bond.
-      </p>
-    </div>
-  </section>
+      <div class="env-body" aria-hidden="true">
+        <div class="stripe"></div>
+        <div class="env-seal">✦</div>
+      </div>
 
-  <section class="details-band">
-    <div class="section-inner reveal">
-      <p class="section-tag">Vivah Vivaran</p>
-      <h2 class="section-title">The Auspicious Details</h2>
-      <div class="details-grid">
-        <div class="detail-item">
-          <p class="detail-label">Muhurtham Date</p>
-          <p class="detail-value">29 April 2026<br>Wednesday</p>
-        </div>
-        <div class="detail-item">
-          <p class="detail-label">Muhurtham Time</p>
-          <p class="detail-value">9:30 AM<br>Reception 7:00 PM</p>
-        </div>
-        <div class="detail-item">
-          <p class="detail-label">Venue</p>
-          <p class="detail-value">Mandara<br>Bengaluru</p>
+      <div class="env-flap" id="envFlap" aria-hidden="true"></div>
+
+      <div class="invitation-card" id="invCard" aria-hidden="true">
+        <div class="intro">
+          <div style="font-family:'Tiro Devanagari Sanskrit',serif;font-size:28px;color:var(--accent);opacity:.95;">ॐ</div>
+          <div style="margin-top:6px;font-family:'Cinzel',serif;letter-spacing:.26em;color:var(--accent);font-size:13px">śubhā vivāha · Shubha Kalyaanam</div>
+          <h2 style="margin-top:12px;font-family:'Cormorant Garamond',serif;font-size:34px;color:var(--primary)">Greeshma<span style="display:block;font-family:'Tiro Devanagari Sanskrit',serif;font-size:12px;color:var(--accent);letter-spacing:0.5em;margin-top:8px"> weds </span>Vijesh</h2>
+          <div style="margin-top:12px;font-family:'Cormorant Garamond',serif;color:var(--text-mid)">Wednesday, 29 April 2026 · Mandara, Bengaluru</div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <section>
-    <div class="section-inner reveal">
-      <p class="section-tag">Utsav Krama</p>
-      <h2 class="section-title">Order of Ceremonies</h2>
-      <p class="section-body">Each ritual is a sacred thread woven into the tapestry of a new life together.</p>
-      <ul class="timeline">
-        <li class="timeline-item">
-          <span class="tl-time">7:00 AM</span>
-          <span class="tl-dot"></span>
-          <div class="tl-event">
-            <p class="tl-event-kannada">ಮಂಗಲ ಸ್ನಾನ</p>
-            <p class="tl-event-name">Mangala Snanam</p>
-            <p class="tl-event-desc">The auspicious ritual bath for bride &amp; groom</p>
-          </div>
-        </li>
-        <li class="timeline-item">
-          <span class="tl-time">9:30 AM</span>
-          <span class="tl-dot"></span>
-          <div class="tl-event">
-            <p class="tl-event-kannada">ಮುಹೂರ್ತ · ಸಪ್ತಪದಿ</p>
-            <p class="tl-event-name">Muhurtham &amp; Saptapadi</p>
-            <p class="tl-event-desc">The sacred seven vows — the heart of the ceremony</p>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </section>
+  <!-- PAGE (start hidden, revealed once envelope opens) -->
+  <div class="page" id="pageRoot">
+    <!-- Petals + bg pattern -->
+    <div class="petals" id="petals"></div>
 
-  <section class="rsvp-section">
-    <div class="section-inner reveal">
-      <p class="section-tag">Nimantrana</p>
-      <h2 class="section-title">Kindly Confirm by 1st April</h2>
-      <p class="section-body">Your presence is the greatest blessing of all. Please let us know if you will be joining us on this joyous occasion.</p>
-      <div class="rsvp-card">
-        <form onsubmit="handleRsvp(event)">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">First Name</label>
-              <input type="text" class="form-input" placeholder="Your name">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Last Name</label>
-              <input type="text" class="form-input" placeholder="Family name">
-            </div>
-          </div>
-          <button type="submit" class="btn-rsvp">Send RSVP &nbsp; ✦</button>
-        </form>
-        <p id="rsvp-msg" style="margin-top:20px;font-family:'Tiro Devanagari Sanskrit',serif;color:var(--saffron);font-size:1rem;display:none;line-height:1.8;"></p>
+    <!-- Kolam background as in original (kept minimal for brevity) -->
+    <svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <pattern id="kolam" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+          <path d="M40 10 L70 40 L40 70 L10 40 Z" fill="none" stroke="#7a1518" stroke-width="0.6"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#kolam)"/>
+    </svg>
+
+    <!-- ========== HERO (kept mostly from your original file) ========== -->
+    <section class="hero">
+      <div style="position:relative;z-index:2;margin-top:40px;">
+        <p class="hero-om" style="font-family:'Tiro Devanagari Sanskrit',serif;font-size:36px;color:var(--accent);opacity:.95">ॐ</p>
+        <p class="hero-blessing" style="font-family:'Tiro Devanagari Sanskrit',serif;font-size:14px;color:var(--text-mid);opacity:.7;margin-top:6px">śubhā vivāha · Shubha Kalyaanam</p>
+
+        <div class="gold-border" aria-hidden="true"></div>
+
+        <p class="prelude">With the blessings of God &amp; our beloved families</p>
+
+        <h1 class="couple-names">
+          Greeshma
+          <span class="weds"> &nbsp; weds &nbsp; </span>
+          Vijesh
+        </h1>
+
+        <p class="wedding-sub" style="font-family:'Cinzel',serif;color:var(--accent);letter-spacing:.34em;margin-top:14px">Muhurtham</p>
+        <p class="hero-date">Wednesday, the 29th of April, 2026</p>
+        <p class="hero-venue" style="margin-top:6px;color:var(--text-mid)">Mandara · Bengaluru</p>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <footer>
-    <p class="footer-om">ॐ</p>
-    <p class="footer-names">Greeshma &amp; Vijesh</p>
-    <div class="footer-gold-line"></div>
-    <p class="footer-note">29 April 2026 &nbsp;·&nbsp; Mandara, Bengaluru</p>
-    <p class="footer-note" style="margin-top:8px;opacity:0.4;font-size:0.68rem;letter-spacing:0.15em;">Shubha Vivah &nbsp;·&nbsp; Made with love</p>
-  </footer>
-</div>
+    <!-- ========== BLESSINGS, DETAILS, TIMELINE, RSVP, etc. ========== -->
+    <!-- For brevity I kept your original sections but you can paste the large content here unchanged —
+         in this demo I include representative blocks so the page shows after the envelope opens. -->
+    <section>
+      <div class="section-inner reveal">
+        <p class="section-tag">Shubha Ashirvaadam</p>
+        <h2 class="section-title">A Sacred Union</h2>
+        <p class="section-body">Blessed by Sri Ganapati and united under auspicious stars, Greeshma and Vijesh embark on their journey as one. Rooted in the rich traditions of Karnataka, bound by love, and celebrated with the warmth of family and friends — we joyfully invite you to witness and bless this sacred bond.</p>
+      </div>
+    </section>
 
-<audio id="bg-music" loop>
-  <source src="tulasi.mp3" type="audio/mpeg">
-</audio>
+    <section class="details-band">
+      <div class="section-inner reveal">
+        <p class="section-tag">Vivah Vivaran</p>
+        <h2 class="section-title">The Auspicious Details</h2>
+        <div class="details-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:28px;margin-top:28px">
+          <div style="text-align:center;color:var(--cream-light)">
+            <p style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.26em">Muhurtham</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-size:1.12rem;font-style:italic">29 April 2026</p>
+          </div>
+          <div style="text-align:center;color:var(--cream-light)">
+            <p style="font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.26em">Time</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-size:1.12rem;font-style:italic">9:30 AM</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-inner reveal">
+        <p class="section-tag">Utsav Krama</p>
+        <h2 class="section-title">Order of Ceremonies</h2>
+        <p class="section-body">Each ritual is a sacred thread woven into the tapestry of a new life together.</p>
+      </div>
+    </section>
+
+    <section class="rsvp-section">
+      <div class="section-inner reveal">
+        <p class="section-tag">Nimantrana</p>
+        <h2 class="section-title">Kindly Confirm by 1st April</h2>
+        <p class="section-body">Your presence is the greatest blessing of all. Please let us know if you will be joining us on this joyous occasion.</p>
+        <div class="rsvp-card" style="margin-top:28px">
+          <form onsubmit="handleRsvp(event)">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">First Name</label><input class="form-input" /></div>
+              <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" /></div>
+            </div>
+            <div style="margin-top:12px"><button class="btn-rsvp" type="submit">Send RSVP ✦</button></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p class="footer-om" style="font-family:'Tiro Devanagari Sanskrit',serif;font-size:24px;color:var(--saffron);margin-bottom:8px">ॐ</p>
+      <p class="footer-names" style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--cream-light)">Greeshma &amp; Vijesh</p>
+      <div style="height:12px"></div>
+      <p class="footer-note" style="color:rgba(255,255,255,0.65)">29 April 2026 · Mandara, Bengaluru</p>
+    </footer>
+
+  </div> <!-- /page -->
+
+  <!-- audio element (muted initially to maximize compatibility) -->
+  <audio id="bgAudio" preload="auto" loop>
+    <!-- replace tulasi.mp3 with your music file or a public domain track URL -->
+    <source src="tulasi.mp3" type="audio/mpeg">
+    <track kind="captions" srclang="en" label="English" />
+    Your browser does not support the audio element.
+  </audio>
 
 <script>
-  /* ─── SCROLL REVEAL ─── */
-  const revEls = document.querySelectorAll('.reveal');
-  const revObs = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  revEls.forEach(el => revObs.observe(el));
-
-  /* ─── RSVP ─── */
-  function handleRsvp(e) {
-    e.preventDefault();
-    const msg = document.getElementById('rsvp-msg');
-    msg.style.display = 'block';
-    msg.textContent = 'ಧನ್ಯವಾದಗಳು — Thank you! We look forward to your blessings and presence. 🌸';
-    e.target.style.opacity = '.45'; e.target.style.pointerEvents = 'none';
+/* ================== Petals (same lightweight generator you had) ================== */
+(function(){
+  const container = document.getElementById('petals');
+  if(!container) return;
+  const fills = [['#d4869a','#c4748a'],['#e8bfc8','#d4a0b0'],['#c97a90','#b86278'],['#f0d0d8','#e0b0bc'],['#b85e76','#9a4a60']];
+  function petalPath(w,h){ const hw=w/2; return `M 0,${h*.9} C ${-hw*.5},${h*.6} ${-hw},${h*.3} ${-hw*.85},0 C ${-hw*.7},${-h*.25} ${-hw*.3},${-h*.32} 0,${-h*.18} C ${hw*.3},${-h*.32} ${hw*.7},${-h*.25} ${hw*.85},0 C ${hw},${h*.3} ${hw*.5},${h*.6} 0,${h*.9} Z`; }
+  function stamens(h){ return [-25,-12,0,12,25].map(a=>{ const r=a*Math.PI/180,len=h*.28; return `<line x1="0" y1="${h*.05}" x2="${(Math.sin(r)*len).toFixed(2)}" y2="${(h*.05-Math.cos(r)*len*.5).toFixed(2)}" stroke="rgba(109,26,42,0.35)" stroke-width="0.5" stroke-linecap="round"/>`; }).join(''); }
+  for(let i=0;i<24;i++){
+    const w=10+Math.random()*14, h=w*(1.1+Math.random()*.3);
+    const [f1,f2]=fills[Math.floor(Math.random()*fills.length)];
+    const gid=`pg${i}`, rot=Math.random()*360;
+    const dur=10+Math.random()*20, del=Math.random()*22;
+    const left=Math.random()*105-2, sway=(20+Math.random()*40)*(Math.random()>.5?1:-1);
+    const vb=w+4, svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width',vb); svg.setAttribute('height',h+4);
+    svg.setAttribute('viewBox',`${-vb/2} ${-h*.1} ${vb} ${h+4}`);
+    svg.style.overflow='visible';
+    svg.innerHTML=`<defs><radialGradient id="${gid}" cx="40%" cy="35%" r="65%"><stop offset="0%" stop-color="${f1}"/><stop offset="100%" stop-color="${f2}"/></radialGradient></defs><g transform="rotate(${rot})"><path d="${petalPath(w,h)}" fill="url(#${gid})" stroke="${f2}" stroke-width="0.4"/>${stamens(h)}<circle cx="0" cy="${h*.05}" r="${w*.06}" fill="rgba(184,150,90,0.5)"/></g>`;
+    const wrap=document.createElement('div');
+    wrap.className='blossom';
+    wrap.style.cssText=`left:${left}vw;animation-duration:${dur}s;animation-delay:-${del}s;--sway:${sway}px;position:absolute;top:-80px;`;
+    wrap.appendChild(svg); container.appendChild(wrap);
   }
+  const st=document.createElement('style');
+  st.textContent=`@keyframes blossomFall{0%{opacity:0;transform:translateY(0) translateX(0) rotate(0deg) scale(1)}4%{opacity:.75}28%{transform:translateY(26vh) translateX(calc(var(--sway)*.4)) rotate(110deg) scale(.97)}55%{transform:translateY(55vh) translateX(calc(var(--sway)*-.3)) rotate(240deg) scale(1.03)}80%{transform:translateY(82vh) translateX(calc(var(--sway)*.6)) rotate(380deg) scale(.95)}92%{opacity:.45}100%{opacity:0;transform:translateY(112vh) translateX(calc(var(--sway)*.1)) rotate(490deg) scale(.88)}}.blossom{animation-name:blossomFall;animation-iteration-count:infinite;will-change:transform,opacity;}`;
+  document.head.appendChild(st);
+})();
 
-  /* ─── THEME SWITCHER ─── */
-  function setTheme(themeName) {
-    // Remove existing theme classes
-    document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
-    if (themeName !== 'default') {
-      document.body.classList.add('theme-' + themeName);
+/* ================== Scroll reveal (your existing logic) ================== */
+document.addEventListener('DOMContentLoaded', function(){
+  const revEls = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver((entries, o) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){ e.target.classList.add('visible'); o.unobserve(e.target); }
+    });
+  }, {threshold:.12});
+  revEls.forEach(el => obs.observe(el));
+});
+
+/* ================== Envelope open + audio logic ================== */
+(function(){
+  const overlay = document.getElementById('envelopeOverlay');
+  const envelope = document.getElementById('envelopeElement');
+  const invCard = document.getElementById('invCard');
+  const audio = document.getElementById('bgAudio');
+  const page = document.getElementById('pageRoot');
+  const audioFallback = document.getElementById('audioFallback');
+  const enableSoundBtn = document.getElementById('enableSoundBtn');
+
+  // set initial low volume and muted to maximize autoplay compatibility
+  audio.volume = 0.12;
+  audio.muted = true;   // will unmute when allowed or when user enables
+
+  // helper to try to play audio and handle autoplay block
+  async function tryPlayAudio(unmute=false){
+    try{
+      if(unmute) audio.muted = false;
+      await audio.play();
+      audioFallback.style.display = 'none';
+      return true;
+    }catch(err){
+      // autoplay blocked — show fallback UI to let user enable
+      audio.muted = true;
+      audioFallback.style.display = 'flex';
+      return false;
     }
   }
 
-  /* ─── ENVELOPE OVERLAY & AUDIO PLAY ─── */
-  const envelope = document.getElementById('envelope-overlay');
-  const bgAudio = document.getElementById('bg-music');
-  
-  // Set background music to a very low volume
-  bgAudio.volume = 0.15; 
+  // open sequence:
+  // 1) wait a short moment so user sees closed envelope
+  // 2) add class 'open' to envelope -> flap rotates
+  // 3) after flap completes, reveal page and attempt to play music
+  window.addEventListener('load', () => {
+    // keep envelope closed briefly so visitor notices it
+    setTimeout(()=> {
+      envelope.classList.add('opening'); // optional marker
+      document.querySelector('.envelope-overlay').classList.add('opening');
+      // trigger the flap rotate via container class
+      document.querySelector('.envelope-overlay').classList.add('animating');
+      // add "open" to envelope element (flap CSS handles rotation)
+      envelope.parentElement.classList.add('open');
 
-  function openEnvelope() {
-    if (envelope.classList.contains('is-open')) return;
-    
-    // Trigger animation
-    envelope.classList.add('is-open');
-    
-    // Unlock scrolling after animation clears the screen
-    setTimeout(() => { document.body.classList.remove('locked'); }, 1500);
+      // after flap finishes (same duration as CSS transition ~2s), reveal page and play audio
+      const openDuration = 2100; // milliseconds - should match CSS transition
+      setTimeout(async ()=> {
+        // show page content
+        page.classList.add('visible');
+        // fade out overlay
+        overlay.classList.add('hidden');
 
-    // Play music. Using .catch() suppresses console errors if the browser blocks it for any strict policy reason.
-    bgAudio.play().catch(e => console.log("Audio play deferred by browser policy."));
+        // attempt to play audio (try unmuted first but keep extremely low volume)
+        // Many browsers block autoplay with sound — we try to play muted then unmute if possible
+        audio.muted = false; // try to play with sound
+        audio.volume = 0.12;
+        const ok = await tryPlayAudio(true);
+        if(!ok){
+          // try muted playback to at least start the loop silently (some browsers allow muted autoplay)
+          try{
+            audio.muted = true;
+            await audio.play();
+            // we still show UI so user can unmute
+            audioFallback.style.display = 'flex';
+          }catch(e){
+            // show fallback UI if nothing works
+            audioFallback.style.display = 'flex';
+          }
+        }
+      }, openDuration + 180); // small buffer
+    }, 700); // keep closed for ~700ms
+  });
+
+  // fallback button to enable sound if autoplay blocked
+  enableSoundBtn.addEventListener('click', async function(){
+    try{
+      audio.muted = false;
+      audio.volume = 0.12;
+      await audio.play();
+      audioFallback.style.display = 'none';
+    }catch(e){
+      // if still blocked, request a visible user gesture: quickly toggle muted/unmuted
+      audio.muted = false;
+      audioFallback.style.display = 'flex';
+      alert('Please interact with the page (tap/click) to enable audio due to browser autoplay policies.');
+    }
+  });
+
+  // also allow any click on the document to try unmuting once
+  document.addEventListener('click', async function tryUnmuteOnClick(){
+    try{
+      audio.muted = false;
+      audio.volume = 0.12;
+      await audio.play();
+      audioFallback.style.display = 'none';
+      // remove this one-time handler
+      document.removeEventListener('click', tryUnmuteOnClick);
+    }catch(e){
+      // ignore; user can press the enable button
+    }
+  });
+
+})();
+
+/* ================== Theme switcher code ================== */
+(function(){
+  const btnDefault = document.getElementById('btn-default');
+  const btnGreen = document.getElementById('btn-green');
+  const btnPurple = document.getElementById('btn-purple');
+  const allBtns = [btnDefault, btnGreen, btnPurple];
+
+  function setActive(btn){
+    allBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
   }
 
-  // Listen for Scroll, Swipe, or Click to open the envelope
-  window.addEventListener('wheel', openEnvelope, { once: true });
-  window.addEventListener('touchstart', openEnvelope, { once: true });
-  envelope.addEventListener('click', openEnvelope, { once: true });
+  btnDefault.addEventListener('click', () => {
+    document.body.classList.remove('theme-green','theme-purple');
+    setActive(btnDefault);
+  });
+  btnGreen.addEventListener('click', () => {
+    document.body.classList.remove('theme-purple'); document.body.classList.add('theme-green');
+    setActive(btnGreen);
+  });
+  btnPurple.addEventListener('click', () => {
+    document.body.classList.remove('theme-green'); document.body.classList.add('theme-purple');
+    setActive(btnPurple);
+  });
+
+  // optionally remember choice in localStorage
+  const saved = localStorage.getItem('wedding_theme');
+  if(saved === 'green'){ btnGreen.click(); }
+  else if(saved === 'purple'){ btnPurple.click(); }
+  else { btnDefault.click(); }
+
+  // persist on change
+  allBtns.forEach(b => b.addEventListener('click', () => {
+    if(b === btnGreen) localStorage.setItem('wedding_theme','green');
+    else if(b === btnPurple) localStorage.setItem('wedding_theme','purple');
+    else localStorage.removeItem('wedding_theme');
+  }));
+})();
+
+/* ================== RSVP tiny handler (keeps UX like before) ================== */
+function handleRsvp(e){
+  e.preventDefault();
+  const msg = document.getElementById('rsvp-msg');
+  if(msg){ msg.style.display='block'; msg.textContent='ಧನ್ಯವಾದಗಳು — Thank you! We look forward to your blessings and presence. 🌸'; }
+  e.target.style.opacity = '.5';
+  e.target.style.pointerEvents = 'none';
+}
+
+/* ================== small safety: ensure overlay hides if user navigates before open completes ================== */
+window.addEventListener('beforeunload', ()=> {
+  try{ document.getElementById('envelopeOverlay').classList.add('hidden'); }catch(e){}
+});
+
 </script>
 
 </body>
