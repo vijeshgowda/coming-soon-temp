@@ -33,6 +33,9 @@ font-weight: 300;
 overflow-x: hidden;
 }
 
+/* Prevent scroll while envelope is showing */
+body.envelope-active { overflow: hidden; }
+
 .bg-pattern {
 position: fixed;
 inset: 0;
@@ -42,100 +45,6 @@ opacity: 0.055;
 }
 
 .page { position: relative; z-index: 1; }
-
-  /* ─── ENVELOPE OVERLAY ─── */
-  body.locked { overflow: hidden; height: 100vh; }
-  .envelope-overlay {
-    position: fixed; inset: 0; z-index: 99999;
-    background: var(--cream-dark);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: transform 1.2s cubic-bezier(0.6, 0.05, 0.15, 0.95) 1.5s, opacity 1s ease-in-out 1.5s;
-  }
-  .envelope-overlay::before {
-    content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 10 L70 40 L40 70 L10 40 Z' fill='none' stroke='rgba(0,0,0,0.03)' stroke-width='1'/%3E%3C/svg%3E");
-    opacity: 0.5;
-  }
-  .envelope-overlay.is-open {
-    transform: translateY(-100vh); opacity: 0; pointer-events: none;
-  }
-  .envelope-wrapper {
-    position: relative; width: min(85vw, 420px); height: 260px;
-    cursor: pointer; perspective: 1000px; z-index: 2;
-  }
-  .env-back {
-    position: absolute; inset: 0; background: var(--cream);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--cream-dark);
-  }
-  .env-letter {
-    position: absolute; left: 15px; right: 15px; top: 15px; bottom: 15px;
-    background: var(--cream-light); border: 1px solid var(--saffron);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: transform 1s ease-in-out 0.6s; z-index: 1;
-  }
-  .env-letter p {
-    font-family: 'Cormorant Garamond', serif; font-size: 2rem;
-    color: var(--crimson); margin: 0; line-height: 1;
-  }
-  .env-letter span {
-    font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.2em;
-    color: var(--saffron); margin-top: 8px; text-transform: uppercase;
-  }
-  .envelope-overlay.is-open .env-letter { transform: translateY(-80px); }
-  
-  .env-front-bottom {
-    position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
-    width: 0; height: 0;
-    border-left: min(42.5vw, 210px) solid transparent;
-    border-right: min(42.5vw, 210px) solid transparent;
-    border-bottom: 150px solid var(--cream-dark);
-    filter: drop-shadow(0 -4px 4px rgba(0,0,0,0.03));
-  }
-  .env-front-left {
-    position: absolute; top: 0; bottom: 0; left: 0; z-index: 2;
-    width: 0; height: 0;
-    border-top: 130px solid transparent; border-bottom: 130px solid transparent;
-    border-left: min(42.5vw, 210px) solid var(--cream);
-  }
-  .env-front-right {
-    position: absolute; top: 0; bottom: 0; right: 0; z-index: 2;
-    width: 0; height: 0;
-    border-top: 130px solid transparent; border-bottom: 130px solid transparent;
-    border-right: min(42.5vw, 210px) solid var(--cream);
-  }
-  .env-flap-top {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
-    width: 0; height: 0;
-    border-left: min(42.5vw, 210px) solid transparent;
-    border-right: min(42.5vw, 210px) solid transparent;
-    border-top: 145px solid var(--saffron-light); /* Golden Flap */
-    transform-origin: top; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-  }
-  .envelope-overlay.is-open .env-flap-top {
-    transform: rotateX(180deg); z-index: 0; filter: none;
-  }
-  .env-wax-seal {
-    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
-    width: 46px; height: 46px; background: var(--crimson); border-radius: 50%;
-    z-index: 4; display: flex; align-items: center; justify-content: center;
-    box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
-    font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--saffron-light);
-    transition: opacity 0.4s ease 0.2s;
-  }
-  .envelope-overlay.is-open .env-wax-seal { opacity: 0; pointer-events: none; }
-  .env-instruction {
-    position: absolute; bottom: -60px; left: 0; right: 0; text-align: center;
-    font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.25em;
-    color: var(--crimson); opacity: 0.8; animation: pulse 2s infinite; z-index: 2;
-  }
-  @keyframes pulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  
-  .bg-pattern { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.055; }
-  .page { position: relative; z-index: 1; }
-
 
 /* ─── HERO ─── */
 .hero {
@@ -288,7 +197,6 @@ animation: riseIn 1.4s 0.85s cubic-bezier(0.22,1,0.36,1) both;
 
 /* ─── SECTIONS ─── */
 section { padding: 88px 20px; position: relative; }
-
 .section-inner { max-width: 780px; margin: 0 auto; text-align: center; }
 
 .section-tag {
@@ -299,158 +207,816 @@ text-transform: uppercase;
 color: var(–saffron);
 margin-bottom: 14px;
 }
+
+.section-title {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: clamp(2rem, 5vw, 3.2rem);
+font-weight: 400;
+color: var(–crimson);
+line-height: 1.15;
+margin-bottom: 20px;
+}
+
+.section-body {
+font-size: 1rem;
+line-height: 1.95;
+color: var(–text-mid);
+max-width: 560px;
+margin: 0 auto;
+}
+
+.sep { display: block; margin: 0 auto 56px; opacity: 0.42; }
+
+/* ─── DETAILS BAND ─── */
+.details-band {
+background: var(–crimson);
+color: var(–cream-light);
+padding: 80px 20px;
+position: relative;
+overflow: hidden;
+}
+.details-band::before {
+content: ‘’;
+position: absolute;
+inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg width=‘40’ height=‘40’ viewBox=‘0 0 40 40’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(255,255,255,0.06)’ stroke-width=‘0.5’%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘8’/%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘15’/%3E%3Cline x1=‘20’ y1=‘0’ x2=‘20’ y2=‘40’/%3E%3Cline x1=‘0’ y1=‘20’ x2=‘40’ y2=‘20’/%3E%3C/g%3E%3C/svg%3E”);
+pointer-events: none;
+}
+.details-band .section-tag   { color: var(–saffron-light); }
+.details-band .section-title { color: var(–cream-light); }
+
+.details-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+gap: 48px;
+margin: 52px auto 0;
+max-width: 740px;
+}
+.detail-item { text-align: center; }
+.detail-icon { display: block; margin: 0 auto 16px; }
+.detail-label {
+font-family: ‘Cinzel’, serif;
+font-size: 0.57rem;
+letter-spacing: 0.32em;
+text-transform: uppercase;
+color: var(–saffron-light);
+margin-bottom: 8px;
+}
+.detail-value {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.35rem;
+font-style: italic;
+line-height: 1.45;
+color: var(–cream-light);
+}
+
+/* ─── TIMELINE ─── */
+.timeline {
+list-style: none;
+margin-top: 48px;
+display: flex;
+flex-direction: column;
+position: relative;
+}
+.timeline::before {
+content: ‘’;
+position: absolute;
+left: 50%; top: 0; bottom: 0;
+width: 1px;
+background: linear-gradient(to bottom, transparent, var(–saffron) 10%, var(–saffron) 90%, transparent);
+transform: translateX(-50%);
+opacity: 0.35;
+}
+.timeline-item { display: flex; align-items: center; gap: 32px; padding: 22px 0; }
+.timeline-item:nth-child(even) { flex-direction: row-reverse; }
+.tl-time {
+flex: 1; text-align: right;
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.05rem; font-style: italic; color: var(–text-mid);
+}
+.timeline-item:nth-child(even) .tl-time { text-align: left; }
+.tl-dot {
+width: 12px; height: 12px; border-radius: 50%;
+background: var(–saffron);
+border: 2px solid var(–cream);
+box-shadow: 0 0 0 2px var(–saffron);
+flex-shrink: 0; z-index: 1;
+}
+.tl-event { flex: 1; text-align: left; }
+.timeline-item:nth-child(even) .tl-event { text-align: right; }
+.tl-event-kannada {
+font-family: ‘Tiro Devanagari Sanskrit’, serif;
+font-size: 0.82rem; color: var(–saffron);
+margin-bottom: 3px; opacity: 0.85;
+}
+.tl-event-name {
+font-family: ‘Cinzel’, serif;
+font-size: 0.67rem; letter-spacing: 0.2em;
+text-transform: uppercase; color: var(–crimson); margin-bottom: 4px;
+}
+.tl-event-desc { font-size: 0.86rem; color: var(–text-mid); line-height: 1.5; }
+
+/* ─── RSVP ─── */
+.rsvp-section {
+background: var(–cream-dark);
+padding: 90px 20px;
+position: relative;
+overflow: hidden;
+}
+.rsvp-section::before, .rsvp-section::after {
+content: ‘’;
+position: absolute;
+left: 0; right: 0; height: 3px;
+background: linear-gradient(90deg, transparent, var(–saffron) 30%, var(–gold) 50%, var(–saffron) 70%, transparent);
+opacity: 0.5;
+}
+.rsvp-section::before { top: 0; }
+.rsvp-section::after  { bottom: 0; }
+
+.rsvp-card {
+background: var(–cream-light);
+border: 1px solid rgba(122,21,24,0.1);
+border-top: 3px solid var(–saffron);
+padding: 52px 48px;
+max-width: 520px;
+margin: 40px auto 0;
+box-shadow: 0 20px 60px rgba(122,21,24,0.07);
+}
+.form-group { margin-bottom: 24px; text-align: left; }
+.form-label {
+display: block;
+font-family: ‘Cinzel’, serif;
+font-size: 0.57rem; letter-spacing: 0.26em; text-transform: uppercase;
+color: var(–saffron); margin-bottom: 8px;
+}
+.form-input, .form-select {
+width: 100%; border: none;
+border-bottom: 1px solid rgba(122,21,24,0.2);
+background: transparent; padding: 10px 0;
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 1.05rem; color: var(–text-dark); outline: none;
+transition: border-color 0.3s; appearance: none;
+}
+.form-input:focus, .form-select:focus { border-bottom-color: var(–crimson); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.btn-rsvp {
+width: 100%; margin-top: 16px; padding: 16px;
+background: var(–crimson); color: var(–cream-light);
+border: none; cursor: pointer;
+font-family: ‘Cinzel’, serif;
+font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase;
+transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+position: relative; overflow: hidden;
+}
+.btn-rsvp::after {
+content: ‘’;
+position: absolute; inset: 0;
+background: linear-gradient(135deg, rgba(201,135,26,0.15), transparent);
+pointer-events: none;
+}
+.btn-rsvp:hover { background: var(–crimson-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(122,21,24,0.28); }
+.btn-rsvp:active { transform: translateY(0); }
+
+/* ─── FOOTER ─── */
+footer {
+background: var(–crimson);
+padding: 56px 20px; text-align: center;
+position: relative; overflow: hidden;
+}
+footer::before {
+content: ‘’; position: absolute; inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg width=‘40’ height=‘40’ viewBox=‘0 0 40 40’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(255,255,255,0.05)’ stroke-width=‘0.5’%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘8’/%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘15’/%3E%3Cline x1=‘20’ y1=‘0’ x2=‘20’ y2=‘40’/%3E%3Cline x1=‘0’ y1=‘20’ x2=‘40’ y2=‘20’/%3E%3C/g%3E%3C/svg%3E”);
+pointer-events: none;
+}
+.footer-om { font-family: ‘Tiro Devanagari Sanskrit’, serif; font-size: 2rem; color: var(–saffron-light); margin-bottom: 14px; opacity: 0.9; position: relative; }
+.footer-names { font-family: ‘Cormorant Garamond’, serif; font-size: 1.6rem; font-style: italic; color: var(–cream-light); margin-bottom: 10px; position: relative; }
+.footer-note { font-size: 0.78rem; color: rgba(253,246,227,0.6); letter-spacing: 0.14em; position: relative; }
+.footer-gold-line { width: 140px; height: 1px; background: linear-gradient(90deg, transparent, var(–saffron-light), transparent); margin: 16px auto; position: relative; }
+
+/* ─── SCROLL REVEAL ─── */
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ─── CHERRY BLOSSOM PETALS ─── */
+.petals { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.blossom { position: absolute; top: -80px; opacity: 0; will-change: transform, opacity; animation: blossomFall linear infinite; }
+@keyframes blossomFall {
+0%   { opacity:0;    transform:translateY(0)     rotate(0deg)   translateX(0)   scale(1); }
+4%   { opacity:0.7; }
+30%  { transform:translateY(28vh) rotate(120deg) translateX(25px)  scale(0.95); }
+60%  { transform:translateY(58vh) rotate(270deg) translateX(-20px) scale(1.02); }
+88%  { opacity:0.45; }
+100% { opacity:0;    transform:translateY(112vh) rotate(480deg)  translateX(15px) scale(0.9); }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width:600px) {
+.corner-lotus { width:130px; }
+.rsvp-card { padding:36px 24px; }
+.form-row { grid-template-columns:1fr; }
+.timeline::before { left:16px; }
+.timeline-item, .timeline-item:nth-child(even) { flex-direction:column; align-items:flex-start; padding-left:36px; }
+.tl-time, .timeline-item:nth-child(even) .tl-time,
+.tl-event, .timeline-item:nth-child(even) .tl-event { text-align:left; }
+.tl-dot { position:absolute; left:10px; }
+.timeline-item { position:relative; }
+}
+
+/* ══════════════════════════════════════════════════════════
+ENVELOPE OVERLAY — Wedding themed
+══════════════════════════════════════════════════════════ */
+
+#envelope-overlay {
+position: fixed;
+inset: 0;
+z-index: 10000;
+background: #2a0a08;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+transition: opacity 1.2s ease;
+overflow: hidden;
+}
+
+#envelope-overlay.fading {
+opacity: 0;
+pointer-events: none;
+}
+
+/* Kolam pattern on overlay background */
+#envelope-overlay::before {
+content: ‘’;
+position: absolute;
+inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg width=‘80’ height=‘80’ viewBox=‘0 0 80 80’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(201,135,26,0.07)’ stroke-width=‘0.6’%3E%3Cpath d=‘M40 10 L70 40 L40 70 L10 40 Z’/%3E%3Cpath d=‘M40 22 L58 40 L40 58 L22 40 Z’/%3E%3Ccircle cx=‘40’ cy=‘40’ r=‘2.5’/%3E%3Cline x1=‘20’ y1=‘20’ x2=‘30’ y2=‘30’/%3E%3Cline x1=‘60’ y1=‘20’ x2=‘50’ y2=‘30’/%3E%3Cline x1=‘20’ y1=‘60’ x2=‘30’ y2=‘50’/%3E%3Cline x1=‘60’ y1=‘60’ x2=‘50’ y2=‘50’/%3E%3C/g%3E%3C/svg%3E”);
+pointer-events: none;
+opacity: 1;
+}
+
+/* Radial vignette */
+#envelope-overlay::after {
+content: ‘’;
+position: absolute;
+inset: 0;
+background: radial-gradient(ellipse at center, transparent 30%, rgba(20,4,4,0.65) 100%);
+pointer-events: none;
+}
+
+/* ── Top torana decoration ── */
+#env-torana {
+position: absolute;
+top: 0; left: 0; right: 0;
+pointer-events: none;
+animation: envFloat 1s cubic-bezier(0.22,1,0.36,1) both;
+opacity: 0.7;
+}
+
+/* ── Corner flourishes ── */
+.env-corner {
+position: absolute;
+width: 120px;
+opacity: 0.35;
+pointer-events: none;
+}
+.env-corner.tl { top: 0; left: 0; }
+.env-corner.tr { top: 0; right: 0; transform: scaleX(-1); }
+.env-corner.bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.env-corner.br { bottom: 0; right: 0; transform: scale(-1); }
+
+/* ── Envelope wrapper ── */
+#env-wrap {
+position: relative;
+z-index: 2;
+width: min(480px, 90vw);
+cursor: pointer;
+animation: envFloat 1.3s cubic-bezier(0.22,1,0.36,1) both;
+transform-style: preserve-3d;
+}
+
+#env-wrap:not(.env-opened) {
+animation: envFloat 1.3s cubic-bezier(0.22,1,0.36,1) both,
+envIdle 7s ease-in-out 1.5s infinite;
+}
+
+@keyframes envFloat {
+from { opacity: 0; transform: translateY(60px) scale(0.92); }
+to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes envIdle {
+0%, 100% { transform: translateY(0); }
+50%       { transform: translateY(-10px); }
+}
+
+/* ── Envelope body ── */
+#env-body {
+position: relative;
+width: 100%;
+padding-bottom: 62%;  /* 3:2-ish aspect ratio */
+background: var(–cream);
+border-radius: 2px 2px 4px 4px;
+box-shadow:
+0 40px 80px rgba(0,0,0,0.6),
+0 0 0 1px rgba(201,135,26,0.2);
+overflow: hidden;
+}
+
+/* Gold border inset on envelope face */
+#env-body::before {
+content: ‘’;
+position: absolute;
+inset: 8px;
+border: 1px solid rgba(201,135,26,0.25);
+pointer-events: none;
+z-index: 6;
+}
+
+/* ── Envelope diagonal crease lines ── */
+#env-creases {
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 3;
+}
+#env-creases::before,
+#env-creases::after {
+content: ‘’;
+position: absolute;
+background: rgba(122,21,24,0.07);
+width: 1px;
+height: 160%;
+top: -30%;
+left: 50%;
+}
+#env-creases::before { transform: rotate(32deg);  transform-origin: top center; }
+#env-creases::after  { transform: rotate(-32deg); transform-origin: top center; }
+
+/* ── Side & bottom folds (triangles) ── */
+.env-fold-bottom {
+position: absolute;
+bottom: 0; left: 0;
+width: 0; height: 0;
+border-left:  50% solid transparent;
+border-right: 50% solid transparent;
+border-bottom: 38% solid var(–cream-dark);
+z-index: 2;
+width: 100%;  /* override */
+}
+/* Use CSS border trick differently — absolute positioned triangles */
+#env-fold-b {
+position: absolute;
+bottom: 0; left: 0; right: 0;
+height: 0;
+border-style: solid;
+border-color: transparent;
+border-bottom-color: #e8d9b8;
+z-index: 2;
+}
+#env-fold-l {
+position: absolute;
+left: 0; top: 0; bottom: 0;
+width: 0;
+border-style: solid;
+border-color: transparent;
+border-left-color: #eddfc4;
+z-index: 2;
+}
+#env-fold-r {
+position: absolute;
+right: 0; top: 0; bottom: 0;
+width: 0;
+border-style: solid;
+border-color: transparent;
+border-right-color: #eddfc4;
+z-index: 2;
+}
+
+/* ── Envelope front text / decoration ── */
+#env-front {
+position: absolute;
+inset: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+z-index: 4;
+padding: 16px;
+text-align: center;
+pointer-events: none;
+}
+
+#env-front .env-om {
+font-family: ‘Tiro Devanagari Sanskrit’, serif;
+font-size: clamp(1rem, 3vw, 1.5rem);
+color: var(–saffron);
+opacity: 0.7;
+margin-bottom: 4px;
+text-shadow: 0 1px 8px rgba(201,135,26,0.3);
+}
+
+#env-front .env-names {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: clamp(1.1rem, 3.5vw, 1.9rem);
+font-weight: 400;
+color: var(–crimson);
+font-style: italic;
+line-height: 1.2;
+opacity: 0.72;
+letter-spacing: 0.04em;
+}
+
+#env-front .env-amp {
+font-family: ‘Tiro Devanagari Sanskrit’, serif;
+font-size: 0.7em;
+color: var(–saffron);
+opacity: 0.5;
+display: block;
+margin: 2px 0;
+}
+
+#env-front .env-date {
+font-family: ‘Cinzel’, serif;
+font-size: clamp(0.45rem, 1.2vw, 0.6rem);
+letter-spacing: 0.22em;
+text-transform: uppercase;
+color: var(–text-mid);
+opacity: 0.4;
+margin-top: 8px;
+}
+
+/* Gold divider line on envelope face */
+.env-gold-rule {
+width: 55%;
+height: 1px;
+background: linear-gradient(90deg, transparent, var(–saffron) 25%, var(–gold) 50%, var(–saffron) 75%, transparent);
+opacity: 0.45;
+margin: 6px auto;
+}
+
+/* ── Top FLAP ── */
+#env-flap {
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 50%;
+transform-origin: top center;
+transform: rotateX(0deg);
+transition: transform 1.6s cubic-bezier(0.4, 0, 0.2, 1);
+z-index: 10;
+pointer-events: none;
+perspective: 800px;
+}
+
+#env-flap svg {
+width: 100%;
+height: 100%;
+display: block;
+overflow: visible;
+}
+
+.env-opened #env-flap {
+transform: rotateX(-178deg);
+}
+
+/* ── Wax Seal ── */
+#env-seal {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+z-index: 15;
+transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1);
+pointer-events: none;
+width: clamp(56px, 12vw, 72px);
+height: clamp(56px, 12vw, 72px);
+}
+
+.env-opened #env-seal {
+opacity: 0;
+transform: translate(-50%, -50%) scale(0.3);
+}
+
+#env-seal-circle {
+width: 100%;
+height: 100%;
+border-radius: 50%;
+background: radial-gradient(circle at 32% 32%,
+#e8c060 0%,
+#c9871a 45%,
+#8a5c0a 100%);
+display: flex;
+align-items: center;
+justify-content: center;
+box-shadow:
+0 4px 14px rgba(0,0,0,0.5),
+inset 0 1px 3px rgba(255,255,255,0.3),
+inset 0 -2px 5px rgba(0,0,0,0.25);
+}
+
+#env-seal-circle .seal-om {
+font-family: ‘Tiro Devanagari Sanskrit’, serif;
+font-size: clamp(1.3rem, 3vw, 1.8rem);
+color: rgba(42, 8, 8, 0.75);
+line-height: 1;
+text-shadow: 0 1px 2px rgba(255,230,150,0.3);
+position: relative;
+top: 1px;
+}
+
+/* Seal outer ring */
+#env-seal::before {
+content: ‘’;
+position: absolute;
+inset: -3px;
+border-radius: 50%;
+border: 1px solid rgba(201,135,26,0.4);
+pointer-events: none;
+}
+
+/* ── Letter (inner paper peeking out) ── */
+#env-letter {
+position: absolute;
+bottom: 4px;
+left: 8px;
+right: 8px;
+height: 90%;
+background: var(–cream-light);
+border-radius: 1px;
+z-index: 5;
+transform: translateY(0);
+transition: transform 1.4s cubic-bezier(0.34, 1.4, 0.64, 1) 0.6s;
+padding: 22px 24px 16px;
+display: flex;
+flex-direction: column;
+gap: 9px;
+box-shadow: 0 -6px 28px rgba(122,21,24,0.12);
+overflow: hidden;
+}
+
+.env-opened #env-letter {
+transform: translateY(-200px);
+}
+
+.env-letter-heading {
+height: 12px;
+width: 38%;
+border-radius: 1px;
+background: rgba(122,21,24,0.18);
+}
+.env-letter-rule {
+height: 1px;
+background: rgba(122,21,24,0.1);
+width: 100%;
+}
+.env-letter-line {
+height: 9px;
+border-radius: 1px;
+background: rgba(122,21,24,0.09);
+}
+.env-letter-line.w-full { width: 100%; }
+.env-letter-line.w-85   { width: 85%; }
+.env-letter-line.w-70   { width: 70%; }
+.env-letter-line.w-55   { width: 55%; }
+
+/* ── Click hint ── */
+#env-hint {
+margin-top: 28px;
+position: relative;
+z-index: 2;
+color: rgba(253,246,227,0.55);
+font-family: ‘Cinzel’, serif;
+font-size: clamp(0.58rem, 1.5vw, 0.72rem);
+letter-spacing: 0.28em;
+text-transform: uppercase;
+animation: envPulse 2.6s ease-in-out 1.6s infinite;
+text-align: center;
+transition: opacity 0.4s ease;
+}
+
+.env-opened #env-hint { opacity: 0; pointer-events: none; }
+
+@keyframes envPulse {
+0%, 100% { opacity: 0.55; }
+50%       { opacity: 0.2; }
+}
+
+/* ── Gold scatter particles ── */
+.env-particle {
+position: fixed;
+pointer-events: none;
+z-index: 10001;
+border-radius: 50%;
+background: var(–saffron);
+animation: envParticleDrift linear forwards;
+}
+
+@keyframes envParticleDrift {
+0%   { opacity: 0.9; transform: translateY(0) scale(1) rotate(0deg); }
+100% { opacity: 0;   transform: translateY(-120px) scale(0.1) rotate(360deg); }
+}
+
 </style>
-
 </head>
-<body>
+<body class="envelope-active">
 
-<div id="scrollProgress"></div>
-<div id="mouseGlow"></div>
-<canvas id="sparkleCanvas"></canvas>
+<!-- ══════════════════════════════════════════════════════════
+     ENVELOPE OVERLAY
+══════════════════════════════════════════════════════════ -->
 
-<!-- ENVELOPE -->
+<div id="envelope-overlay">
 
-<div id="envOverlay">
-  <p id="envTopText">You Are Cordially Invited</p>
-  <div id="envWrapper">
-    <svg id="envBodySvg" viewBox="0 0 420 290" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="1" width="418" height="128" rx="2" style="fill:var(--cream-dark);" opacity="0.6"/>
-      <rect width="420" height="290" rx="3" style="fill:var(--cream);"/>
-      <rect x="0.75" y="0.75" width="418.5" height="288.5" rx="2.5" fill="none" style="stroke:var(--saffron);" stroke-width="1.5" opacity="0.55"/>
-      <rect x="8" y="8" width="404" height="274" rx="2" fill="none" style="stroke:var(--gold);" stroke-width="0.5" opacity="0.28"/>
-      <line x1="0" y1="290" x2="210" y2="178" style="stroke:var(--saffron);" stroke-width="0.9" opacity="0.32"/>
-      <line x1="420" y1="290" x2="210" y2="178" style="stroke:var(--saffron);" stroke-width="0.9" opacity="0.32"/>
-      <line x1="0" y1="0" x2="210" y2="130" style="stroke:var(--saffron);" stroke-width="0.9" opacity="0.22"/>
-      <line x1="420" y1="0" x2="210" y2="130" style="stroke:var(--saffron);" stroke-width="0.9" opacity="0.22"/>
-      <line x1="0" y1="130" x2="420" y2="130" style="stroke:var(--gold);" stroke-width="0.6" opacity="0.18"/>
-      <text x="210" y="162" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="19" font-style="italic" style="fill:var(--crimson);" opacity="0.72">Greeshma &amp; Vijesh</text>
-      <text x="210" y="180" text-anchor="middle" font-family="Cinzel, serif" font-size="6.5" letter-spacing="4" style="fill:var(--saffron);" opacity="0.65">29 · APRIL · 2026</text>
-      <g opacity="0.32" style="fill:none;stroke:var(--saffron);" stroke-width="0.6"><path d="M20 20 Q26 14 32 20 Q26 26 20 20Z"/><path d="M14 26 Q20 20 26 26 Q20 32 14 26Z"/><circle cx="20" cy="20" r="2" style="fill:var(--saffron);" stroke="none" opacity="0.5"/></g>
-      <g opacity="0.32" style="fill:none;stroke:var(--saffron);" stroke-width="0.6" transform="translate(420,0) scale(-1,1)"><path d="M20 20 Q26 14 32 20 Q26 26 20 20Z"/><path d="M14 26 Q20 20 26 26 Q20 32 14 26Z"/><circle cx="20" cy="20" r="2" style="fill:var(--saffron);" stroke="none" opacity="0.5"/></g>
-      <g class="env-seal-glow" transform="translate(210,222)">
-        <circle r="30" style="fill:var(--crimson);" opacity="0.95"/>
-        <circle r="26" style="fill:var(--crimson-light);" opacity="0.6"/>
-        <circle r="25" fill="none" style="stroke:var(--saffron);" stroke-width="1" opacity="0.55"/>
-        <circle r="22" fill="none" style="stroke:var(--saffron);" stroke-width="0.4" stroke-dasharray="2.5 2.5" opacity="0.35"/>
-        <text y="8" text-anchor="middle" font-family="serif" font-size="26" style="fill:var(--saffron-light);" opacity="0.95">ॐ</text>
+  <!-- Torana string across top -->
+
+  <div id="env-torana">
+    <svg width="100%" height="70" viewBox="0 0 1000 70" preserveAspectRatio="xMidYMax meet" fill="none">
+      <path d="M0 18 Q250 32 500 16 Q750 0 1000 18" stroke="#c9871a" stroke-width="1.8" fill="none" opacity="0.55"/>
+      <circle cx="500" cy="16" r="9" fill="#c9871a" opacity="0.8"/>
+      <circle cx="500" cy="16" r="5" fill="#e2a835"/>
+      <circle cx="500" cy="16" r="2.5" fill="#7a1518"/>
+      <g opacity="0.75">
+        <path d="M80 18 Q76 34 80 50 Q84 34 80 18Z" fill="#2a5a2e" transform="rotate(-10,80,18)"/>
+        <path d="M130 20 Q126 36 130 52 Q134 36 130 20Z" fill="#2a5a2e" transform="rotate(8,130,20)"/>
+        <path d="M185 22 Q181 38 185 54 Q189 38 185 22Z" fill="#1e4422" transform="rotate(-9,185,22)"/>
+        <path d="M240 20 Q236 36 240 52 Q244 36 240 20Z" fill="#2a5a2e" transform="rotate(10,240,20)"/>
+        <path d="M295 17 Q291 33 295 49 Q299 33 295 17Z" fill="#2a5a2e" transform="rotate(-7,295,17)"/>
+        <path d="M350 15 Q346 31 350 47 Q354 31 350 15Z" fill="#1e4422" transform="rotate(9,350,15)"/>
+        <path d="M405 13 Q401 29 405 45 Q409 29 405 13Z" fill="#2a5a2e" transform="rotate(-8,405,13)"/>
+        <path d="M455 13 Q451 29 455 45 Q459 29 455 13Z" fill="#2a5a2e" transform="rotate(6,455,13)"/>
+        <path d="M545 13 Q541 29 545 45 Q549 29 545 13Z" fill="#2a5a2e" transform="rotate(-6,545,13)"/>
+        <path d="M595 13 Q591 29 595 45 Q599 29 595 13Z" fill="#1e4422" transform="rotate(8,595,13)"/>
+        <path d="M650 15 Q646 31 650 47 Q654 31 650 15Z" fill="#2a5a2e" transform="rotate(-9,650,15)"/>
+        <path d="M705 17 Q701 33 705 49 Q709 33 705 17Z" fill="#2a5a2e" transform="rotate(7,705,17)"/>
+        <path d="M760 20 Q756 36 760 52 Q764 36 760 20Z" fill="#1e4422" transform="rotate(-10,760,20)"/>
+        <path d="M815 22 Q811 38 815 54 Q819 38 815 22Z" fill="#2a5a2e" transform="rotate(9,815,22)"/>
+        <path d="M870 20 Q866 36 870 52 Q874 36 870 20Z" fill="#2a5a2e" transform="rotate(-8,870,20)"/>
+        <path d="M920 18 Q916 34 920 50 Q924 34 920 18Z" fill="#2a5a2e" transform="rotate(10,920,18)"/>
       </g>
-      <text x="355" y="275" text-anchor="middle" font-family="Cinzel, serif" font-size="5" letter-spacing="1.5" style="fill:var(--saffron);" opacity="0.38">BENGALURU</text>
-      <rect x="330" y="248" width="52" height="22" fill="none" style="stroke:var(--saffron);" stroke-width="0.5" opacity="0.28"/>
     </svg>
-    <div id="envFlapCont">
-      <svg id="envFlapSvg" viewBox="0 0 420 130" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-        <polygon points="0,0 420,0 210,130" style="fill:var(--crimson);" opacity="0.18" transform="translate(0,4)"/>
-        <polygon points="0,0 420,0 210,130" style="fill:var(--crimson);"/>
-        <polygon points="0,0 420,0 210,130" fill="url(#flapGrad)" opacity="0.35"/>
-        <polyline points="2,2 210,128 418,2" fill="none" style="stroke:var(--saffron);" stroke-width="1.2" opacity="0.4" stroke-linejoin="round"/>
-        <line x1="0" y1="0" x2="420" y2="0" style="stroke:var(--saffron);" stroke-width="1.5" opacity="0.5"/>
-        <polygon points="210,114 214,120 210,126 206,120" style="fill:var(--saffron);" opacity="0.5"/>
-        <defs><linearGradient id="flapGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#000000"/></linearGradient></defs>
-      </svg>
+  </div>
+
+  <!-- Corner lotus ornaments -->
+
+  <svg class="env-corner tl" viewBox="0 0 120 120" fill="none">
+    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="38" cy="70" rx="14" ry="5.5" fill="#c4748a" opacity="0.35" transform="rotate(-50,38,70)"/>
+    <ellipse cx="55" cy="44" rx="12" ry="5" fill="#7a1518" opacity="0.25" transform="rotate(-32,55,44)"/>
+    <ellipse cx="78" cy="10" rx="8" ry="4" fill="#c9871a" opacity="0.55" transform="rotate(-45,78,10)"/>
+    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.6"/>
+    <circle cx="78" cy="8" r="1.8" fill="#7a1518" opacity="0.75"/>
+  </svg>
+  <svg class="env-corner tr" viewBox="0 0 120 120" fill="none">
+    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="38" cy="70" rx="14" ry="5.5" fill="#c4748a" opacity="0.35" transform="rotate(-50,38,70)"/>
+    <ellipse cx="78" cy="10" rx="8" ry="4" fill="#c9871a" opacity="0.55" transform="rotate(-45,78,10)"/>
+    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.6"/>
+    <circle cx="78" cy="8" r="1.8" fill="#7a1518" opacity="0.75"/>
+  </svg>
+  <svg class="env-corner bl" viewBox="0 0 120 120" fill="none">
+    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="55" cy="44" rx="12" ry="5" fill="#c4748a" opacity="0.3" transform="rotate(-32,55,44)"/>
+    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.5"/>
+  </svg>
+  <svg class="env-corner br" viewBox="0 0 120 120" fill="none">
+    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.45"/>
+  </svg>
+
+  <!-- The envelope itself -->
+
+  <div id="env-wrap">
+
+```
+<!-- Inner letter paper -->
+<div id="env-letter">
+  <div class="env-letter-heading"></div>
+  <div class="env-letter-rule"></div>
+  <div class="env-letter-line w-full"></div>
+  <div class="env-letter-line w-85"></div>
+  <div class="env-letter-line w-70"></div>
+  <div class="env-letter-line w-full"></div>
+  <div class="env-letter-line w-55"></div>
+  <div class="env-letter-rule" style="margin-top:2px;"></div>
+  <div class="env-letter-line w-70"></div>
+</div>
+
+<!-- Envelope body container -->
+<div id="env-body">
+  <div id="env-creases"></div>
+
+  <!-- SVG folds: bottom, left, right triangles -->
+  <svg style="position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;" viewBox="0 0 480 300" preserveAspectRatio="none">
+    <!-- Bottom fold -->
+    <polygon points="0,300 480,300 240,165" fill="#e2d4b2"/>
+    <!-- Left fold -->
+    <polygon points="0,0 0,300 225,150" fill="#ead7b8"/>
+    <!-- Right fold -->
+    <polygon points="480,0 480,300 255,150" fill="#ead7b8"/>
+    <!-- subtle crease shadows -->
+    <line x1="0" y1="300" x2="240" y2="165" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
+    <line x1="480" y1="300" x2="240" y2="165" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
+    <line x1="0" y1="0" x2="225" y2="150" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
+    <line x1="480" y1="0" x2="255" y2="150" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
+  </svg>
+
+  <!-- Envelope front text -->
+  <div id="env-front">
+    <div class="env-gold-rule"></div>
+    <div class="env-om">ॐ</div>
+    <div class="env-names">
+      Greeshma
+      <span class="env-amp">weds</span>
+      Vijesh
+    </div>
+    <div class="env-date">Shubha Vivaha &nbsp;·&nbsp; 29 April 2026</div>
+    <div class="env-gold-rule" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- Top flap SVG -->
+  <div id="env-flap">
+    <svg viewBox="0 0 480 300" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="envFlapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#f0e6c4"/>
+          <stop offset="100%" stop-color="#fdf6e3"/>
+        </linearGradient>
+        <filter id="envFlapShadow">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(122,21,24,0.12)"/>
+        </filter>
+      </defs>
+      <polygon
+        points="0,0 480,0 240,172"
+        fill="url(#envFlapGrad)"
+        filter="url(#envFlapShadow)"
+      />
+      <!-- Flap crease lines -->
+      <line x1="0"   y1="0" x2="240" y2="172" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
+      <line x1="480" y1="0" x2="240" y2="172" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
+      <!-- Gold border along flap edges -->
+      <line x1="2"   y1="2" x2="238" y2="170" stroke="rgba(201,135,26,0.18)" stroke-width="0.8"/>
+      <line x1="478" y1="2" x2="242" y2="170" stroke="rgba(201,135,26,0.18)" stroke-width="0.8"/>
+    </svg>
+  </div>
+
+  <!-- Wax seal -->
+  <div id="env-seal">
+    <div id="env-seal-circle">
+      <span class="seal-om">ॐ</span>
     </div>
   </div>
-  <p id="envSubText">Greeshma &amp; Vijesh · Shubha Vivaha · 29 April 2026</p>
-  <button id="envCta" onclick="skipEnvelope()">tap to enter &nbsp;↓</button>
-</div>
 
-<!-- THEME SWITCHER -->
+</div><!-- /env-body -->
 
-<div id="themeSwitcher">
-  <div id="themePanel">
-    <h4>Colour Theme</h4>
-    <button class="theme-opt-btn active" id="btn-trad"   onclick="applyTheme('traditional')"><span class="theme-swatch" style="background:#7a1518;"></span> Traditional</button>
-    <button class="theme-opt-btn"        id="btn-green"  onclick="applyTheme('green')">      <span class="theme-swatch" style="background:#004d1a;"></span> British Racing Green</button>
-    <button class="theme-opt-btn"        id="btn-purple" onclick="applyTheme('purple')">     <span class="theme-swatch" style="background:#4a1464;"></span> Purple &amp; Cream</button>
-    <button class="theme-opt-btn"        id="btn-navy"   onclick="applyTheme('navy')">       <span class="theme-swatch" style="background:#1a2a5a;"></span> Navy &amp; Gold</button>
-    <button class="theme-opt-btn"        id="btn-rose"   onclick="applyTheme('rose')">       <span class="theme-swatch" style="background:#7a2840;"></span> Rose Gold</button>
-  </div>
-  <button id="themeToggleBtn" onclick="toggleThemePanel()" title="Change theme">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-  </button>
-</div>
+<!-- Click hint -->
+<div id="env-hint">Click to open &nbsp; · &nbsp; ಕ್ಲಿಕ್ ಮಾಡಿ</div>
+```
 
-<!-- MUSIC -->
+  </div><!-- /env-wrap -->
 
-<div id="musicControl">
-  <button id="musicBtn" onclick="toggleMusic()" title="Toggle music">
-    <svg id="musicIconOn"  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-    <svg id="musicIconOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-  </button>
-</div>
+</div><!-- /envelope-overlay -->
 
-<audio id="weddingMusic" loop preload="auto"><source src="tulasi.mp3" type="audio/mpeg"></audio>
+<!-- ══════════════════════════════════════════════════════════
+     MAIN WEBSITE
+══════════════════════════════════════════════════════════ -->
 
 <div class="petals" id="petals"></div>
 
-
-
-<div id="envelope-overlay" class="envelope-overlay">
-  <div class="envelope-wrapper">
-    <div class="env-back"></div>
-    <div class="env-letter">
-      <p>G & V</p>
-      <span>29 April 2026</span>
-    </div>
-    <div class="env-front-bottom"></div>
-    <div class="env-front-left"></div>
-    <div class="env-front-right"></div>
-    <div class="env-flap-top">
-      <div class="env-wax-seal">ॐ</div>
-    </div>
-    <p class="env-instruction">Scroll or Tap to Open</p>
-  </div>
-</div>
-
-
-<!-- Kolam background pattern -->
-
 <svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg">
-  <defs><pattern id="kolam" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-    <path d="M40 10 L70 40 L40 70 L10 40 Z" fill="none" stroke="#7a1518" stroke-width="0.6"/>
-    <path d="M40 22 L58 40 L40 58 L22 40 Z" fill="none" stroke="#c9871a" stroke-width="0.5"/>
-    <circle cx="40" cy="40" r="2.5" fill="#7a1518"/>
-    <circle cx="10" cy="40" r="1.5" fill="#c9871a"/><circle cx="70" cy="40" r="1.5" fill="#c9871a"/>
-    <circle cx="40" cy="10" r="1.5" fill="#c9871a"/><circle cx="40" cy="70" r="1.5" fill="#c9871a"/>
-    <line x1="10" y1="10" x2="30" y2="30" stroke="#7a1518" stroke-width="0.4"/>
-    <line x1="70" y1="10" x2="50" y2="30" stroke="#7a1518" stroke-width="0.4"/>
-    <line x1="10" y1="70" x2="30" y2="50" stroke="#7a1518" stroke-width="0.4"/>
-    <line x1="70" y1="70" x2="50" y2="50" stroke="#7a1518" stroke-width="0.4"/>
-  </pattern></defs>
+  <defs>
+    <pattern id="kolam" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M40 10 L70 40 L40 70 L10 40 Z" fill="none" stroke="#7a1518" stroke-width="0.6"/>
+      <path d="M40 22 L58 40 L40 58 L22 40 Z" fill="none" stroke="#c9871a" stroke-width="0.5"/>
+      <circle cx="40" cy="40" r="2.5" fill="#7a1518"/>
+      <circle cx="10" cy="40" r="1.5" fill="#c9871a"/>
+      <circle cx="70" cy="40" r="1.5" fill="#c9871a"/>
+      <circle cx="40" cy="10" r="1.5" fill="#c9871a"/>
+      <circle cx="40" cy="70" r="1.5" fill="#c9871a"/>
+      <line x1="10" y1="10" x2="30" y2="30" stroke="#7a1518" stroke-width="0.4"/>
+      <line x1="70" y1="10" x2="50" y2="30" stroke="#7a1518" stroke-width="0.4"/>
+      <line x1="10" y1="70" x2="30" y2="50" stroke="#7a1518" stroke-width="0.4"/>
+      <line x1="70" y1="70" x2="50" y2="50" stroke="#7a1518" stroke-width="0.4"/>
+    </pattern>
+  </defs>
   <rect width="100%" height="100%" fill="url(#kolam)"/>
 </svg>
 
-<div id="envelope-overlay" class="envelope-overlay">
-  <div class="envelope-wrapper">
-    <div class="env-back"></div>
-    <div class="env-letter">
-      <p>G & V</p>
-      <span>29 April 2026</span>
-    </div>
-    <div class="env-front-bottom"></div>
-    <div class="env-front-left"></div>
-    <div class="env-front-right"></div>
-    <div class="env-flap-top">
-      <div class="env-wax-seal">ॐ</div>
-    </div>
-    <p class="env-instruction">Scroll or Tap to Open</p>
-  </div>
-</div>
-
 <div class="page">
-  <!-- HERO -->
-  <section class="hero" id="hero">
-    <div id="mandala3d"><svg id="mandalaSvg" viewBox="-200 -200 400 400" xmlns="http://www.w3.org/2000/svg"></svg></div>
-    <div class="hero-rings"><div class="h-ring h-ring-1"></div><div class="h-ring h-ring-2"></div><div class="h-ring h-ring-3"></div></div>
-    <canvas id="goldDustCanvas"></canvas>
+
+  <!-- ═════════════════ HERO ═════════════════ -->
+
+  <section class="hero">
 
 ```
-<div class="torana" data-depth="0.35">
+<div class="torana">
   <svg width="100%" height="88" viewBox="0 0 1000 88" preserveAspectRatio="xMidYMax meet" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M0 20 Q250 36 500 18 Q750 0 1000 20" stroke="#c9871a" stroke-width="2.2" fill="none" opacity="0.65"/>
-    <circle cx="500" cy="18" r="11" fill="#c9871a" opacity="0.88"/><circle cx="500" cy="18" r="6.5" fill="#e2a835"/><circle cx="500" cy="18" r="3" fill="#7a1518"/>
+    <circle cx="500" cy="18" r="11" fill="#c9871a" opacity="0.88"/>
+    <circle cx="500" cy="18" r="6.5" fill="#e2a835"/>
+    <circle cx="500" cy="18" r="3" fill="#7a1518"/>
     <g opacity="0.85">
       <path d="M70 20 Q65 40 70 58 Q75 40 70 20Z" fill="#2a5a2e" transform="rotate(-12,70,20)"/>
+      <line x1="70" y1="21" x2="70" y2="56" stroke="#c9871a" stroke-width="0.6" transform="rotate(-12,70,20)" opacity="0.45"/>
       <path d="M120 22 Q115 42 120 60 Q125 42 120 22Z" fill="#2a5a2e" transform="rotate(9,120,22)"/>
+      <line x1="120" y1="23" x2="120" y2="58" stroke="#c9871a" stroke-width="0.6" transform="rotate(9,120,22)" opacity="0.45"/>
       <path d="M170 25 Q165 45 170 62 Q175 45 170 25Z" fill="#1e4422" transform="rotate(-10,170,25)"/>
       <path d="M220 24 Q215 44 220 61 Q225 44 220 24Z" fill="#2a5a2e" transform="rotate(7,220,24)"/>
       <path d="M270 20 Q265 40 270 57 Q275 40 270 20Z" fill="#2a5a2e" transform="rotate(-8,270,20)"/>
@@ -471,7 +1037,7 @@ margin-bottom: 14px;
   </svg>
 </div>
 
-<svg class="corner-lotus tl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" data-depth="0.25">
+<svg class="corner-lotus tl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
   <ellipse cx="38" cy="90" rx="17" ry="7" fill="#7a1518" opacity="0.28" transform="rotate(-68,38,90)"/>
@@ -484,31 +1050,43 @@ margin-bottom: 14px;
   <circle cx="102" cy="12" r="2.4" fill="#7a1518" opacity="0.8"/>
   <ellipse cx="25" cy="162" rx="13" ry="5" fill="#2a5a2e" opacity="0.38" transform="rotate(-38,25,162)"/>
 </svg>
-<svg class="corner-lotus tr" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" data-depth="0.25" style="transform:scaleX(-1)">
+
+<svg class="corner-lotus tr" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
+  <ellipse cx="38" cy="90" rx="17" ry="7" fill="#7a1518" opacity="0.28" transform="rotate(-68,38,90)"/>
   <ellipse cx="72" cy="76" rx="19" ry="8" fill="#c4748a" opacity="0.38" transform="rotate(-32,72,76)"/>
   <ellipse cx="102" cy="18" rx="10" ry="5" fill="#c9871a" opacity="0.6" transform="rotate(-45,102,18)"/>
+  <ellipse cx="114" cy="6" rx="10" ry="5" fill="#c4748a" opacity="0.48" transform="rotate(-28,114,6)"/>
+  <ellipse cx="90" cy="6" rx="10" ry="5" fill="#c4748a" opacity="0.48" transform="rotate(-62,90,6)"/>
   <circle cx="102" cy="12" r="5" fill="#c9871a" opacity="0.7"/>
   <circle cx="102" cy="12" r="2.4" fill="#7a1518" opacity="0.8"/>
 </svg>
-<svg class="corner-lotus bl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" data-depth="0.2" style="transform:scaleY(-1)">
+
+<svg class="corner-lotus bl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
+  <ellipse cx="72" cy="76" rx="19" ry="8" fill="#c4748a" opacity="0.38" transform="rotate(-32,72,76)"/>
   <circle cx="102" cy="12" r="5" fill="#c9871a" opacity="0.7"/>
+  <circle cx="102" cy="12" r="2.4" fill="#7a1518" opacity="0.8"/>
 </svg>
-<svg class="corner-lotus br" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" data-depth="0.2" style="transform:scale(-1)">
+
+<svg class="corner-lotus br" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
   <circle cx="102" cy="12" r="5" fill="#c9871a" opacity="0.7"/>
 </svg>
 
-<div style="position:relative;z-index:2;margin-top:72px;" data-depth="0.08">
+<div style="position:relative;z-index:2;margin-top:72px;">
   <p class="hero-om">ॐ</p>
   <p class="hero-blessing">śubhā vivāha &nbsp;·&nbsp; Shubha Kalyaanam</p>
   <div class="gold-border"></div>
   <p class="prelude">With the blessings of God &amp; our beloved families</p>
-  <h1 class="couple-names">Greeshma<span class="weds">&nbsp; weds &nbsp;</span>Vijesh</h1>
+  <h1 class="couple-names">
+    Greeshma
+    <span class="weds"> &nbsp; weds &nbsp; </span>
+    Vijesh
+  </h1>
   <p class="wedding-sub">Muhurtham</p>
   <p class="hero-date">Wednesday, the 29th of April, 2026</p>
   <p class="hero-venue">Mandara &nbsp;·&nbsp; Bengaluru</p>
@@ -522,20 +1100,31 @@ margin-bottom: 14px;
     <circle cx="150" cy="22" r="2" fill="#c9871a" opacity="0.9"/>
     <path d="M127 22 L130 19 L133 22 L130 25Z" fill="#c4748a" opacity="0.55"/>
     <path d="M167 22 L170 19 L173 22 L170 25Z" fill="#c4748a" opacity="0.55"/>
+    <path d="M116 22 L119 19 L122 22 L119 25Z" fill="#c9871a" opacity="0.38"/>
+    <path d="M178 22 L181 19 L184 22 L181 25Z" fill="#c9871a" opacity="0.38"/>
   </svg>
 </div>
 ```
 
   </section>
 
-  <!-- BLESSINGS -->
+  <!-- ═════════════════ BLESSINGS ═════════════════ -->
 
   <section>
     <div class="section-inner reveal">
-      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none"><line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/><circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/><path d="M87 16 L91 11 L95 16 L91 21Z" fill="#7a1518" opacity="0.4"/><path d="M105 16 L109 11 L113 16 L109 21Z" fill="#7a1518" opacity="0.4"/></svg>
+      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
+        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
+        <path d="M87 16 L91 11 L95 16 L91 21Z" fill="#7a1518" opacity="0.4"/>
+        <path d="M105 16 L109 11 L113 16 L109 21Z" fill="#7a1518" opacity="0.4"/>
+      </svg>
       <p class="section-tag">Shubha Ashirvaadam</p>
       <h2 class="section-title">A Sacred Union</h2>
-      <p class="section-body">Blessed by Sri Ganapati and united under auspicious stars, Greeshma and Vijesh embark on their journey as one. Rooted in the rich traditions of Karnataka, bound by love, and celebrated with the warmth of family and friends — we joyfully invite you to witness and bless this sacred bond.</p>
+      <p class="section-body">
+        Blessed by Sri Ganapati and united under auspicious stars, Greeshma and Vijesh embark on their journey as one. Rooted in the rich traditions of Karnataka, bound by love, and celebrated with the warmth of family and friends — we joyfully invite you to witness and bless this sacred bond.
+      </p>
       <div style="margin-top:42px;">
         <svg width="52" height="68" viewBox="0 0 56 72" fill="none" style="opacity:0.72;">
           <path d="M28 4 C24 12 20 18 24 24 C26 28 28 26 28 26 C28 26 30 28 32 24 C36 18 32 12 28 4Z" fill="#e2a835" opacity="0.88"/>
@@ -543,76 +1132,166 @@ margin-bottom: 14px;
           <line x1="28" y1="24" x2="28" y2="32" stroke="#7a1518" stroke-width="1.5"/>
           <path d="M14 32 Q12 40 16 46 Q22 52 28 52 Q34 52 40 46 Q44 40 42 32 Z" fill="#c9871a" opacity="0.72"/>
           <path d="M12 32 L44 32" stroke="#7a1518" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M40 38 Q50 38 50 30 Q50 24 44 26" stroke="#b8840e" stroke-width="1.5" fill="none" stroke-linecap="round"/>
           <rect x="20" y="52" width="16" height="3" rx="1.5" fill="#7a1518" opacity="0.5"/>
           <rect x="16" y="55" width="24" height="4" rx="2" fill="#c9871a" opacity="0.5"/>
+          <rect x="18" y="59" width="20" height="3" rx="1.5" fill="#b8840e" opacity="0.4"/>
         </svg>
       </div>
     </div>
   </section>
 
-  <!-- DETAILS BAND -->
+  <!-- ═════════════════ DETAILS BAND ═════════════════ -->
 
   <section class="details-band">
     <div class="section-inner reveal">
       <p class="section-tag">Vivah Vivaran</p>
       <h2 class="section-title">The Auspicious Details</h2>
-      <div class="details-grid" id="detailsGrid">
+      <div class="details-grid">
         <div class="detail-item">
-          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="4" y="8" width="32" height="26" rx="1" stroke="#e2a835" stroke-width="1.2"/><line x1="4" y1="15" x2="36" y2="15" stroke="#e2a835" stroke-width="1"/><line x1="12" y1="4" x2="12" y2="12" stroke="#e2a835" stroke-width="1.5" stroke-linecap="round"/><line x1="28" y1="4" x2="28" y2="12" stroke="#e2a835" stroke-width="1.5" stroke-linecap="round"/><text x="20" y="30" text-anchor="middle" font-family="serif" font-size="13" fill="#e2a835" opacity="0.9">ॐ</text></svg>
-          <p class="detail-label">Muhurtham Date</p><p class="detail-value">29 April 2026<br>Wednesday</p>
+          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <rect x="4" y="8" width="32" height="26" rx="1" stroke="#e2a835" stroke-width="1.2"/>
+            <line x1="4" y1="15" x2="36" y2="15" stroke="#e2a835" stroke-width="1"/>
+            <line x1="12" y1="4" x2="12" y2="12" stroke="#e2a835" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="28" y1="4" x2="28" y2="12" stroke="#e2a835" stroke-width="1.5" stroke-linecap="round"/>
+            <text x="20" y="30" text-anchor="middle" font-family="serif" font-size="13" fill="#e2a835" opacity="0.9">ॐ</text>
+          </svg>
+          <p class="detail-label">Muhurtham Date</p>
+          <p class="detail-value">29 April 2026<br>Wednesday</p>
         </div>
         <div class="detail-item">
-          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="14" stroke="#e2a835" stroke-width="1.2"/><circle cx="20" cy="20" r="10" stroke="#e2a835" stroke-width="0.5" stroke-dasharray="2 2"/><line x1="20" y1="20" x2="20" y2="10" stroke="#e2a835" stroke-width="1.8" stroke-linecap="round"/><line x1="20" y1="20" x2="26" y2="23" stroke="#e2a835" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="20" r="2" fill="#e2a835"/></svg>
-          <p class="detail-label">Muhurtham Time</p><p class="detail-value">9:30 AM<br>Reception 7:00 PM</p>
+          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="14" stroke="#e2a835" stroke-width="1.2"/>
+            <circle cx="20" cy="20" r="10" stroke="#e2a835" stroke-width="0.5" stroke-dasharray="2 2"/>
+            <line x1="20" y1="20" x2="20" y2="10" stroke="#e2a835" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="20" y1="20" x2="26" y2="23" stroke="#e2a835" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="20" cy="20" r="2" fill="#e2a835"/>
+          </svg>
+          <p class="detail-label">Muhurtham Time</p>
+          <p class="detail-value">9:30 AM<br>Reception 7:00 PM</p>
         </div>
         <div class="detail-item">
-          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="14" y="22" width="12" height="14" fill="none" stroke="#e2a835" stroke-width="1.2"/><path d="M12 22 L20 6 L28 22 Z" fill="none" stroke="#e2a835" stroke-width="1.2" stroke-linejoin="round"/><circle cx="20" cy="5" r="2" fill="#e2a835" opacity="0.75"/><line x1="20" y1="22" x2="20" y2="36" stroke="#e2a835" stroke-width="1"/></svg>
-          <p class="detail-label">Venue</p><p class="detail-value">Mandara<br>Bengaluru</p>
+          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <rect x="14" y="22" width="12" height="14" fill="none" stroke="#e2a835" stroke-width="1.2"/>
+            <path d="M12 22 L20 6 L28 22 Z" fill="none" stroke="#e2a835" stroke-width="1.2" stroke-linejoin="round"/>
+            <circle cx="20" cy="5" r="2" fill="#e2a835" opacity="0.75"/>
+            <line x1="20" y1="22" x2="20" y2="36" stroke="#e2a835" stroke-width="1"/>
+          </svg>
+          <p class="detail-label">Venue</p>
+          <p class="detail-value">Mandara<br>Bengaluru</p>
         </div>
         <div class="detail-item">
-          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M13 4 L20 12 L27 4 L31 8 L26 16 L30 36 L10 36 L14 16 L9 8 Z" stroke="#e2a835" stroke-width="1.2" fill="none" stroke-linejoin="round"/><path d="M10 28 Q20 25 30 28" stroke="#e2a835" stroke-width="0.7" fill="none"/></svg>
-          <p class="detail-label">Attire</p><p class="detail-value">Traditional<br>South Indian Silk</p>
+          <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path d="M13 4 L20 12 L27 4 L31 8 L26 16 L30 36 L10 36 L14 16 L9 8 Z" stroke="#e2a835" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+            <path d="M10 28 Q20 25 30 28" stroke="#e2a835" stroke-width="0.7" fill="none"/>
+          </svg>
+          <p class="detail-label">Attire</p>
+          <p class="detail-value">Traditional<br>South Indian Silk</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- CEREMONIES -->
+  <!-- ═════════════════ CEREMONIES ═════════════════ -->
 
   <section>
     <div class="section-inner reveal">
-      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none"><line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/><circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/></svg>
+      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
+        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
+      </svg>
       <p class="section-tag">Utsav Krama</p>
       <h2 class="section-title">Order of Ceremonies</h2>
       <p class="section-body">Each ritual is a sacred thread woven into the tapestry of a new life together.</p>
-      <ul class="timeline" id="timeline">
-        <li class="timeline-item"><span class="tl-time">7:00 AM</span><span class="tl-dot"></span><div class="tl-event"><p class="tl-event-kannada">ಮಂಗಲ ಸ್ನಾನ</p><p class="tl-event-name">Mangala Snanam</p><p class="tl-event-desc">The auspicious ritual bath for bride &amp; groom</p></div></li>
-        <li class="timeline-item"><span class="tl-time">8:30 AM</span><span class="tl-dot"></span><div class="tl-event"><p class="tl-event-kannada">ವರ ಪೂಜೆ</p><p class="tl-event-name">Vara Pooja</p><p class="tl-event-desc">Welcome of the groom with sacred rites</p></div></li>
-        <li class="timeline-item"><span class="tl-time">9:00 AM</span><span class="tl-dot"></span><div class="tl-event"><p class="tl-event-kannada">ಕಾಶಿ ಯಾತ್ರೆ</p><p class="tl-event-name">Kashi Yatra</p><p class="tl-event-desc">The groom's playful procession &amp; return</p></div></li>
-        <li class="timeline-item"><span class="tl-time">9:30 AM</span><span class="tl-dot"></span><div class="tl-event"><p class="tl-event-kannada">ಮುಹೂರ್ತ · ಸಪ್ತಪದಿ</p><p class="tl-event-name">Muhurtham &amp; Saptapadi</p><p class="tl-event-desc">The sacred seven vows — the heart of the ceremony</p></div></li>
-        <li class="timeline-item"><span class="tl-time">12:00 PM</span><span class="tl-dot"></span><div class="tl-event"><p class="tl-event-kannada">ವಿವಾಹ ಸದ್ಯ</p><p class="tl-event-name">Wedding Sadya</p><p class="tl-event-desc">Traditional South Indian wedding feast on banana leaf</p></div></li>
-        <li class="timeline-item"><span class="tl-time">7:00 PM</span><span class="tl-dot"></span><div class="tl-event"><p class="tl-event-kannada">ಆಶೀರ್ವಾದ ಸ್ವಾಗತ</p><p class="tl-event-name">Ashirvaadam &amp; Reception</p><p class="tl-event-desc">Evening reception, dinner &amp; blessings</p></div></li>
+      <ul class="timeline">
+        <li class="timeline-item">
+          <span class="tl-time">7:00 AM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-kannada">ಮಂಗಲ ಸ್ನಾನ</p>
+            <p class="tl-event-name">Mangala Snanam</p>
+            <p class="tl-event-desc">The auspicious ritual bath for bride &amp; groom</p>
+          </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">8:30 AM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-kannada">ವರ ಪೂಜೆ</p>
+            <p class="tl-event-name">Vara Pooja</p>
+            <p class="tl-event-desc">Welcome of the groom with sacred rites</p>
+          </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">9:00 AM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-kannada">ಕಾಶಿ ಯಾತ್ರೆ</p>
+            <p class="tl-event-name">Kashi Yatra</p>
+            <p class="tl-event-desc">The groom's playful procession &amp; return</p>
+          </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">9:30 AM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-kannada">ಮುಹೂರ್ತ · ಸಪ್ತಪದಿ</p>
+            <p class="tl-event-name">Muhurtham &amp; Saptapadi</p>
+            <p class="tl-event-desc">The sacred seven vows — the heart of the ceremony</p>
+          </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">12:00 PM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-kannada">ವಿವಾಹ ಸದ್ಯ</p>
+            <p class="tl-event-name">Wedding Sadya</p>
+            <p class="tl-event-desc">Traditional South Indian wedding feast on banana leaf</p>
+          </div>
+        </li>
+        <li class="timeline-item">
+          <span class="tl-time">7:00 PM</span>
+          <span class="tl-dot"></span>
+          <div class="tl-event">
+            <p class="tl-event-kannada">ಆಶೀರ್ವಾದ ಸ್ವಾಗತ</p>
+            <p class="tl-event-name">Ashirvaadam &amp; Reception</p>
+            <p class="tl-event-desc">Evening reception, dinner &amp; blessings</p>
+          </div>
+        </li>
       </ul>
     </div>
   </section>
 
-  <!-- PHOTO BOOTH -->
+  <!-- ═════════════════ PHOTO BOOTH ═════════════════ -->
 
   <section class="photobooth-section reveal">
     <div class="section-inner">
-      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none"><line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/><circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/></svg>
+      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
+        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
+      </svg>
       <p class="section-tag">Smriti Chitre · Memory Gallery</p>
       <h2 class="section-title">Capture the Celebration</h2>
       <p class="section-body">Take a photo at the wedding and add it to our shared memory wall. Every moment you capture becomes part of Greeshma &amp; Vijesh's story forever.</p>
       <button class="btn-booth-open" onclick="openBooth()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
         Open Photo Booth
       </button>
       <div class="photo-wall-wrap">
         <p class="photo-wall-label">Photos shared by guests</p>
         <div class="photo-wall" id="photoWall">
           <div class="photo-wall-empty" id="photoWallEmpty">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.3;margin-bottom:10px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3;margin-bottom:10px;">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
             <p>No photos yet — be the first to share a memory!</p>
           </div>
         </div>
@@ -620,25 +1299,55 @@ margin-bottom: 14px;
     </div>
   </section>
 
-  <!-- RSVP -->
+  <!-- ═════════════════ RSVP ═════════════════ -->
 
   <section class="rsvp-section">
     <div class="section-inner reveal">
-      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none"><line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/><circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/><circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/></svg>
+      <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
+        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
+      </svg>
       <p class="section-tag">Nimantrana</p>
       <h2 class="section-title">Kindly Confirm by 1st April</h2>
       <p class="section-body">Your presence is the greatest blessing of all. Please let us know if you will be joining us on this joyous occasion.</p>
-      <div class="rsvp-card" id="rsvpCard">
+      <div class="rsvp-card">
         <form onsubmit="handleRsvp(event)">
           <div class="form-row">
-            <div class="form-group"><label class="form-label">First Name</label><input type="text" class="form-input" placeholder="Your name"></div>
-            <div class="form-group"><label class="form-label">Last Name</label><input type="text" class="form-input" placeholder="Family name"></div>
+            <div class="form-group">
+              <label class="form-label">First Name</label>
+              <input type="text" class="form-input" placeholder="Your name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name</label>
+              <input type="text" class="form-input" placeholder="Family name">
+            </div>
           </div>
-          <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" placeholder="your@email.com"></div>
-          <div class="form-group"><label class="form-label">Mobile Number</label><input type="tel" class="form-input" placeholder="+91 XXXXX XXXXX"></div>
-          <div class="form-group"><label class="form-label">Attendance</label><select class="form-select"><option value="">Please select…</option><option>Joyfully accepts — will attend</option><option>Regretfully declines</option></select></div>
-          <div class="form-group"><label class="form-label">Number of Guests</label><input type="number" class="form-input" min="1" max="8" placeholder="1"></div>
-          <div class="form-group"><label class="form-label">Dietary / Special Requirements</label><input type="text" class="form-input" placeholder="Veg / Jain / Allergies…"></div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mobile Number</label>
+            <input type="tel" class="form-input" placeholder="+91 XXXXX XXXXX">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Attendance</label>
+            <select class="form-select">
+              <option value="">Please select…</option>
+              <option>Joyfully accepts — will attend</option>
+              <option>Regretfully declines</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Number of Guests</label>
+            <input type="number" class="form-input" min="1" max="8" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dietary / Special Requirements</label>
+            <input type="text" class="form-input" placeholder="Veg / Jain / Allergies…">
+          </div>
           <button type="submit" class="btn-rsvp">Send RSVP &nbsp; ✦</button>
         </form>
         <p id="rsvp-msg" style="margin-top:20px;font-family:'Tiro Devanagari Sanskrit',serif;color:var(--saffron);font-size:1rem;display:none;line-height:1.8;"></p>
@@ -646,11 +1355,12 @@ margin-bottom: 14px;
     </div>
   </section>
 
-  <!-- FOOTER -->
+  <!-- ═════════════════ FOOTER ═════════════════ -->
 
-  <footer id="siteFooter">
+  <footer>
     <svg width="220" height="28" viewBox="0 0 220 28" fill="none" style="margin-bottom:20px;opacity:0.48;position:relative;">
-      <line x1="0" y1="14" x2="90" y2="14" stroke="#e2a835" stroke-width="0.8"/><line x1="130" y1="14" x2="220" y2="14" stroke="#e2a835" stroke-width="0.8"/>
+      <line x1="0" y1="14" x2="90" y2="14" stroke="#e2a835" stroke-width="0.8"/>
+      <line x1="130" y1="14" x2="220" y2="14" stroke="#e2a835" stroke-width="0.8"/>
       <ellipse cx="110" cy="14" rx="8" ry="4" fill="#e2a835" opacity="0.55"/>
       <ellipse cx="110" cy="14" rx="8" ry="4" fill="#e2a835" opacity="0.5" transform="rotate(60,110,14)"/>
       <ellipse cx="110" cy="14" rx="8" ry="4" fill="#e2a835" opacity="0.5" transform="rotate(120,110,14)"/>
@@ -662,402 +1372,519 @@ margin-bottom: 14px;
     <p class="footer-note">29 April 2026 &nbsp;·&nbsp; Mandara, Bengaluru</p>
     <p class="footer-note" style="margin-top:8px;opacity:0.4;font-size:0.68rem;letter-spacing:0.15em;">Shubha Vivah &nbsp;·&nbsp; Made with love</p>
   </footer>
-</div>
 
-<!-- PHOTO BOOTH MODAL -->
+</div><!-- /page -->
 
-<div class="booth-modal" id="boothModal" role="dialog" aria-modal="true">
+<!-- ═════════════════ PHOTO BOOTH MODAL ═════════════════ -->
+
+<div class="booth-modal" id="boothModal" role="dialog" aria-modal="true" aria-label="Wedding Photo Booth">
   <div class="booth-shell">
     <div class="booth-screen" id="screenViewfinder">
-      <div class="booth-header"><p class="booth-tag">Memory Gallery</p><button class="booth-close-btn" onclick="closeBooth()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+      <div class="booth-header">
+        <p class="booth-tag">Memory Gallery</p>
+        <button class="booth-close-btn" onclick="closeBooth()" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
       <div class="booth-viewfinder" id="boothViewfinder">
-        <video id="booth-video" autoplay muted playsinline></video><canvas id="booth-canvas" style="display:none;"></canvas>
-        <div class="vf-frame"><span class="vf-tl"></span><span class="vf-tr"></span><span class="vf-bl"></span><span class="vf-br"></span></div>
+        <video id="booth-video" autoplay muted playsinline></video>
+        <canvas id="booth-canvas" style="display:none;"></canvas>
+        <div class="vf-frame">
+          <span class="vf-tl"></span><span class="vf-tr"></span>
+          <span class="vf-bl"></span><span class="vf-br"></span>
+        </div>
         <div class="booth-countdown" id="boothCountdown"></div>
         <div class="booth-flash" id="boothFlash"></div>
       </div>
-      <div class="booth-denied" id="boothDenied"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="opacity:0.4;margin-bottom:12px;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg><p>Camera access denied. Please allow it in browser settings.</p><button class="btn-retry" onclick="boothStartCamera()">Try Again</button></div>
+      <div class="booth-denied" id="boothDenied">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="opacity:0.4;margin-bottom:12px;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        <p>Camera access was denied.<br>Please allow it in browser settings and try again.</p>
+        <button class="btn-retry" onclick="boothStartCamera()">Try Again</button>
+      </div>
       <p class="booth-hint" id="boothHint">Smile! Hit the button to capture your moment 📸</p>
       <div class="booth-controls">
-        <button class="booth-flip-btn" onclick="boothFlip()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg></button>
-        <button class="booth-shutter" id="shutterBtn" onclick="startCountdown()"><span class="shutter-ring"></span><span class="shutter-dot"></span></button>
+        <button class="booth-flip-btn" onclick="boothFlip()" title="Flip camera">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+        </button>
+        <button class="booth-shutter" id="shutterBtn" onclick="startCountdown()" aria-label="Take photo">
+          <span class="shutter-ring"></span>
+          <span class="shutter-dot"></span>
+        </button>
         <div style="width:48px;"></div>
       </div>
     </div>
-    <div class="booth-screen" id="screenPreview" style="display:none;">
-      <div class="booth-header"><p class="booth-tag">Your Capture</p><button class="booth-close-btn" onclick="closeBooth()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
-      <div class="preview-photo-wrap"><img id="previewImg" src="" alt="Your photo" class="preview-photo"/><div class="preview-stamp"><span class="stamp-date">Greeshma &amp; Vijesh · 29 April 2026</span></div></div>
-      <div class="preview-form">
-        <div class="pf-group"><label class="pf-label">Your Name</label><input type="text" id="guestName" class="pf-input" placeholder="e.g. Shushma Deepak" maxlength="60"></div>
-        <div class="pf-group"><label class="pf-label">A Message <span style="opacity:0.5;">(optional)</span></label><textarea id="guestMsg" class="pf-input pf-textarea" rows="2" maxlength="160"></textarea></div>
-      </div>
-      <div class="preview-actions"><button class="btn-retake" onclick="retakePhoto()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.75"/></svg>Retake</button><button class="btn-submit-photo" id="submitBtn" onclick="submitPhoto()">Upload Memory &nbsp; ✦</button></div>
+
+```
+<div class="booth-screen" id="screenPreview" style="display:none;">
+  <div class="booth-header">
+    <p class="booth-tag">Your Capture</p>
+    <button class="booth-close-btn" onclick="closeBooth()" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="preview-photo-wrap">
+    <img id="previewImg" src="" alt="Your photo" class="preview-photo"/>
+    <div class="preview-stamp">
+      <span class="stamp-date">Greeshma &amp; Vijesh · 29 April 2026</span>
     </div>
-    <div class="booth-screen" id="screenUploading" style="display:none;">
-      <div class="upload-state"><div class="upload-spinner"><svg width="60" height="60" viewBox="0 0 60 60" fill="none"><circle cx="30" cy="30" r="26" stroke="var(--cream-dark)" stroke-width="3"/><circle cx="30" cy="30" r="26" stroke="var(--saffron)" stroke-width="3" stroke-linecap="round" stroke-dasharray="40 124" class="spin-arc"/></svg></div><p class="upload-label">Sharing your memory…</p><div class="upload-bar-wrap"><div class="upload-bar" id="uploadBar"></div></div></div>
+  </div>
+  <div class="preview-form">
+    <div class="pf-group">
+      <label class="pf-label">Your Name</label>
+      <input type="text" id="guestName" class="pf-input" placeholder="e.g. Shushma Deepak" maxlength="60">
     </div>
-    <div class="booth-screen" id="screenSuccess" style="display:none;">
-      <div class="success-state"><div class="success-icon"><svg width="52" height="52" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="24" fill="var(--saffron)" opacity="0.12"/><circle cx="26" cy="26" r="24" stroke="var(--saffron)" stroke-width="1.5"/><polyline points="16,27 23,34 36,19" stroke="var(--saffron)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><p class="success-title">ಧನ್ಯವಾದಗಳು!</p><p class="success-body">Your memory has been added to the wedding gallery!</p><img id="successThumb" src="" alt="" class="success-thumb"/><div class="success-actions"><button class="btn-another" onclick="takeAnother()">Take Another</button><button class="btn-close-done" onclick="closeBooth()">Done</button></div></div>
+    <div class="pf-group">
+      <label class="pf-label">A Message for the couple <span style="opacity:0.5;">(optional)</span></label>
+      <textarea id="guestMsg" class="pf-input pf-textarea" placeholder="e.g. Wishing you both a lifetime of love and laughter 🌸" rows="2" maxlength="160"></textarea>
     </div>
+  </div>
+  <div class="preview-actions">
+    <button class="btn-retake" onclick="retakePhoto()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.75"/></svg>
+      Retake
+    </button>
+    <button class="btn-submit-photo" id="submitBtn" onclick="submitPhoto()">Upload Memory &nbsp; ✦</button>
   </div>
 </div>
 
-<script>
-/* ── 1. ENVELOPE ── */
-(function(){
-  const overlay=document.getElementById('envOverlay'),flapCont=document.getElementById('envFlapCont'),music=document.getElementById('weddingMusic');
-  flapCont.addEventListener('animationend',()=>{flapCont.style.visibility='hidden';});
-  function revealSite(){
-    overlay.classList.add('env-hide');
-    music.volume=0.13; music.play().catch(()=>{});
-    setTimeout(()=>{document.getElementById('themeSwitcher').classList.add('ts-visible');document.getElementById('musicControl').classList.add('mc-visible');},600);
-    setTimeout(()=>{overlay.style.display='none';document.body.style.overflow='';},1500);
-  }
-  document.body.style.overflow='hidden';
-  window._envTimer=setTimeout(revealSite,4500);
-  window.skipEnvelope=function(){clearTimeout(window._envTimer);revealSite();};
-})();
+<div class="booth-screen" id="screenUploading" style="display:none;">
+  <div class="upload-state">
+    <div class="upload-spinner">
+      <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+        <circle cx="30" cy="30" r="26" stroke="var(--cream-dark)" stroke-width="3"/>
+        <circle cx="30" cy="30" r="26" stroke="var(--saffron)" stroke-width="3" stroke-linecap="round" stroke-dasharray="40 124" class="spin-arc"/>
+      </svg>
+    </div>
+    <p class="upload-label">Sharing your memory…</p>
+    <div class="upload-bar-wrap"><div class="upload-bar" id="uploadBar"></div></div>
+  </div>
+</div>
 
-/* ── 2. THEME ── */
-let themePanelOpen=false;
-function toggleThemePanel(){themePanelOpen=!themePanelOpen;document.getElementById('themePanel').classList.toggle('ts-open',themePanelOpen);}
-function applyTheme(name){
-  const html=document.documentElement;
-  if(name==='traditional')html.removeAttribute('data-theme'); else html.setAttribute('data-theme',name);
-  ['trad','green','purple','navy','rose'].forEach(id=>{const b=document.getElementById('btn-'+id);if(b)b.classList.toggle('active',id===name||(id==='trad'&&name==='traditional'));});
-  document.getElementById('themePanel').classList.remove('ts-open'); themePanelOpen=false;
+<div class="booth-screen" id="screenSuccess" style="display:none;">
+  <div class="success-state">
+    <div class="success-icon">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="24" fill="var(--saffron)" opacity="0.12"/>
+        <circle cx="26" cy="26" r="24" stroke="var(--saffron)" stroke-width="1.5"/>
+        <polyline points="16,27 23,34 36,19" stroke="var(--saffron)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+    <p class="success-title">ಧನ್ಯವಾದಗಳು!</p>
+    <p class="success-body">Your memory has been added to the wedding gallery. Thank you for capturing this moment with us!</p>
+    <img id="successThumb" src="" alt="" class="success-thumb"/>
+    <div class="success-actions">
+      <button class="btn-another" onclick="takeAnother()">Take Another</button>
+      <button class="btn-close-done" onclick="closeBooth()">Done</button>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<style>
+/* ── Photo Booth Section ── */
+.photobooth-section { padding: 88px 20px; background: var(--cream-dark); position: relative; overflow: hidden; }
+.photobooth-section::before, .photobooth-section::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--saffron) 30%, var(--gold) 50%, var(--saffron) 70%, transparent);
+  opacity: 0.4;
 }
-document.addEventListener('click',e=>{const sw=document.getElementById('themeSwitcher');if(themePanelOpen&&sw&&!sw.contains(e.target)){document.getElementById('themePanel').classList.remove('ts-open');themePanelOpen=false;}});
+.photobooth-section::before { top: 0; }
+.photobooth-section::after  { bottom: 0; }
 
-/* ── 3. MUSIC ── */
-let musicPlaying=false;
-const music=document.getElementById('weddingMusic');
-function toggleMusic(){if(musicPlaying){music.pause();}else{music.volume=0.13;music.play().catch(()=>{});}}
-music.addEventListener('play',()=>{musicPlaying=true;document.getElementById('musicIconOn').style.display='';document.getElementById('musicIconOff').style.display='none';});
-music.addEventListener('pause',()=>{musicPlaying=false;document.getElementById('musicIconOn').style.display='none';document.getElementById('musicIconOff').style.display='';});
+.btn-booth-open {
+  margin-top: 36px; padding: 16px 44px;
+  background: var(--crimson); color: var(--cream-light);
+  border: none; cursor: pointer;
+  font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 12px;
+  transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+  position: relative; overflow: hidden;
+}
+.btn-booth-open::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,135,26,.18),transparent); pointer-events:none; }
+.btn-booth-open:hover { background: var(--crimson-light); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(122,21,24,.3); }
 
-/* ── 4. SCROLL PROGRESS ── */
-const progressBar=document.getElementById('scrollProgress');
-window.addEventListener('scroll',()=>{const pct=window.scrollY/(document.documentElement.scrollHeight-window.innerHeight)||0;progressBar.style.transform='scaleX('+pct+')';},{passive:true});
+.photo-wall-wrap { margin-top: 56px; }
+.photo-wall-label { font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--saffron); margin-bottom: 24px; }
+.photo-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; min-height: 80px; }
+.photo-wall-empty { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--text-mid); opacity: 0.55; }
+.wall-card { position: relative; overflow: hidden; border: 1px solid rgba(122,21,24,.1); background: var(--cream-light); animation: cardIn 0.5s cubic-bezier(.22,1,.36,1) both; cursor: pointer; }
+@keyframes cardIn { from { opacity:0; transform:scale(.92) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.wall-card img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+.wall-card-meta { padding: 10px 12px; border-top: 1px solid rgba(122,21,24,.08); }
+.wall-card-name { font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--crimson); margin-bottom:3px; }
+.wall-card-msg  { font-family:'Cormorant Garamond',serif; font-size:.88rem; font-style:italic; color:var(--text-mid); line-height:1.4; }
+.wall-card::before { content: '✦'; position:absolute; top:8px; right:8px; width:26px; height:26px; background:var(--saffron); border-radius:50%; font-size:10px; color:var(--cream-light); opacity:0.85; z-index:2; display:grid; place-items:center; }
 
-/* ── 5. MOUSE GLOW + SPARKLE TRAIL ── */
-const glowEl=document.getElementById('mouseGlow');
-const sparkleCanvas=document.getElementById('sparkleCanvas');
-const sparkleCtx=sparkleCanvas.getContext('2d');
-let sparkles=[],gX=0,gY=0,tX=0,tY=0;
-function resizeSparkle(){sparkleCanvas.width=window.innerWidth;sparkleCanvas.height=window.innerHeight;}
-window.addEventListener('resize',resizeSparkle);resizeSparkle();
-(function glowLoop(){gX+=(tX-gX)*0.07;gY+=(tY-gY)*0.07;glowEl.style.transform='translate('+(gX-170)+'px,'+(gY-170)+'px)';requestAnimationFrame(glowLoop);})();
-function addSparkles(x,y){for(let i=0;i<3;i++){const angle=Math.random()*Math.PI*2,speed=Math.random()*2.5+0.5;sparkles.push({x,y,vx:Math.cos(angle)*speed*0.7,vy:Math.sin(angle)*speed-1.5,size:Math.random()*3.5+0.8,life:1,color:Math.random()>0.4?'#c9871a':(Math.random()>0.5?'#e2a835':'#fdf6e3')});}}
-(function drawSparkles(){
-  sparkleCtx.clearRect(0,0,sparkleCanvas.width,sparkleCanvas.height);
-  sparkles=sparkles.filter(s=>s.life>0.02);
-  sparkles.forEach(s=>{
-    s.x+=s.vx;s.y+=s.vy;s.vy+=0.08;s.life-=0.028;
-    sparkleCtx.save();sparkleCtx.globalAlpha=Math.max(0,s.life*0.9);sparkleCtx.fillStyle=s.color;sparkleCtx.shadowBlur=8;sparkleCtx.shadowColor='#c9871a';
-    const sz=s.size;sparkleCtx.beginPath();sparkleCtx.moveTo(s.x,s.y-sz);sparkleCtx.lineTo(s.x+sz*0.45,s.y);sparkleCtx.lineTo(s.x,s.y+sz);sparkleCtx.lineTo(s.x-sz*0.45,s.y);sparkleCtx.closePath();sparkleCtx.fill();sparkleCtx.restore();
-  });
-  requestAnimationFrame(drawSparkles);
-})();
-let lastSparkleTime=0;
-document.addEventListener('mousemove',e=>{tX=e.clientX;tY=e.clientY;const now=Date.now();if(now-lastSparkleTime>35){addSparkles(e.clientX,e.clientY);lastSparkleTime=now;}});
+/* ── Booth Modal ── */
+.booth-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(10,2,2,0.94); backdrop-filter: blur(8px); align-items: flex-end; justify-content: center; }
+.booth-modal.open { display: flex; }
+.booth-shell { width: 100%; max-width: 480px; max-height: 96vh; background: var(--cream-light); border-top: 3px solid var(--saffron); overflow-y: auto; animation: sheetUp 0.42s cubic-bezier(.22,1,.36,1) both; position: relative; }
+@keyframes sheetUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+@media (min-width:600px) {
+  .booth-modal { align-items: center; }
+  .booth-shell { border-radius: 2px; max-height: 90vh; animation: modalPop .38s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes modalPop { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
+}
+.booth-screen { padding: 0 0 24px; }
+.booth-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 12px; border-bottom: 1px solid rgba(122,21,24,.1); position: sticky; top: 0; background: var(--cream-light); z-index: 10; }
+.booth-tag { font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.32em; text-transform:uppercase; color:var(--saffron); }
+.booth-close-btn { background:transparent; border:none; cursor:pointer; color:var(--text-mid); padding:4px; transition:color .2s; }
+.booth-close-btn:hover { color:var(--crimson); }
+.booth-viewfinder { position: relative; width: 100%; aspect-ratio: 1; background: #0a0101; overflow: hidden; }
+#booth-video { width:100%; height:100%; object-fit:cover; display:block; }
+.vf-frame span { position: absolute; width: 32px; height: 32px; border-color: var(--saffron); border-style: solid; opacity: 0.8; }
+.vf-frame .vf-tl { top:12px; left:12px;  border-width:2px 0 0 2px; }
+.vf-frame .vf-tr { top:12px; right:12px; border-width:2px 2px 0 0; }
+.vf-frame .vf-bl { bottom:12px; left:12px;  border-width:0 0 2px 2px; }
+.vf-frame .vf-br { bottom:12px; right:12px; border-width:0 2px 2px 0; }
+.booth-countdown { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 9rem; font-weight: 300; color: var(--cream-light); text-shadow: 0 4px 30px rgba(0,0,0,.6); pointer-events: none; opacity: 0; transition: opacity .15s; }
+.booth-countdown.active { opacity: 1; }
+.booth-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity .05s; }
+.booth-flash.flash { opacity: 1; }
+.booth-denied { display: none; padding: 40px 24px; text-align: center; font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--text-mid); font-size: 1rem; line-height: 1.7; }
+.btn-retry { margin-top: 16px; padding: 10px 24px; background: var(--crimson); color: var(--cream-light); border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: .63rem; letter-spacing: .2em; text-transform: uppercase; transition: background .25s; }
+.btn-retry:hover { background: var(--crimson-light); }
+.booth-hint { padding: 12px 24px 4px; font-family: 'Jost', sans-serif; font-size: .8rem; color: var(--text-mid); letter-spacing: .06em; text-align: center; }
+.booth-controls { display: flex; align-items: center; justify-content: space-between; padding: 20px 36px 8px; }
+.booth-flip-btn { width: 48px; height: 48px; border-radius: 50%; background: transparent; border: 1px solid rgba(122,21,24,.25); color: var(--text-mid); cursor: pointer; display: grid; place-items: center; transition: border-color .25s, color .25s; }
+.booth-flip-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+.booth-shutter { width: 74px; height: 74px; border-radius: 50%; background: var(--crimson); border: none; cursor: pointer; position: relative; display: grid; place-items: center; transition: transform .15s, box-shadow .25s; box-shadow: 0 6px 22px rgba(122,21,24,.35); }
+.booth-shutter:hover { transform: scale(1.06); box-shadow: 0 10px 30px rgba(122,21,24,.45); }
+.booth-shutter:active { transform: scale(.95); }
+.shutter-ring { position: absolute; inset: 5px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); }
+.shutter-dot { width: 40px; height: 40px; border-radius: 50%; background: var(--cream-light); opacity: .9; }
+.preview-photo-wrap { position: relative; margin: 20px 24px 0; }
+.preview-photo { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border: 1px solid rgba(122,21,24,.1); }
+.preview-stamp { background: var(--crimson); padding: 8px 16px; text-align: center; }
+.stamp-date { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .22em; text-transform: uppercase; color: var(--saffron-light); }
+.preview-form { padding: 20px 24px 8px; }
+.pf-group { margin-bottom: 18px; }
+.pf-label { display:block; font-family:'Cinzel',serif; font-size:.56rem; letter-spacing:.24em; text-transform:uppercase; color:var(--saffron); margin-bottom:7px; }
+.pf-input { width: 100%; border: none; border-bottom: 1px solid rgba(122,21,24,.22); background: transparent; padding: 8px 0; font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: var(--text-dark); outline: none; resize: none; transition: border-color .3s; }
+.pf-input:focus { border-bottom-color: var(--crimson); }
+.pf-textarea { line-height: 1.5; }
+.preview-actions { display: flex; gap: 12px; padding: 8px 24px; }
+.btn-retake { padding: 12px 20px; flex-shrink: 0; background: transparent; border: 1px solid rgba(122,21,24,.28); color: var(--text-mid); cursor: pointer; font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; display: flex; align-items: center; gap: 7px; transition: all .25s; }
+.btn-retake:hover { border-color: var(--crimson); color: var(--crimson); }
+.btn-submit-photo { flex: 1; padding: 12px 20px; background: var(--crimson); color: var(--cream-light); border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .25em; text-transform: uppercase; transition: background .25s, box-shadow .25s; position: relative; overflow: hidden; }
+.btn-submit-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,135,26,.18),transparent); pointer-events:none; }
+.btn-submit-photo:hover { background: var(--crimson-light); box-shadow: 0 6px 20px rgba(122,21,24,.28); }
+.btn-submit-photo:disabled { opacity: .5; cursor: default; }
+.upload-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 24px; gap: 20px; }
+.upload-spinner .spin-arc { animation: spinArc 1.1s linear infinite; transform-origin: center; }
+@keyframes spinArc { to { stroke-dashoffset: -164; } }
+.upload-label { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-style:italic; color:var(--text-mid); }
+.upload-bar-wrap { width:200px; height:3px; background:rgba(122,21,24,.12); border-radius:2px; overflow:hidden; }
+.upload-bar { height:100%; width:0%; background:var(--saffron); border-radius:2px; transition:width .3s ease; }
+.success-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 32px; text-align: center; gap: 16px; }
+.success-icon { animation: popIn .5s cubic-bezier(.22,1,.36,1) .1s both; }
+@keyframes popIn { from{opacity:0;transform:scale(.5)} to{opacity:1;transform:scale(1)} }
+.success-title { font-family:'Tiro Devanagari Sanskrit',serif; font-size:1.6rem; color:var(--saffron); }
+.success-body { font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-style:italic; color:var(--text-mid); line-height:1.7; max-width:320px; }
+.success-thumb { width:140px; height:140px; object-fit:cover; border:2px solid rgba(122,21,24,.15); }
+.success-actions { display:flex; gap:12px; margin-top:4px; }
+.btn-another { padding:12px 24px; background:transparent; border:1px solid rgba(122,21,24,.3); color:var(--text-mid); cursor:pointer; font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; transition:all .25s; }
+.btn-another:hover { border-color:var(--crimson); color:var(--crimson); }
+.btn-close-done { padding:12px 24px; background:var(--crimson); color:var(--cream-light); border:none; cursor:pointer; font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; transition:background .25s; }
+.btn-close-done:hover { background:var(--crimson-light); }
+</style>
 
-/* ── 6. HERO PARALLAX ── */
-const heroEl=document.getElementById('hero');
-let hx=0,hy=0,htx=0,hty=0;
-document.addEventListener('mousemove',e=>{
-  if(!heroEl)return;
-  const rect=heroEl.getBoundingClientRect();
-  if(e.clientY>=rect.top&&e.clientY<=rect.bottom+100){htx=((e.clientX-rect.left)/rect.width-0.5)*2;hty=((e.clientY-rect.top)/rect.height-0.5)*2;}
+<script>
+/* ═══════════════════════════════════════════════════════
+   ENVELOPE OPEN LOGIC
+═══════════════════════════════════════════════════════ */
+let envOpened = false;
+const overlay = document.getElementById('envelope-overlay');
+
+// Compute triangle folds based on actual rendered size
+function sizeEnvFolds() {
+  const body = document.getElementById('env-body');
+  const w = body.offsetWidth;
+  const h = body.offsetHeight;
+  // Already using SVG viewBox — no dynamic sizing needed
+}
+
+function spawnGoldParticles() {
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'env-particle';
+    const sz    = Math.random() * 8 + 3;
+    const delay = Math.random() * 1.0;
+    const dur   = 1.5 + Math.random() * 2;
+    // Bias particles around centre of screen
+    p.style.cssText = `
+      width: ${sz}px;
+      height: ${sz}px;
+      left: ${25 + Math.random() * 50}vw;
+      top: ${40 + Math.random() * 22}vh;
+      animation-duration: ${dur}s;
+      animation-delay: ${delay}s;
+      background: ${Math.random() > 0.5 ? '#c9871a' : '#e2a835'};
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), (dur + delay + 0.5) * 1000);
+  }
+}
+
+function openEnvelope() {
+  if (envOpened) return;
+  envOpened = true;
+
+  const wrap = document.getElementById('env-wrap');
+  wrap.classList.add('env-opened');
+
+  // Start audio
+  const audio = document.getElementById('weddingAudio');
+  if (audio) {
+    audio.volume = 0.08;
+    audio.play().catch(() => {}); // graceful fail if autoplay blocked
+  }
+
+  // Gold particle burst
+  spawnGoldParticles();
+
+  // After animation, fade out overlay and restore scroll
+  setTimeout(() => {
+    overlay.classList.add('fading');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      document.body.classList.remove('envelope-active');
+    }, 1300);
+  }, 1800);
+}
+
+document.getElementById('env-wrap').addEventListener('click', openEnvelope);
+document.addEventListener('keydown', e => {
+  if (!envOpened && (e.key === ' ' || e.key === 'Enter')) openEnvelope();
 });
-(function parallaxLoop(){
-  hx+=(htx-hx)*0.055;hy+=(hty-hy)*0.055;
-  document.querySelectorAll('[data-depth]').forEach(el=>{
-    const d=parseFloat(el.getAttribute('data-depth'))*18;
-    const base='translate('+(hx*-d)+'px,'+(hy*-d)+'px)';
-    const extra=el.style.transform.includes('scale')?el.style.transform.replace(/translate\([^)]+\)/,'').trim():'';
-    el.style.transform=base+(extra?' '+extra:'');
-  });
-  requestAnimationFrame(parallaxLoop);
-})();
 
-/* ── 7. 3D MANDALA ── */
-(function buildMandala(){
-  const NS='http://www.w3.org/2000/svg',svg=document.getElementById('mandalaSvg');
-  if(!svg)return;
-  const rings=[{n:16,r:185,r2:166,speed:72,rev:false},{n:12,r:144,r2:125,speed:48,rev:true},{n:8,r:104,r2:84,speed:30,rev:false},{n:8,r:64,r2:46,speed:18,rev:true},{n:6,r:27,r2:14,speed:9,rev:false}];
-  rings.forEach(({n,r,r2,speed,rev},idx)=>{
-    const op=0.15+idx*0.045,g=document.createElementNS(NS,'g');
-    g.style.cssText='animation:mRot '+speed+'s linear infinite '+(rev?'reverse':'')+';transform-origin:0 0;';
-    const c1=document.createElementNS(NS,'circle');c1.setAttribute('r',r);c1.setAttribute('fill','none');c1.setAttribute('stroke','rgba(201,135,26,'+op+')');c1.setAttribute('stroke-width','0.7');g.appendChild(c1);
-    const c2=document.createElementNS(NS,'circle');c2.setAttribute('r',r2);c2.setAttribute('fill','none');c2.setAttribute('stroke','rgba(201,135,26,'+(op*0.55)+')');c2.setAttribute('stroke-width','0.4');c2.setAttribute('stroke-dasharray','3 5');g.appendChild(c2);
-    const hw=r*0.044;
-    for(let i=0;i<n;i++){
-      const sub=document.createElementNS(NS,'g');sub.setAttribute('transform','rotate('+(360*i/n).toFixed(2)+')');
-      const path=document.createElementNS(NS,'path');
-      const tip=-(r+4),base2=-r2,mid=-(r2+(r-r2)*0.42);
-      path.setAttribute('d','M 0,'+tip+' L '+(-hw)+','+base2+' L 0,'+mid+' L '+hw+','+base2+' Z');
-      path.setAttribute('fill','rgba(201,135,26,'+(op*1.3)+')');sub.appendChild(path);
-      const dot=document.createElementNS(NS,'circle');dot.setAttribute('cx','0');dot.setAttribute('cy',''+base2);dot.setAttribute('r','1.2');dot.setAttribute('fill','rgba(201,135,26,'+(op*0.8)+')');sub.appendChild(dot);
-      g.appendChild(sub);
-    }
-    svg.appendChild(g);
-  });
-  const center=document.createElementNS(NS,'g');center.style.cssText='animation:mRot 18s linear infinite;transform-origin:0 0;';
-  for(let i=0;i<8;i++){const angle=(Math.PI*2*i)/8,px=(11*Math.cos(angle)).toFixed(2),py=(11*Math.sin(angle)).toFixed(2),petal=document.createElementNS(NS,'ellipse');petal.setAttribute('cx',px);petal.setAttribute('cy',py);petal.setAttribute('rx','4.5');petal.setAttribute('ry','10');petal.setAttribute('transform','rotate('+(45*i).toFixed(1)+','+px+','+py+')');petal.setAttribute('fill','none');petal.setAttribute('stroke','rgba(201,135,26,0.48)');petal.setAttribute('stroke-width','0.8');center.appendChild(petal);}
-  const cd=document.createElementNS(NS,'circle');cd.setAttribute('r','5.5');cd.setAttribute('fill','rgba(201,135,26,0.45)');center.appendChild(cd);
-  const cd2=document.createElementNS(NS,'circle');cd2.setAttribute('r','2.8');cd2.setAttribute('fill','rgba(122,21,24,0.65)');center.appendChild(cd2);
-  svg.appendChild(center);
-})();
-
-/* ── 8. GOLD DUST ── */
-(function initGoldDust(){
-  const hero=document.getElementById('hero'),canvas=document.getElementById('goldDustCanvas');if(!hero||!canvas)return;
-  const ctx=canvas.getContext('2d');let particles=[],W,H;
-  function resize(){W=canvas.width=hero.offsetWidth;H=canvas.height=hero.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  function spawn(){particles.push({x:Math.random()*W,y:H+10,vx:(Math.random()-0.5)*0.45,vy:-(Math.random()*1.2+0.3),r:Math.random()*1.8+0.4,life:1});}
-  (function draw(){ctx.clearRect(0,0,W,H);if(Math.random()<0.28)spawn();particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.003;ctx.save();ctx.globalAlpha=Math.max(0,p.life*0.55);ctx.fillStyle='#c9871a';ctx.shadowBlur=7;ctx.shadowColor='#c9871a';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore();});requestAnimationFrame(draw);})();
-})();
-
-/* ── 9. RSVP CARD TILT ── */
+/* ═══════════════════════════════════════════════════════
+   CHERRY BLOSSOM PETALS
+═══════════════════════════════════════════════════════ */
 (function(){
-  const card=document.getElementById('rsvpCard');if(!card)return;
-  card.addEventListener('mousemove',e=>{const rect=card.getBoundingClientRect(),cx=rect.width/2,cy=rect.height/2,mx=e.clientX-rect.left,my=e.clientY-rect.top,rx=((my-cy)/cy)*-10,ry=((mx-cx)/cx)*10;card.style.transform='perspective(900px) rotateX('+rx+'deg) rotateY('+ry+'deg) translateZ(10px)';card.style.transition='transform 0.08s ease-out';});
-  card.addEventListener('mouseleave',()=>{card.style.transform='';card.style.transition='transform 0.55s cubic-bezier(0.22,1,0.36,1)';});
-})();
-
-/* ── 10. RIPPLE ── */
-document.addEventListener('click',e=>{
-  const btn=e.target.closest('.btn-rsvp,.btn-booth-open,.btn-submit-photo,.btn-close-done');if(!btn)return;
-  const rect=btn.getBoundingClientRect(),size=Math.max(rect.width,rect.height)*1.2;
-  const ripple=document.createElement('span');ripple.className='ripple-effect';ripple.style.cssText='width:'+size+'px;height:'+size+'px;left:'+(e.clientX-rect.left-size/2)+'px;top:'+(e.clientY-rect.top-size/2)+'px;';
-  btn.appendChild(ripple);setTimeout(()=>ripple.remove(),700);
-});
-
-/* ── 11. DETAIL ITEMS REVEAL ── */
-(function(){
-  const grid=document.getElementById('detailsGrid');if(!grid)return;
-  new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.detail-item').forEach((item,i)=>{setTimeout(()=>item.classList.add('item-visible'),i*160+150);});observer.unobserve(e.target);}});},{threshold:0.25}).observe(grid);
-  var observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.detail-item').forEach((item,i)=>{setTimeout(()=>item.classList.add('item-visible'),i*160+150);});}});},{threshold:0.25});observer.observe(grid);
-})();
-
-/* ── 12. TIMELINE REVEAL ── */
-(function(){
-  const tl=document.getElementById('timeline');if(!tl)return;
-  new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.timeline-item').forEach((item,i)=>{setTimeout(()=>item.classList.add('tl-visible'),i*110);});}});},{threshold:0.1}).observe(tl);
-})();
-
-/* ── 13. FOOTER STARS ── */
-(function(){
-  const footer=document.getElementById('siteFooter');if(!footer)return;
-  for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';const sz=Math.random()*2.5+0.5;s.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;position:absolute;--dur:'+(Math.random()*3+2).toFixed(1)+'s;--del:'+(Math.random()*4).toFixed(1)+'s;';footer.appendChild(s);}
-})();
-
-/* ── 14. PETALS ── */
-(function(){
-  const container=document.getElementById('petals');
-  const fills=[['#d4869a','#c4748a'],['#e8bfc8','#d4a0b0'],['#c97a90','#b86278'],['#f0d0d8','#e0b0bc'],['#b85e76','#9a4a60']];
-  function petalPath(w,h){const hw=w/2;return'M 0,'+(h*.9)+' C '+(-hw*.5)+','+(h*.6)+' '+(-hw)+','+(h*.3)+' '+(-hw*.85)+',0 C '+(-hw*.7)+','+(- h*.25)+' '+(-hw*.3)+','+(- h*.32)+' 0,'+(- h*.18)+' C '+(hw*.3)+','+(- h*.32)+' '+(hw*.7)+','+(- h*.25)+' '+(hw*.85)+',0 C '+hw+','+(h*.3)+' '+(hw*.5)+','+(h*.6)+' 0,'+(h*.9)+' Z';}
-  function stamens(h){return[-25,-12,0,12,25].map(a=>{const r=a*Math.PI/180,len=h*.28;return'<line x1="0" y1="'+(h*.05)+'" x2="'+(Math.sin(r)*len).toFixed(2)+'" y2="'+(h*.05-Math.cos(r)*len*.5).toFixed(2)+'" stroke="rgba(109,26,42,0.35)" stroke-width="0.5" stroke-linecap="round"/>';}).join('');}
+  const container = document.getElementById('petals');
+  const fills = [['#d4869a','#c4748a'],['#e8bfc8','#d4a0b0'],['#c97a90','#b86278'],['#f0d0d8','#e0b0bc'],['#b85e76','#9a4a60']];
+  function petalPath(w,h){ const hw=w/2; return `M 0,${h*.9} C ${-hw*.5},${h*.6} ${-hw},${h*.3} ${-hw*.85},0 C ${-hw*.7},${-h*.25} ${-hw*.3},${-h*.32} 0,${-h*.18} C ${hw*.3},${-h*.32} ${hw*.7},${-h*.25} ${hw*.85},0 C ${hw},${h*.3} ${hw*.5},${h*.6} 0,${h*.9} Z`; }
+  function stamens(h){ return [-25,-12,0,12,25].map(a=>{ const r=a*Math.PI/180,len=h*.28; return `<line x1="0" y1="${h*.05}" x2="${(Math.sin(r)*len).toFixed(2)}" y2="${(h*.05-Math.cos(r)*len*.5).toFixed(2)}" stroke="rgba(109,26,42,0.35)" stroke-width="0.5" stroke-linecap="round"/>`; }).join(''); }
   for(let i=0;i<28;i++){
-    const w=10+Math.random()*14,h=w*(1.1+Math.random()*.3),[f1,f2]=fills[Math.floor(Math.random()*fills.length)];
-    const gid='pg'+i,rot=Math.random()*360,dur=12+Math.random()*18,del=Math.random()*22,left=Math.random()*105-2,sway=(20+Math.random()*40)*(Math.random()>.5?1:-1);
-    const vb=w+4,svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('width',vb);svg.setAttribute('height',h+4);svg.setAttribute('viewBox',(- vb/2)+' '+(- h*.1)+' '+vb+' '+(h+4));svg.style.overflow='visible';
-    svg.innerHTML='<defs><radialGradient id="'+gid+'" cx="40%" cy="35%" r="65%"><stop offset="0%" stop-color="'+f1+'"/><stop offset="100%" stop-color="'+f2+'"/></radialGradient></defs><g transform="rotate('+rot+')"><path d="'+petalPath(w,h)+'" fill="url(#'+gid+')" stroke="'+f2+'" stroke-width="0.4"/>'+stamens(h)+'<circle cx="0" cy="'+(h*.05)+'" r="'+(w*.06)+'" fill="rgba(184,150,90,0.5)"/></g>';
-    const wrap=document.createElement('div');wrap.className='blossom';wrap.style.cssText='left:'+left+'vw;animation-duration:'+dur+'s;animation-delay:-'+del+'s;--sway:'+sway+'px;';
-    wrap.appendChild(svg);container.appendChild(wrap);
+    const w=10+Math.random()*14, h=w*(1.1+Math.random()*.3);
+    const [f1,f2]=fills[Math.floor(Math.random()*fills.length)];
+    const gid=`pg${i}`, rot=Math.random()*360;
+    const dur=12+Math.random()*18, del=Math.random()*22;
+    const left=Math.random()*105-2, sway=(20+Math.random()*40)*(Math.random()>.5?1:-1);
+    const vb=w+4, svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width',vb); svg.setAttribute('height',h+4);
+    svg.setAttribute('viewBox',`${-vb/2} ${-h*.1} ${vb} ${h+4}`);
+    svg.style.overflow='visible';
+    svg.innerHTML=`<defs><radialGradient id="${gid}" cx="40%" cy="35%" r="65%"><stop offset="0%" stop-color="${f1}"/><stop offset="100%" stop-color="${f2}"/></radialGradient></defs><g transform="rotate(${rot})"><path d="${petalPath(w,h)}" fill="url(#${gid})" stroke="${f2}" stroke-width="0.4"/>${stamens(h)}<circle cx="0" cy="${h*.05}" r="${w*.06}" fill="rgba(184,150,90,0.5)"/></g>`;
+    const wrap=document.createElement('div');
+    wrap.className='blossom';
+    wrap.style.cssText=`left:${left}vw;animation-duration:${dur}s;animation-delay:-${del}s;--sway:${sway}px;`;
+    wrap.appendChild(svg); container.appendChild(wrap);
   }
+  const st=document.createElement('style');
+  st.textContent=`@keyframes blossomFall{0%{opacity:0;transform:translateY(0) translateX(0) rotate(0deg) scale(1)}4%{opacity:.75}28%{transform:translateY(26vh) translateX(calc(var(--sway)*.4)) rotate(110deg) scale(.97)}55%{transform:translateY(55vh) translateX(calc(var(--sway)*-.3)) rotate(240deg) scale(1.03)}80%{transform:translateY(82vh) translateX(calc(var(--sway)*.6)) rotate(380deg) scale(.95)}92%{opacity:.45}100%{opacity:0;transform:translateY(112vh) translateX(calc(var(--sway)*.1)) rotate(490deg) scale(.88)}}`;
+  document.head.appendChild(st);
+})();
 
-  function boothStopCamera() {
-    if (boothStream) { boothStream.getTracks().forEach(t=>t.stop()); boothStream=null; }
-    boothVid.srcObject = null;
-  }
+/* ═══════════════════════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════════════════════ */
+const revEls = document.querySelectorAll('.reveal');
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); revObs.unobserve(e.target); } });
+}, { threshold: .12 });
+revEls.forEach(el => revObs.observe(el));
 
-  function boothFlip() {
-    boothFacing = boothFacing==='environment' ? 'user' : 'environment';
-    boothStartCamera();
-  }
+/* ═══════════════════════════════════════════════════════
+   RSVP
+═══════════════════════════════════════════════════════ */
+function handleRsvp(e) {
+  e.preventDefault();
+  const msg = document.getElementById('rsvp-msg');
+  msg.style.display = 'block';
+  msg.textContent = 'ಧನ್ಯವಾದಗಳು — Thank you! We look forward to your blessings and presence. 🌸';
+  e.target.style.opacity = '.45'; e.target.style.pointerEvents = 'none';
+}
 
-  /* ── Countdown ── */
-  function startCountdown() {
-    document.getElementById('shutterBtn').disabled = true;
-    let count = 3;
-    boothCountdown.textContent = count;
-    boothCountdown.classList.add('active');
+/* ═══════════════════════════════════════════════════════
+   PHOTO WALL
+═══════════════════════════════════════════════════════ */
+const photoCache = [];
 
-    const tick = () => {
-      count--;
-      if (count > 0) {
-        boothCountdown.textContent = count;
-        countdownTimer = setTimeout(tick, 1000);
-      } else {
-        boothCountdown.textContent = '';
-        boothCountdown.classList.remove('active');
-        capturePhoto();
-      }
-    };
-    countdownTimer = setTimeout(tick, 1000);
-  }
+async function loadPhotoWall() {
+  renderWall(photoCache);
+}
 
-  /* ── Capture ── */
-  function capturePhoto() {
-    // Flash effect
-    boothFlashEl.classList.add('flash');
-    setTimeout(() => boothFlashEl.classList.remove('flash'), 150);
+function renderWall(photos) {
+  const wall  = document.getElementById('photoWall');
+  const empty = document.getElementById('photoWallEmpty');
+  wall.querySelectorAll('.wall-card').forEach(c => c.remove());
+  if (!photos.length) { empty.style.display='flex'; return; }
+  empty.style.display = 'none';
+  photos.slice().reverse().forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'wall-card';
+    card.innerHTML = `<img src="${p.url}" alt="${p.guest_name}" loading="lazy">
+      <div class="wall-card-meta">
+        <p class="wall-card-name">${p.guest_name || 'A Guest'}</p>
+        ${p.message ? `<p class="wall-card-msg">${p.message}</p>` : ''}
+      </div>`;
+    wall.appendChild(card);
+  });
+}
 
-    const vw = boothVid.videoWidth  || boothVid.clientWidth;
-    const vh = boothVid.videoHeight || boothVid.clientHeight;
-    const size = Math.min(vw, vh);
-    const ox = (vw - size) / 2;
-    const oy = (vh - size) / 2;
+/* ═══════════════════════════════════════════════════════
+   PHOTO BOOTH
+═══════════════════════════════════════════════════════ */
+let boothStream = null, boothFacing = 'environment', capturedDataUrl = null, countdownTimer = null;
+const boothModal = document.getElementById('boothModal');
+const boothVid   = document.getElementById('booth-video');
+const boothCanvas= document.getElementById('booth-canvas');
+const boothCountdown = document.getElementById('boothCountdown');
+const boothFlashEl   = document.getElementById('boothFlash');
+const boothDenied    = document.getElementById('boothDenied');
+const boothViewfinder= document.getElementById('boothViewfinder');
+const boothHint      = document.getElementById('boothHint');
+const boothCtx       = boothCanvas.getContext('2d');
 
-    boothCanvas.width  = size;
-    boothCanvas.height = size;
-    boothCtx.drawImage(boothVid, ox, oy, size, size, 0, 0, size, size);
+function showScreen(id) {
+  ['screenViewfinder','screenPreview','screenUploading','screenSuccess']
+    .forEach(s => document.getElementById(s).style.display = s===id ? 'block' : 'none');
+}
 
-    capturedDataUrl = boothCanvas.toDataURL('image/jpeg', 0.88);
-    boothStopCamera();
-
-    document.getElementById('previewImg').src    = capturedDataUrl;
-    document.getElementById('successThumb').src  = capturedDataUrl;
-    showScreen('screenPreview');
-  }
-
-  function retakePhoto() {
-    capturedDataUrl = null;
-    document.getElementById('guestName').value = '';
-    document.getElementById('guestMsg').value  = '';
-    showScreen('screenViewfinder');
-    boothStartCamera();
-  }
-
-  /* ── Upload ── */
-  async function submitPhoto() {
-    const name = document.getElementById('guestName').value.trim() || 'A Guest';
-    const msg  = document.getElementById('guestMsg').value.trim();
-    const btn  = document.getElementById('submitBtn');
-    btn.disabled = true;
-
-    showScreen('screenUploading');
-
-    // Animate progress bar for UX
-    let pct = 0;
-    const bar = document.getElementById('uploadBar');
-    const prog = setInterval(() => { pct = Math.min(pct + Math.random()*18, 88); bar.style.width = pct + '%'; }, 220);
-
-    try {
-      // ── Convert dataURL → Blob for FormData ──────────────────────────────
-      const blob = await (await fetch(capturedDataUrl)).blob();
-      const filename = `wedding_${Date.now()}.jpg`;
-      const fd = new FormData();
-      fd.append('image',      blob, filename);
-      fd.append('guest_name', name);
-      fd.append('message',    msg);
-      fd.append('taken_at',   new Date().toISOString());
-
-      // ── HOOK: Your API endpoint ──────────────────────────────────────────
-      // const res  = await fetch('/api/photos', { method:'POST', body: fd });
-      // const data = await res.json();   // expect { id, url }
-      // const imageUrl = data.url;
-      //
-      // ── STORAGE OPTIONS (choose one, see notes below) ────────────────────
-      // Option A — Supabase Storage (RECOMMENDED if you're already on Postgres):
-      //   const { data:upload } = await supabase.storage.from('wedding-photos').upload(filename, blob);
-      //   const { data:{publicUrl} } = supabase.storage.from('wedding-photos').getPublicUrl(upload.path);
-      //   then INSERT into your `wedding_photos` table via supabase.from('wedding_photos').insert({...})
-      //
-      // Option B — Cloudinary (best auto-optimisation + CDN):
-      //   fd.append('upload_preset', 'YOUR_PRESET');
-      //   const r = await fetch('https://api.cloudinary.com/v1_1/YOUR_CLOUD/image/upload', {method:'POST',body:fd});
-      //   const { secure_url } = await r.json();
-      //
-      // Option C — AWS S3 presigned URL (enterprise):
-      //   1. GET /api/presign → { upload_url, public_url }
-      //   2. PUT upload_url with blob body
-      //   3. POST /api/photos with { public_url, guest_name, message }
-      // ─────────────────────────────────────────────────────────────────────
-
-      // ── DEMO: store in memory & show locally ──────────────────────────────
-      await new Promise(r => setTimeout(r, 1600)); // simulate network
-      const imageUrl = capturedDataUrl;             // <-- replace with real URL
-      photoCache.push({ id: Date.now(), url: imageUrl, guest_name: name, message: msg });
-      // ─────────────────────────────────────────────────────────────────────
-
-      clearInterval(prog);
-      bar.style.width = '100%';
-      await new Promise(r => setTimeout(r, 200));
-
-      showScreen('screenSuccess');
-      loadPhotoWall();   // refresh the wall
-    } catch(err) {
-      clearInterval(prog);
-      showScreen('screenPreview');
-      btn.disabled = false;
-      alert('Upload failed: ' + err.message + '\nPlease try again.');
-    }
-  }
-
-  function takeAnother() {
-    capturedDataUrl = null;
-    document.getElementById('guestName').value = '';
-    document.getElementById('guestMsg').value  = '';
-    document.getElementById('uploadBar').style.width = '0%';
-    showScreen('screenViewfinder');
-    boothStartCamera();
-  }
-
-  /* ── Escape key / backdrop ── */
-  boothModal.addEventListener('click', e => { if(e.target===boothModal) closeBooth(); });
-  document.addEventListener('keydown', e => { if(e.key==='Escape') closeBooth(); });
-
-  /* ── Load wall on page ready ── */
+function openBooth() {
+  boothModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  showScreen('screenViewfinder');
+  boothStartCamera();
   loadPhotoWall();
-  
-  
-    /* ─── SCROLL REVEAL ─── */
-  const revEls = document.querySelectorAll('.reveal');
-  const revObs = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  revEls.forEach(el => revObs.observe(el));
+}
 
+function closeBooth() {
+  boothStopCamera();
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer=null; }
+  boothModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
 
-  /* ─── THEME SWITCHER ─── */
-  function setTheme(themeName) {
-    // Remove existing theme classes
-    document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
-    if (themeName !== 'default') {
-      document.body.classList.add('theme-' + themeName);
-    }
+async function boothStartCamera() {
+  boothStopCamera();
+  boothDenied.style.display = 'none';
+  boothViewfinder.style.display = 'block';
+  boothHint.style.display = 'block';
+  document.getElementById('shutterBtn').disabled = false;
+  try {
+    boothStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: boothFacing, width:{ideal:1280}, height:{ideal:1280} }, audio: false });
+    boothVid.srcObject = boothStream;
+    await boothVid.play();
+  } catch(err) {
+    boothStopCamera();
+    if (err.name==='NotAllowedError' || err.name==='PermissionDeniedError') {
+      boothViewfinder.style.display = 'none';
+      boothHint.style.display = 'none';
+      boothDenied.style.display = 'flex';
+    } else { boothHint.textContent = 'Camera error: ' + err.message; }
   }
+}
 
-  /* ─── ENVELOPE OVERLAY & AUDIO PLAY ─── */
-  const envelope = document.getElementById('envelope-overlay');
-  const bgAudio = document.getElementById('bg-music');
-  
-  // Set background music to a very low volume
-  bgAudio.volume = 0.15; 
+function boothStopCamera() {
+  if (boothStream) { boothStream.getTracks().forEach(t=>t.stop()); boothStream=null; }
+  boothVid.srcObject = null;
+}
 
-  function openEnvelope() {
-    if (envelope.classList.contains('is-open')) return;
-    
-    // Trigger animation
-    envelope.classList.add('is-open');
-    
-    // Unlock scrolling after animation clears the screen
-    setTimeout(() => { document.body.classList.remove('locked'); }, 1500);
+function boothFlip() { boothFacing = boothFacing==='environment' ? 'user' : 'environment'; boothStartCamera(); }
 
-    // Play music. Using .catch() suppresses console errors if the browser blocks it for any strict policy reason.
-    bgAudio.play().catch(e => console.log("Audio play deferred by browser policy."));
+function startCountdown() {
+  document.getElementById('shutterBtn').disabled = true;
+  let count = 3;
+  boothCountdown.textContent = count;
+  boothCountdown.classList.add('active');
+  const tick = () => {
+    count--;
+    if (count > 0) { boothCountdown.textContent = count; countdownTimer = setTimeout(tick, 1000); }
+    else { boothCountdown.textContent = ''; boothCountdown.classList.remove('active'); capturePhoto(); }
+  };
+  countdownTimer = setTimeout(tick, 1000);
+}
+
+function capturePhoto() {
+  boothFlashEl.classList.add('flash');
+  setTimeout(() => boothFlashEl.classList.remove('flash'), 150);
+  const vw = boothVid.videoWidth || boothVid.clientWidth;
+  const vh = boothVid.videoHeight || boothVid.clientHeight;
+  const size = Math.min(vw, vh);
+  const ox = (vw - size) / 2, oy = (vh - size) / 2;
+  boothCanvas.width = size; boothCanvas.height = size;
+  boothCtx.drawImage(boothVid, ox, oy, size, size, 0, 0, size, size);
+  capturedDataUrl = boothCanvas.toDataURL('image/jpeg', 0.88);
+  boothStopCamera();
+  document.getElementById('previewImg').src   = capturedDataUrl;
+  document.getElementById('successThumb').src = capturedDataUrl;
+  showScreen('screenPreview');
+}
+
+function retakePhoto() {
+  capturedDataUrl = null;
+  document.getElementById('guestName').value = '';
+  document.getElementById('guestMsg').value  = '';
+  showScreen('screenViewfinder');
+  boothStartCamera();
+}
+
+async function submitPhoto() {
+  const name = document.getElementById('guestName').value.trim() || 'A Guest';
+  const msg  = document.getElementById('guestMsg').value.trim();
+  const btn  = document.getElementById('submitBtn');
+  btn.disabled = true;
+  showScreen('screenUploading');
+  let pct = 0;
+  const bar = document.getElementById('uploadBar');
+  const prog = setInterval(() => { pct = Math.min(pct + Math.random()*18, 88); bar.style.width = pct + '%'; }, 220);
+  try {
+    // ── HOOK: Replace with your real API ──────────────────────────────────
+    await new Promise(r => setTimeout(r, 1600));
+    const imageUrl = capturedDataUrl;
+    photoCache.push({ id: Date.now(), url: imageUrl, guest_name: name, message: msg });
+    // ─────────────────────────────────────────────────────────────────────
+    clearInterval(prog);
+    bar.style.width = '100%';
+    await new Promise(r => setTimeout(r, 200));
+    showScreen('screenSuccess');
+    loadPhotoWall();
+  } catch(err) {
+    clearInterval(prog);
+    showScreen('screenPreview');
+    btn.disabled = false;
+    alert('Upload failed: ' + err.message);
   }
+}
 
-  // Listen for Scroll, Swipe, or Click to open the envelope
-  window.addEventListener('wheel', openEnvelope, { once: true });
-  window.addEventListener('touchstart', openEnvelope, { once: true });
-  envelope.addEventListener('click', openEnvelope, { once: true });
+function takeAnother() {
+  capturedDataUrl = null;
+  document.getElementById('guestName').value = '';
+  document.getElementById('guestMsg').value  = '';
+  document.getElementById('uploadBar').style.width = '0%';
+  showScreen('screenViewfinder');
+  boothStartCamera();
+}
+
+boothModal.addEventListener('click', e => { if(e.target===boothModal) closeBooth(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeBooth(); });
+loadPhotoWall();
 </script>
+
+<!-- Wedding audio — place tulasi.mp3 in same folder -->
+
+<audio id="weddingAudio" loop preload="none">
+  <source src="tulasi.mp3" type="audio/mpeg">
+</audio>
 
 </body>
 </html>
