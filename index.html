@@ -43,6 +43,104 @@ opacity: 0.055;
 
 .page { position: relative; z-index: 1; }
 
+
+
+4a192c; }
+
+  /* ─── ENVELOPE OVERLAY ─── */
+  body.locked { overflow: hidden; height: 100vh; }
+  .envelope-overlay {
+    position: fixed; inset: 0; z-index: 99999;
+    background: var(--cream-dark);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: transform 1.2s cubic-bezier(0.6, 0.05, 0.15, 0.95) 1.5s, opacity 1s ease-in-out 1.5s;
+  }
+  .envelope-overlay::before {
+    content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 10 L70 40 L40 70 L10 40 Z' fill='none' stroke='rgba(0,0,0,0.03)' stroke-width='1'/%3E%3C/svg%3E");
+    opacity: 0.5;
+  }
+  .envelope-overlay.is-open {
+    transform: translateY(-100vh); opacity: 0; pointer-events: none;
+  }
+  .envelope-wrapper {
+    position: relative; width: min(85vw, 420px); height: 260px;
+    cursor: pointer; perspective: 1000px; z-index: 2;
+  }
+  .env-back {
+    position: absolute; inset: 0; background: var(--cream);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--cream-dark);
+  }
+  .env-letter {
+    position: absolute; left: 15px; right: 15px; top: 15px; bottom: 15px;
+    background: var(--cream-light); border: 1px solid var(--saffron);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: transform 1s ease-in-out 0.6s; z-index: 1;
+  }
+  .env-letter p {
+    font-family: 'Cormorant Garamond', serif; font-size: 2rem;
+    color: var(--crimson); margin: 0; line-height: 1;
+  }
+  .env-letter span {
+    font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.2em;
+    color: var(--saffron); margin-top: 8px; text-transform: uppercase;
+  }
+  .envelope-overlay.is-open .env-letter { transform: translateY(-80px); }
+  
+  .env-front-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+    width: 0; height: 0;
+    border-left: min(42.5vw, 210px) solid transparent;
+    border-right: min(42.5vw, 210px) solid transparent;
+    border-bottom: 150px solid var(--cream-dark);
+    filter: drop-shadow(0 -4px 4px rgba(0,0,0,0.03));
+  }
+  .env-front-left {
+    position: absolute; top: 0; bottom: 0; left: 0; z-index: 2;
+    width: 0; height: 0;
+    border-top: 130px solid transparent; border-bottom: 130px solid transparent;
+    border-left: min(42.5vw, 210px) solid var(--cream);
+  }
+  .env-front-right {
+    position: absolute; top: 0; bottom: 0; right: 0; z-index: 2;
+    width: 0; height: 0;
+    border-top: 130px solid transparent; border-bottom: 130px solid transparent;
+    border-right: min(42.5vw, 210px) solid var(--cream);
+  }
+  .env-flap-top {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+    width: 0; height: 0;
+    border-left: min(42.5vw, 210px) solid transparent;
+    border-right: min(42.5vw, 210px) solid transparent;
+    border-top: 145px solid var(--saffron-light); /* Golden Flap */
+    transform-origin: top; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+  }
+  .envelope-overlay.is-open .env-flap-top {
+    transform: rotateX(180deg); z-index: 0; filter: none;
+  }
+  .env-wax-seal {
+    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    width: 46px; height: 46px; background: var(--crimson); border-radius: 50%;
+    z-index: 4; display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
+    font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--saffron-light);
+    transition: opacity 0.4s ease 0.2s;
+  }
+  .envelope-overlay.is-open .env-wax-seal { opacity: 0; pointer-events: none; }
+  .env-instruction {
+    position: absolute; bottom: -60px; left: 0; right: 0; text-align: center;
+    font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.25em;
+    color: var(--crimson); opacity: 0.8; animation: pulse 2s infinite; z-index: 2;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  
+  .bg-pattern { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.055; }
+  .page { position: relative; z-index: 1; }
+
+
 /* ─── HERO ─── */
 .hero {
 min-height: 100vh;
@@ -507,6 +605,26 @@ position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.45);
 <body>
 
 <div class="petals" id="petals"></div>
+
+
+
+<div id="envelope-overlay" class="envelope-overlay">
+  <div class="envelope-wrapper">
+    <div class="env-back"></div>
+    <div class="env-letter">
+      <p>G & V</p>
+      <span>29 April 2026</span>
+    </div>
+    <div class="env-front-bottom"></div>
+    <div class="env-front-left"></div>
+    <div class="env-front-right"></div>
+    <div class="env-flap-top">
+      <div class="env-wax-seal">ॐ</div>
+    </div>
+    <p class="env-instruction">Scroll or Tap to Open</p>
+  </div>
+</div>
+
 
 <!-- Kolam background pattern -->
 
@@ -1681,6 +1799,49 @@ position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.45);
 
   /* ── Load wall on page ready ── */
   loadPhotoWall();
+  
+  
+    /* ─── SCROLL REVEAL ─── */
+  const revEls = document.querySelectorAll('.reveal');
+  const revObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  revEls.forEach(el => revObs.observe(el));
+
+
+  /* ─── THEME SWITCHER ─── */
+  function setTheme(themeName) {
+    // Remove existing theme classes
+    document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+    if (themeName !== 'default') {
+      document.body.classList.add('theme-' + themeName);
+    }
+  }
+
+  /* ─── ENVELOPE OVERLAY & AUDIO PLAY ─── */
+  const envelope = document.getElementById('envelope-overlay');
+  const bgAudio = document.getElementById('bg-music');
+  
+  // Set background music to a very low volume
+  bgAudio.volume = 0.15; 
+
+  function openEnvelope() {
+    if (envelope.classList.contains('is-open')) return;
+    
+    // Trigger animation
+    envelope.classList.add('is-open');
+    
+    // Unlock scrolling after animation clears the screen
+    setTimeout(() => { document.body.classList.remove('locked'); }, 1500);
+
+    // Play music. Using .catch() suppresses console errors if the browser blocks it for any strict policy reason.
+    bgAudio.play().catch(e => console.log("Audio play deferred by browser policy."));
+  }
+
+  // Listen for Scroll, Swipe, or Click to open the envelope
+  window.addEventListener('wheel', openEnvelope, { once: true });
+  window.addEventListener('touchstart', openEnvelope, { once: true });
+  envelope.addEventListener('click', openEnvelope, { once: true });
 </script>
 
 <!-- Simple audio loop with controls -->
