@@ -7,6 +7,9 @@
 <title>Greeshma &amp; Vijesh — Shubha Vivaha</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Cinzel:wght@400;600&family=Tiro+Devanagari+Sanskrit&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
 <style>
+  /* ══════════════════════════════════════════
+     DESIGN TOKENS — default (Crimson & Cream)
+  ══════════════════════════════════════════ */
   :root {
     --cream:        #fdf6e3;
     --cream-dark:   #f0e6c4;
@@ -22,6 +25,35 @@
     --text-mid:     #5a3218;
   }
 
+/* ── THEME: British Racing Green & Gold ── */
+body.theme-green {
+–crimson:       #004225;
+–crimson-light: #005a32;
+–crimson-pale:  #8fbc9f;
+–saffron:       #d4af37;
+–saffron-light: #f3d56e;
+–gold:          #b58c2a;
+–text-dark:     #0a1a10;
+–text-mid:      #1c3b27;
+}
+
+/* ── THEME: Purple & Cream ── */
+body.theme-purple {
+–crimson:       #4a192c;
+–crimson-light: #6a2c42;
+–crimson-pale:  #cbb4bc;
+–saffron:       #c99a45;
+–saffron-light: #e6be73;
+–gold:          #b58c3a;
+–cream:         #f7f3f5;
+–cream-dark:    #e8dee3;
+–text-dark:     #210a15;
+–text-mid:      #421a2d;
+}
+
+/* ══════════════════════════════════════════
+RESET & BASE
+══════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
@@ -31,969 +63,483 @@ color: var(–text-dark);
 font-family: ‘Jost’, sans-serif;
 font-weight: 300;
 overflow-x: hidden;
+transition: background-color 0.5s ease;
 }
 
-/* Prevent scroll while envelope is showing */
-body.envelope-active { overflow: hidden; }
+body.locked { overflow: hidden; height: 100vh; }
 
-.bg-pattern {
-position: fixed;
-inset: 0;
+/* ══════════════════════════════════════════
+THEME PICKER
+══════════════════════════════════════════ */
+.theme-picker {
+position: fixed; top: 20px; right: 20px; z-index: 99999;
+display: flex; gap: 10px;
+background: rgba(255,255,255,0.85);
+padding: 8px 14px; border-radius: 30px;
+backdrop-filter: blur(6px);
+box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+border: 1px solid var(–cream-dark);
+transition: border-color 0.5s;
+}
+.theme-btn {
+width: 22px; height: 22px; border-radius: 50%;
+border: 2px solid rgba(255,255,255,0.6);
+cursor: pointer;
+transition: transform 0.2s, box-shadow 0.2s;
+box-shadow: 0 2px 5px rgba(0,0,0,0.22);
+}
+.theme-btn:hover { transform: scale(1.18); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+.theme-btn.t-default { background: #7a1518; }
+.theme-btn.t-green   { background: #004225; }
+.theme-btn.t-purple  { background: #4a192c; }
+
+/* ══════════════════════════════════════════
+ENVELOPE OVERLAY
+══════════════════════════════════════════ */
+.envelope-overlay {
+position: fixed; inset: 0; z-index: 9999;
+background: var(–cream-dark);
+display: flex; flex-direction: column;
+align-items: center; justify-content: center;
+transition: transform 1.2s cubic-bezier(0.6, 0.05, 0.15, 0.95) 1.5s,
+opacity   1s  ease-in-out 1.5s;
+}
+
+/* Subtle tiled pattern on the overlay background */
+.envelope-overlay::before {
+content: ‘’; position: absolute; inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg width=‘80’ height=‘80’ viewBox=‘0 0 80 80’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(0,0,0,0.04)’ stroke-width=‘0.8’%3E%3Cpath d=‘M40 10 L70 40 L40 70 L10 40 Z’/%3E%3Cpath d=‘M40 22 L58 40 L40 58 L22 40 Z’/%3E%3Ccircle cx=‘40’ cy=‘40’ r=‘2’/%3E%3C/g%3E%3C/svg%3E”);
 pointer-events: none;
-z-index: 0;
-opacity: 0.055;
 }
 
+.envelope-overlay.is-open {
+transform: translateY(-100vh);
+opacity: 0;
+pointer-events: none;
+}
+
+/* ── Envelope shell ── */
+.envelope-wrapper {
+position: relative;
+width: min(85vw, 420px);
+height: 260px;
+cursor: pointer;
+perspective: 1000px;
+z-index: 2;
+/* gentle idle float */
+animation: envIdle 5s ease-in-out 1s infinite;
+}
+@keyframes envIdle {
+0%, 100% { transform: translateY(0); }
+50%       { transform: translateY(-8px); }
+}
+.envelope-overlay.is-open .envelope-wrapper { animation: none; }
+
+/* Back face */
+.env-back {
+position: absolute; inset: 0;
+background: var(–cream);
+box-shadow: 0 20px 50px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
+border: 1px solid var(–cream-dark);
+transition: background 0.5s, border-color 0.5s;
+}
+
+/* Inner letter peeking out */
+.env-letter {
+position: absolute; left: 15px; right: 15px; top: 15px; bottom: 15px;
+background: var(–cream-light);
+border: 1px solid var(–saffron);
+display: flex; flex-direction: column; align-items: center; justify-content: center;
+transition: transform 1s ease-in-out 0.6s, border-color 0.5s, background 0.5s;
+z-index: 1;
+gap: 6px;
+}
+.env-letter .env-couple {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: clamp(1.6rem, 5vw, 2.2rem);
+color: var(–crimson); margin: 0; line-height: 1;
+transition: color 0.5s;
+}
+.env-letter .env-date-tag {
+font-family: ‘Cinzel’, serif; font-size: 0.58rem;
+letter-spacing: 0.22em; color: var(–saffron);
+text-transform: uppercase; transition: color 0.5s;
+}
+.env-letter .env-om-inner {
+font-family: ‘Tiro Devanagari Sanskrit’, serif;
+font-size: 0.9rem; color: var(–saffron); opacity: 0.6;
+transition: color 0.5s;
+}
+
+.envelope-overlay.is-open .env-letter { transform: translateY(-90px); }
+
+/* ── CSS-triangle folds ── */
+.env-front-bottom {
+position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+width: 0; height: 0;
+border-left:  min(42.5vw, 210px) solid transparent;
+border-right: min(42.5vw, 210px) solid transparent;
+border-bottom: 150px solid var(–cream-dark);
+filter: drop-shadow(0 -3px 4px rgba(0,0,0,0.04));
+transition: border-bottom-color 0.5s;
+}
+.env-front-left {
+position: absolute; top: 0; bottom: 0; left: 0; z-index: 2;
+width: 0; height: 0;
+border-top:    130px solid transparent;
+border-bottom: 130px solid transparent;
+border-left:   min(42.5vw, 210px) solid var(–cream);
+transition: border-left-color 0.5s;
+}
+.env-front-right {
+position: absolute; top: 0; bottom: 0; right: 0; z-index: 2;
+width: 0; height: 0;
+border-top:    130px solid transparent;
+border-bottom: 130px solid transparent;
+border-right:  min(42.5vw, 210px) solid var(–cream);
+transition: border-right-color 0.5s;
+}
+
+/* ── Top flap (golden) ── */
+.env-flap-top {
+position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+width: 0; height: 0;
+border-left:  min(42.5vw, 210px) solid transparent;
+border-right: min(42.5vw, 210px) solid transparent;
+border-top: 145px solid var(–saffron-light);
+transform-origin: top center;
+transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1),
+border-top-color 0.5s;
+filter: drop-shadow(0 5px 8px rgba(0,0,0,0.12));
+}
+.envelope-overlay.is-open .env-flap-top {
+transform: rotateX(180deg);
+z-index: 0;
+filter: none;
+}
+
+/* ── Wax seal ── */
+.env-wax-seal {
+/* Positioned relative to the flap — sits at centre bottom of the triangle */
+position: absolute;
+/* The flap is a border-top triangle; the visual tip is at top:145px in the flap’s own space,
+but the element’s box is 0-height. We anchor it to the envelope-wrapper instead. */
+top: calc(145px - 23px); /* flap height minus half seal */
+left: 50%;
+transform: translateX(-50%);
+width: 46px; height: 46px;
+background: var(–crimson);
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+box-shadow: inset 0 0 10px rgba(0,0,0,0.3), 0 4px 10px rgba(0,0,0,0.25);
+font-family: ‘Tiro Devanagari Sanskrit’, serif;
+font-size: 1.25rem; color: var(–saffron-light);
+transition: opacity 0.4s ease 0.2s, background 0.5s, color 0.5s;
+z-index: 10;
+/* Pull it out of the flap element into the wrapper */
+pointer-events: none;
+}
+/* The seal lives inside .env-flap-top which is a 0×0 box; reposition it as a sibling */
+.envelope-overlay.is-open .env-wax-seal { opacity: 0; }
+
+/* ── Instruction text ── */
+.env-instruction {
+position: absolute; bottom: -58px; left: 0; right: 0;
+text-align: center;
+font-family: ‘Cinzel’, serif; font-size: 0.72rem;
+letter-spacing: 0.26em; text-transform: uppercase;
+color: var(–crimson); opacity: 0.75;
+animation: envPulse 2.2s ease-in-out infinite;
+z-index: 2; transition: color 0.5s;
+}
+@keyframes envPulse { 0%,100%{opacity:0.45;} 50%{opacity:0.85;} }
+.envelope-overlay.is-open .env-instruction { opacity: 0 !important; }
+
+/* ══════════════════════════════════════════
+BACKGROUND PATTERN
+══════════════════════════════════════════ */
+.bg-pattern { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.055; }
 .page { position: relative; z-index: 1; }
 
-/* ─── HERO ─── */
+/* ══════════════════════════════════════════
+HERO
+══════════════════════════════════════════ */
 .hero {
-min-height: 100vh;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-text-align: center;
-padding: 60px 20px 80px;
-position: relative;
-overflow: hidden;
+min-height: 100vh; display: flex; flex-direction: column;
+align-items: center; justify-content: center;
+text-align: center; padding: 60px 20px 80px;
+position: relative; overflow: hidden;
 }
-
 .torana {
-position: absolute;
-top: 0; left: 0; right: 0;
-display: flex;
-justify-content: center;
-pointer-events: none;
+position: absolute; top: 0; left: 0; right: 0;
+display: flex; justify-content: center; pointer-events: none;
 animation: toranaIn 1.4s cubic-bezier(0.22,1,0.36,1) both;
 }
+@keyframes toranaIn { from{opacity:0;transform:translateY(-20px);} to{opacity:1;transform:translateY(0);} }
 
-@keyframes toranaIn {
-from { opacity: 0; transform: translateY(-20px); }
-to   { opacity: 1; transform: translateY(0); }
-}
+.corner-lotus { position: absolute; width: 200px; opacity: 0.48; }
+.corner-lotus.tl { top:0; left:0; }
+.corner-lotus.tr { top:0; right:0; transform:scaleX(-1); }
+.corner-lotus.bl { bottom:0; left:0; transform:scaleY(-1); }
+.corner-lotus.br { bottom:0; right:0; transform:scale(-1); }
 
-.corner-lotus {
-position: absolute;
-width: 200px;
-opacity: 0.48;
-}
-.corner-lotus.tl { top: 0; left: 0; }
-.corner-lotus.tr { top: 0; right: 0; transform: scaleX(-1); }
-.corner-lotus.bl { bottom: 0; left: 0; transform: scaleY(-1); }
-.corner-lotus.br { bottom: 0; right: 0; transform: scale(-1); }
+@keyframes riseIn { from{opacity:0;transform:translateY(38px);} to{opacity:1;transform:translateY(0);} }
 
-@keyframes riseIn {
-from { opacity: 0; transform: translateY(38px); }
-to   { opacity: 1; transform: translateY(0); }
-}
+.hero-om { font-family:‘Tiro Devanagari Sanskrit’,serif; font-size:2.6rem; color:var(–saffron); margin-bottom:6px; opacity:0.92; animation:riseIn 1.4s 0.1s cubic-bezier(0.22,1,0.36,1) both; text-shadow:0 2px 16px rgba(201,135,26,0.3); }
+.hero-blessing { font-family:‘Tiro Devanagari Sanskrit’,serif; font-size:0.82rem; color:var(–text-mid); letter-spacing:0.1em; margin-bottom:26px; animation:riseIn 1.4s 0.2s cubic-bezier(0.22,1,0.36,1) both; opacity:0.65; }
+.gold-border { width:min(400px,90vw); height:2px; background:linear-gradient(90deg,transparent,var(–saffron) 20%,var(–gold) 50%,var(–saffron) 80%,transparent); margin:0 auto 22px; animation:riseIn 1.4s 0.25s cubic-bezier(0.22,1,0.36,1) both; position:relative; }
+.gold-border::before,.gold-border::after { content:’’; position:absolute; top:-3px; width:8px; height:8px; background:var(–saffron); transform:rotate(45deg); }
+.gold-border::before { left:18%; }
+.gold-border::after  { right:18%; }
+.prelude { font-family:‘Cinzel’,serif; letter-spacing:0.28em; font-size:0.62rem; text-transform:uppercase; color:var(–crimson); margin-bottom:22px; animation:riseIn 1.4s 0.3s cubic-bezier(0.22,1,0.36,1) both; transition:color 0.5s; }
+.couple-names { font-family:‘Cormorant Garamond’,serif; font-size:clamp(3.8rem,10vw,7.8rem); font-weight:400; line-height:0.92; color:var(–crimson); animation:riseIn 1.4s 0.38s cubic-bezier(0.22,1,0.36,1) both; transition:color 0.5s; }
+.couple-names .weds { display:block; font-family:‘Tiro Devanagari Sanskrit’,serif; font-size:0.26em; color:var(–saffron); letter-spacing:0.4em; text-transform:uppercase; margin:10px 0 8px; font-weight:400; transition:color 0.5s; }
+.wedding-sub { margin-top:28px; font-family:‘Cinzel’,serif; font-size:0.7rem; letter-spacing:0.34em; color:var(–saffron); text-transform:uppercase; animation:riseIn 1.4s 0.52s cubic-bezier(0.22,1,0.36,1) both; transition:color 0.5s; }
+.hero-date { margin-top:10px; font-family:‘Cormorant Garamond’,serif; font-size:clamp(1.1rem,2.8vw,1.7rem); color:var(–text-mid); letter-spacing:0.1em; font-style:italic; animation:riseIn 1.4s 0.62s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-venue { margin-top:6px; font-family:‘Jost’,sans-serif; font-weight:300; font-size:0.8rem; letter-spacing:0.24em; text-transform:uppercase; color:var(–text-mid); opacity:0.68; animation:riseIn 1.4s 0.72s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-flourish { margin:32px auto 0; display:block; animation:riseIn 1.4s 0.85s cubic-bezier(0.22,1,0.36,1) both; }
 
-.hero-om {
-font-family: ‘Tiro Devanagari Sanskrit’, serif;
-font-size: 2.6rem;
-color: var(–saffron);
-margin-bottom: 6px;
-opacity: 0.92;
-animation: riseIn 1.4s 0.1s cubic-bezier(0.22,1,0.36,1) both;
-text-shadow: 0 2px 16px rgba(201,135,26,0.3);
-}
+/* ══════════════════════════════════════════
+SECTIONS
+══════════════════════════════════════════ */
+section { padding:88px 20px; position:relative; }
+.section-inner { max-width:780px; margin:0 auto; text-align:center; }
+.section-tag { font-family:‘Cinzel’,serif; font-size:0.63rem; letter-spacing:0.38em; text-transform:uppercase; color:var(–saffron); margin-bottom:14px; transition:color 0.5s; }
+.section-title { font-family:‘Cormorant Garamond’,serif; font-size:clamp(2rem,5vw,3.2rem); font-weight:400; color:var(–crimson); line-height:1.15; margin-bottom:20px; transition:color 0.5s; }
+.section-body { font-size:1rem; line-height:1.95; color:var(–text-mid); max-width:560px; margin:0 auto; }
+.sep { display:block; margin:0 auto 56px; opacity:0.42; }
 
-.hero-blessing {
-font-family: ‘Tiro Devanagari Sanskrit’, serif;
-font-size: 0.82rem;
-color: var(–text-mid);
-letter-spacing: 0.1em;
-margin-bottom: 26px;
-animation: riseIn 1.4s 0.2s cubic-bezier(0.22,1,0.36,1) both;
-opacity: 0.65;
-}
+/* ── Details band ── */
+.details-band { background:var(–crimson); color:var(–cream-light); padding:80px 20px; position:relative; overflow:hidden; transition:background 0.5s; }
+.details-band::before { content:’’; position:absolute; inset:0; background-image:url(“data:image/svg+xml,%3Csvg width=‘40’ height=‘40’ viewBox=‘0 0 40 40’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(255,255,255,0.06)’ stroke-width=‘0.5’%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘8’/%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘15’/%3E%3Cline x1=‘20’ y1=‘0’ x2=‘20’ y2=‘40’/%3E%3Cline x1=‘0’ y1=‘20’ x2=‘40’ y2=‘20’/%3E%3C/g%3E%3C/svg%3E”); pointer-events:none; }
+.details-band .section-tag   { color:var(–saffron-light); }
+.details-band .section-title { color:var(–cream-light); }
+.details-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:48px; margin:52px auto 0; max-width:740px; }
+.detail-item { text-align:center; }
+.detail-icon { display:block; margin:0 auto 16px; }
+.detail-label { font-family:‘Cinzel’,serif; font-size:0.57rem; letter-spacing:0.32em; text-transform:uppercase; color:var(–saffron-light); margin-bottom:8px; }
+.detail-value { font-family:‘Cormorant Garamond’,serif; font-size:1.35rem; font-style:italic; line-height:1.45; color:var(–cream-light); }
 
-.gold-border {
-width: min(400px, 90vw);
-height: 2px;
-background: linear-gradient(90deg, transparent, var(–saffron) 20%, var(–gold) 50%, var(–saffron) 80%, transparent);
-margin: 0 auto 22px;
-animation: riseIn 1.4s 0.25s cubic-bezier(0.22,1,0.36,1) both;
-position: relative;
-}
-.gold-border::before, .gold-border::after {
-content: ‘’;
-position: absolute;
-top: -3px;
-width: 8px; height: 8px;
-background: var(–saffron);
-transform: rotate(45deg);
-}
-.gold-border::before { left: 18%; }
-.gold-border::after  { right: 18%; }
+/* ── Timeline ── */
+.timeline { list-style:none; margin-top:48px; display:flex; flex-direction:column; position:relative; }
+.timeline::before { content:’’; position:absolute; left:50%; top:0; bottom:0; width:1px; background:linear-gradient(to bottom,transparent,var(–saffron) 10%,var(–saffron) 90%,transparent); transform:translateX(-50%); opacity:0.35; }
+.timeline-item { display:flex; align-items:center; gap:32px; padding:22px 0; }
+.timeline-item:nth-child(even) { flex-direction:row-reverse; }
+.tl-time { flex:1; text-align:right; font-family:‘Cormorant Garamond’,serif; font-size:1.05rem; font-style:italic; color:var(–text-mid); }
+.timeline-item:nth-child(even) .tl-time { text-align:left; }
+.tl-dot { width:12px; height:12px; border-radius:50%; background:var(–saffron); border:2px solid var(–cream); box-shadow:0 0 0 2px var(–saffron); flex-shrink:0; z-index:1; transition:background 0.5s,box-shadow 0.5s; }
+.tl-event { flex:1; text-align:left; }
+.timeline-item:nth-child(even) .tl-event { text-align:right; }
+.tl-event-kannada { font-family:‘Tiro Devanagari Sanskrit’,serif; font-size:0.82rem; color:var(–saffron); margin-bottom:3px; opacity:0.85; transition:color 0.5s; }
+.tl-event-name { font-family:‘Cinzel’,serif; font-size:0.67rem; letter-spacing:0.2em; text-transform:uppercase; color:var(–crimson); margin-bottom:4px; transition:color 0.5s; }
+.tl-event-desc { font-size:0.86rem; color:var(–text-mid); line-height:1.5; }
 
-.prelude {
-font-family: ‘Cinzel’, serif;
-letter-spacing: 0.28em;
-font-size: 0.62rem;
-text-transform: uppercase;
-color: var(–crimson);
-margin-bottom: 22px;
-animation: riseIn 1.4s 0.3s cubic-bezier(0.22,1,0.36,1) both;
-}
+/* ── RSVP ── */
+.rsvp-section { background:var(–cream-dark); padding:90px 20px; position:relative; overflow:hidden; transition:background 0.5s; }
+.rsvp-section::before,.rsvp-section::after { content:’’; position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,var(–saffron) 30%,var(–gold) 50%,var(–saffron) 70%,transparent); opacity:0.5; }
+.rsvp-section::before { top:0; }
+.rsvp-section::after  { bottom:0; }
+.rsvp-card { background:var(–cream-light); border:1px solid rgba(0,0,0,0.07); border-top:3px solid var(–saffron); padding:52px 48px; max-width:520px; margin:40px auto 0; box-shadow:0 20px 60px rgba(0,0,0,0.07); transition:border-top-color 0.5s,background 0.5s; }
+.form-group { margin-bottom:24px; text-align:left; }
+.form-label { display:block; font-family:‘Cinzel’,serif; font-size:0.57rem; letter-spacing:0.26em; text-transform:uppercase; color:var(–saffron); margin-bottom:8px; transition:color 0.5s; }
+.form-input,.form-select { width:100%; border:none; border-bottom:1px solid rgba(0,0,0,0.15); background:transparent; padding:10px 0; font-family:‘Cormorant Garamond’,serif; font-size:1.05rem; color:var(–text-dark); outline:none; transition:border-color 0.3s,color 0.5s; appearance:none; }
+.form-input:focus,.form-select:focus { border-bottom-color:var(–crimson); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.btn-rsvp { width:100%; margin-top:16px; padding:16px; background:var(–crimson); color:var(–cream-light); border:none; cursor:pointer; font-family:‘Cinzel’,serif; font-size:0.7rem; letter-spacing:0.3em; text-transform:uppercase; transition:background 0.5s,transform 0.2s,box-shadow 0.3s; position:relative; overflow:hidden; }
+.btn-rsvp::after { content:’’; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,0.12),transparent); pointer-events:none; }
+.btn-rsvp:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.22); opacity:0.9; }
+.btn-rsvp:active { transform:translateY(0); }
 
-.couple-names {
-font-family: ‘Cormorant Garamond’, serif;
-font-size: clamp(3.8rem, 10vw, 7.8rem);
-font-weight: 400;
-line-height: 0.92;
-color: var(–crimson);
-animation: riseIn 1.4s 0.38s cubic-bezier(0.22,1,0.36,1) both;
-}
+/* ── Footer ── */
+footer { background:var(–crimson); padding:56px 20px; text-align:center; position:relative; overflow:hidden; transition:background 0.5s; }
+footer::before { content:’’; position:absolute; inset:0; background-image:url(“data:image/svg+xml,%3Csvg width=‘40’ height=‘40’ viewBox=‘0 0 40 40’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(255,255,255,0.05)’ stroke-width=‘0.5’%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘8’/%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘15’/%3E%3Cline x1=‘20’ y1=‘0’ x2=‘20’ y2=‘40’/%3E%3Cline x1=‘0’ y1=‘20’ x2=‘40’ y2=‘20’/%3E%3C/g%3E%3C/svg%3E”); pointer-events:none; }
+.footer-om { font-family:‘Tiro Devanagari Sanskrit’,serif; font-size:2rem; color:var(–saffron-light); margin-bottom:14px; opacity:0.9; position:relative; transition:color 0.5s; }
+.footer-names { font-family:‘Cormorant Garamond’,serif; font-size:1.6rem; font-style:italic; color:var(–cream-light); margin-bottom:10px; position:relative; }
+.footer-note { font-size:0.78rem; color:rgba(255,255,255,0.6); letter-spacing:0.14em; position:relative; }
+.footer-gold-line { width:140px; height:1px; background:linear-gradient(90deg,transparent,var(–saffron-light),transparent); margin:16px auto; position:relative; }
 
-.couple-names .weds {
-display: block;
-font-family: ‘Tiro Devanagari Sanskrit’, serif;
-font-size: 0.26em;
-color: var(–saffron);
-letter-spacing: 0.4em;
-text-transform: uppercase;
-margin: 10px 0 8px;
-font-weight: 400;
-}
+/* ── Scroll reveal ── */
+.reveal { opacity:0; transform:translateY(30px); transition:opacity 0.9s cubic-bezier(0.22,1,0.36,1),transform 0.9s cubic-bezier(0.22,1,0.36,1); }
+.reveal.visible { opacity:1; transform:translateY(0); }
 
-.wedding-sub {
-margin-top: 28px;
-font-family: ‘Cinzel’, serif;
-font-size: 0.7rem;
-letter-spacing: 0.34em;
-color: var(–saffron);
-text-transform: uppercase;
-animation: riseIn 1.4s 0.52s cubic-bezier(0.22,1,0.36,1) both;
-}
+/* ── Cherry blossom petals ── */
+.petals { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.blossom { position:absolute; top:-80px; opacity:0; will-change:transform,opacity; animation:blossomFall linear infinite; }
 
-.hero-date {
-margin-top: 10px;
-font-family: ‘Cormorant Garamond’, serif;
-font-size: clamp(1.1rem, 2.8vw, 1.7rem);
-color: var(–text-mid);
-letter-spacing: 0.1em;
-font-style: italic;
-animation: riseIn 1.4s 0.62s cubic-bezier(0.22,1,0.36,1) both;
-}
+/* ══════════════════════════════════════════
+PHOTO BOOTH
+══════════════════════════════════════════ */
+.photobooth-section { padding:88px 20px; background:var(–cream-dark); position:relative; overflow:hidden; transition:background 0.5s; }
+.photobooth-section::before,.photobooth-section::after { content:’’; position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,var(–saffron) 30%,var(–gold) 50%,var(–saffron) 70%,transparent); opacity:0.4; }
+.photobooth-section::before { top:0; }
+.photobooth-section::after  { bottom:0; }
 
-.hero-venue {
-margin-top: 6px;
-font-family: ‘Jost’, sans-serif;
-font-weight: 300;
-font-size: 0.8rem;
-letter-spacing: 0.24em;
-text-transform: uppercase;
-color: var(–text-mid);
-opacity: 0.68;
-animation: riseIn 1.4s 0.72s cubic-bezier(0.22,1,0.36,1) both;
-}
+.btn-booth-open { margin-top:36px; padding:16px 44px; background:var(–crimson); color:var(–cream-light); border:none; cursor:pointer; font-family:‘Cinzel’,serif; font-size:0.75rem; letter-spacing:0.3em; text-transform:uppercase; display:inline-flex; align-items:center; gap:12px; transition:background 0.5s,transform 0.2s,box-shadow 0.3s; position:relative; overflow:hidden; }
+.btn-booth-open::after { content:’’; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,135,26,.18),transparent); pointer-events:none; }
+.btn-booth-open:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(0,0,0,.22); opacity:0.9; }
 
-.hero-flourish {
-margin: 32px auto 0;
-display: block;
-animation: riseIn 1.4s 0.85s cubic-bezier(0.22,1,0.36,1) both;
-}
+.photo-wall-wrap { margin-top:56px; }
+.photo-wall-label { font-family:‘Cinzel’,serif; font-size:0.62rem; letter-spacing:0.3em; text-transform:uppercase; color:var(–saffron); margin-bottom:24px; transition:color 0.5s; }
+.photo-wall { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; min-height:80px; }
+.photo-wall-empty { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; font-family:‘Cormorant Garamond’,serif; font-style:italic; font-size:1rem; color:var(–text-mid); opacity:0.55; }
+.wall-card { position:relative; overflow:hidden; border:1px solid rgba(0,0,0,.08); background:var(–cream-light); animation:cardIn 0.5s cubic-bezier(.22,1,.36,1) both; }
+@keyframes cardIn { from{opacity:0;transform:scale(.92) translateY(12px);} to{opacity:1;transform:scale(1) translateY(0);} }
+.wall-card img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+.wall-card-meta { padding:10px 12px; border-top:1px solid rgba(0,0,0,.05); }
+.wall-card-name { font-family:‘Cinzel’,serif; font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(–crimson); margin-bottom:3px; transition:color 0.5s; }
+.wall-card-msg  { font-family:‘Cormorant Garamond’,serif; font-size:.88rem; font-style:italic; color:var(–text-mid); line-height:1.4; }
+.wall-card::before { content:‘✦’; position:absolute; top:8px; right:8px; width:26px; height:26px; background:var(–saffron); border-radius:50%; font-size:10px; color:var(–cream-light); opacity:0.85; z-index:2; display:grid; place-items:center; transition:background 0.5s; }
 
-/* ─── SECTIONS ─── */
-section { padding: 88px 20px; position: relative; }
-.section-inner { max-width: 780px; margin: 0 auto; text-align: center; }
+/* Booth modal */
+.booth-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(10,2,2,0.94); backdrop-filter:blur(8px); align-items:flex-end; justify-content:center; }
+.booth-modal.open { display:flex; }
+.booth-shell { width:100%; max-width:480px; max-height:96vh; background:var(–cream-light); border-top:3px solid var(–saffron); overflow-y:auto; animation:sheetUp 0.42s cubic-bezier(.22,1,.36,1) both; transition:background 0.5s; }
+@keyframes sheetUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+@media (min-width:600px) {
+.booth-modal { align-items:center; }
+.booth-shell { border-radius:2px; max-height:90vh; animation:modalPop .38s cubic-bezier(.22,1,.36,1) both; }
+@keyframes modalPop { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
+}
+.booth-screen { padding:0 0 24px; }
+.booth-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 12px; border-bottom:1px solid rgba(0,0,0,.07); position:sticky; top:0; background:var(–cream-light); z-index:10; transition:background 0.5s; }
+.booth-tag { font-family:‘Cinzel’,serif; font-size:.6rem; letter-spacing:.32em; text-transform:uppercase; color:var(–saffron); transition:color 0.5s; }
+.booth-close-btn { background:transparent; border:none; cursor:pointer; color:var(–text-mid); padding:4px; transition:color .2s; }
+.booth-close-btn:hover { color:var(–crimson); }
+.booth-viewfinder { position:relative; width:100%; aspect-ratio:1; background:#0a0101; overflow:hidden; }
+#booth-video { width:100%; height:100%; object-fit:cover; display:block; }
+.vf-frame span { position:absolute; width:32px; height:32px; border-color:var(–saffron); border-style:solid; opacity:0.8; transition:border-color 0.5s; }
+.vf-frame .vf-tl { top:12px; left:12px;  border-width:2px 0 0 2px; }
+.vf-frame .vf-tr { top:12px; right:12px; border-width:2px 2px 0 0; }
+.vf-frame .vf-bl { bottom:12px; left:12px;  border-width:0 0 2px 2px; }
+.vf-frame .vf-br { bottom:12px; right:12px; border-width:0 2px 2px 0; }
+.booth-countdown { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:‘Cormorant Garamond’,serif; font-size:9rem; font-weight:300; color:var(–cream-light); text-shadow:0 4px 30px rgba(0,0,0,.6); pointer-events:none; opacity:0; transition:opacity .15s; }
+.booth-countdown.active { opacity:1; }
+.booth-flash { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; transition:opacity .05s; }
+.booth-flash.flash { opacity:1; }
+.booth-denied { display:none; padding:40px 24px; text-align:center; font-family:‘Cormorant Garamond’,serif; font-style:italic; color:var(–text-mid); font-size:1rem; line-height:1.7; }
+.btn-retry { margin-top:16px; padding:10px 24px; background:var(–crimson); color:var(–cream-light); border:none; cursor:pointer; font-family:‘Cinzel’,serif; font-size:.63rem; letter-spacing:.2em; text-transform:uppercase; transition:background .5s; }
+.btn-retry:hover { opacity:0.85; }
+.booth-hint { padding:12px 24px 4px; font-family:‘Jost’,sans-serif; font-size:.8rem; color:var(–text-mid); letter-spacing:.06em; text-align:center; }
+.booth-controls { display:flex; align-items:center; justify-content:space-between; padding:20px 36px 8px; }
+.booth-flip-btn { width:48px; height:48px; border-radius:50%; background:transparent; border:1px solid rgba(0,0,0,.18); color:var(–text-mid); cursor:pointer; display:grid; place-items:center; transition:border-color .25s,color .25s; }
+.booth-flip-btn:hover { border-color:var(–crimson); color:var(–crimson); }
+.booth-shutter { width:74px; height:74px; border-radius:50%; background:var(–crimson); border:none; cursor:pointer; position:relative; display:grid; place-items:center; transition:transform .15s,box-shadow .25s,background 0.5s; box-shadow:0 6px 22px rgba(0,0,0,.28); }
+.booth-shutter:hover { transform:scale(1.06); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+.booth-shutter:active { transform:scale(.95); }
+.shutter-ring { position:absolute; inset:5px; border-radius:50%; border:2px solid rgba(255,255,255,.35); }
+.shutter-dot  { width:40px; height:40px; border-radius:50%; background:var(–cream-light); opacity:.9; }
+.preview-photo-wrap { position:relative; margin:20px 24px 0; }
+.preview-photo { width:100%; aspect-ratio:1; object-fit:cover; display:block; border:1px solid rgba(0,0,0,.08); }
+.preview-stamp { background:var(–crimson); padding:8px 16px; text-align:center; transition:background 0.5s; }
+.stamp-date { font-family:‘Cinzel’,serif; font-size:.58rem; letter-spacing:.22em; text-transform:uppercase; color:var(–saffron-light); transition:color 0.5s; }
+.preview-form { padding:20px 24px 8px; }
+.pf-group { margin-bottom:18px; }
+.pf-label { display:block; font-family:‘Cinzel’,serif; font-size:.56rem; letter-spacing:.24em; text-transform:uppercase; color:var(–saffron); margin-bottom:7px; transition:color 0.5s; }
+.pf-input { width:100%; border:none; border-bottom:1px solid rgba(0,0,0,.16); background:transparent; padding:8px 0; font-family:‘Cormorant Garamond’,serif; font-size:1rem; color:var(–text-dark); outline:none; resize:none; transition:border-color .3s; }
+.pf-input:focus { border-bottom-color:var(–crimson); }
+.pf-textarea { line-height:1.5; }
+.preview-actions { display:flex; gap:12px; padding:8px 24px; }
+.btn-retake { padding:12px 20px; flex-shrink:0; background:transparent; border:1px solid rgba(0,0,0,.2); color:var(–text-mid); cursor:pointer; font-family:‘Cinzel’,serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; display:flex; align-items:center; gap:7px; transition:all .25s; }
+.btn-retake:hover { border-color:var(–crimson); color:var(–crimson); }
+.btn-submit-photo { flex:1; padding:12px 20px; background:var(–crimson); color:var(–cream-light); border:none; cursor:pointer; font-family:‘Cinzel’,serif; font-size:.68rem; letter-spacing:.25em; text-transform:uppercase; transition:background .5s,box-shadow .25s; position:relative; overflow:hidden; }
+.btn-submit-photo::after { content:’’; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,135,26,.18),transparent); pointer-events:none; }
+.btn-submit-photo:hover { box-shadow:0 6px 20px rgba(0,0,0,.22); opacity:0.9; }
+.btn-submit-photo:disabled { opacity:.5; cursor:default; }
+.upload-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 24px; gap:20px; }
+.upload-spinner .spin-arc { animation:spinArc 1.1s linear infinite; transform-origin:center; }
+@keyframes spinArc { to{stroke-dashoffset:-164;} }
+.upload-label { font-family:‘Cormorant Garamond’,serif; font-size:1.1rem; font-style:italic; color:var(–text-mid); }
+.upload-bar-wrap { width:200px; height:3px; background:rgba(0,0,0,.08); border-radius:2px; overflow:hidden; }
+.upload-bar { height:100%; width:0%; background:var(–saffron); border-radius:2px; transition:width .3s ease; }
+.success-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 32px; text-align:center; gap:16px; }
+.success-icon { animation:popIn .5s cubic-bezier(.22,1,.36,1) .1s both; }
+@keyframes popIn { from{opacity:0;transform:scale(.5)} to{opacity:1;transform:scale(1)} }
+.success-title { font-family:‘Tiro Devanagari Sanskrit’,serif; font-size:1.6rem; color:var(–saffron); transition:color 0.5s; }
+.success-body  { font-family:‘Cormorant Garamond’,serif; font-size:1.05rem; font-style:italic; color:var(–text-mid); line-height:1.7; max-width:320px; }
+.success-thumb { width:140px; height:140px; object-fit:cover; border:2px solid rgba(0,0,0,.1); }
+.success-actions { display:flex; gap:12px; margin-top:4px; }
+.btn-another   { padding:12px 24px; background:transparent; border:1px solid rgba(0,0,0,.2); color:var(–text-mid); cursor:pointer; font-family:‘Cinzel’,serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; transition:all .25s; }
+.btn-another:hover { border-color:var(–crimson); color:var(–crimson); }
+.btn-close-done { padding:12px 24px; background:var(–crimson); color:var(–cream-light); border:none; cursor:pointer; font-family:‘Cinzel’,serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; transition:background .5s; }
+.btn-close-done:hover { opacity:0.85; }
 
-.section-tag {
-font-family: ‘Cinzel’, serif;
-font-size: 0.63rem;
-letter-spacing: 0.38em;
-text-transform: uppercase;
-color: var(–saffron);
-margin-bottom: 14px;
-}
-
-.section-title {
-font-family: ‘Cormorant Garamond’, serif;
-font-size: clamp(2rem, 5vw, 3.2rem);
-font-weight: 400;
-color: var(–crimson);
-line-height: 1.15;
-margin-bottom: 20px;
-}
-
-.section-body {
-font-size: 1rem;
-line-height: 1.95;
-color: var(–text-mid);
-max-width: 560px;
-margin: 0 auto;
-}
-
-.sep { display: block; margin: 0 auto 56px; opacity: 0.42; }
-
-/* ─── DETAILS BAND ─── */
-.details-band {
-background: var(–crimson);
-color: var(–cream-light);
-padding: 80px 20px;
-position: relative;
-overflow: hidden;
-}
-.details-band::before {
-content: ‘’;
-position: absolute;
-inset: 0;
-background-image: url(“data:image/svg+xml,%3Csvg width=‘40’ height=‘40’ viewBox=‘0 0 40 40’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(255,255,255,0.06)’ stroke-width=‘0.5’%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘8’/%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘15’/%3E%3Cline x1=‘20’ y1=‘0’ x2=‘20’ y2=‘40’/%3E%3Cline x1=‘0’ y1=‘20’ x2=‘40’ y2=‘20’/%3E%3C/g%3E%3C/svg%3E”);
-pointer-events: none;
-}
-.details-band .section-tag   { color: var(–saffron-light); }
-.details-band .section-title { color: var(–cream-light); }
-
-.details-grid {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-gap: 48px;
-margin: 52px auto 0;
-max-width: 740px;
-}
-.detail-item { text-align: center; }
-.detail-icon { display: block; margin: 0 auto 16px; }
-.detail-label {
-font-family: ‘Cinzel’, serif;
-font-size: 0.57rem;
-letter-spacing: 0.32em;
-text-transform: uppercase;
-color: var(–saffron-light);
-margin-bottom: 8px;
-}
-.detail-value {
-font-family: ‘Cormorant Garamond’, serif;
-font-size: 1.35rem;
-font-style: italic;
-line-height: 1.45;
-color: var(–cream-light);
-}
-
-/* ─── TIMELINE ─── */
-.timeline {
-list-style: none;
-margin-top: 48px;
-display: flex;
-flex-direction: column;
-position: relative;
-}
-.timeline::before {
-content: ‘’;
-position: absolute;
-left: 50%; top: 0; bottom: 0;
-width: 1px;
-background: linear-gradient(to bottom, transparent, var(–saffron) 10%, var(–saffron) 90%, transparent);
-transform: translateX(-50%);
-opacity: 0.35;
-}
-.timeline-item { display: flex; align-items: center; gap: 32px; padding: 22px 0; }
-.timeline-item:nth-child(even) { flex-direction: row-reverse; }
-.tl-time {
-flex: 1; text-align: right;
-font-family: ‘Cormorant Garamond’, serif;
-font-size: 1.05rem; font-style: italic; color: var(–text-mid);
-}
-.timeline-item:nth-child(even) .tl-time { text-align: left; }
-.tl-dot {
-width: 12px; height: 12px; border-radius: 50%;
-background: var(–saffron);
-border: 2px solid var(–cream);
-box-shadow: 0 0 0 2px var(–saffron);
-flex-shrink: 0; z-index: 1;
-}
-.tl-event { flex: 1; text-align: left; }
-.timeline-item:nth-child(even) .tl-event { text-align: right; }
-.tl-event-kannada {
-font-family: ‘Tiro Devanagari Sanskrit’, serif;
-font-size: 0.82rem; color: var(–saffron);
-margin-bottom: 3px; opacity: 0.85;
-}
-.tl-event-name {
-font-family: ‘Cinzel’, serif;
-font-size: 0.67rem; letter-spacing: 0.2em;
-text-transform: uppercase; color: var(–crimson); margin-bottom: 4px;
-}
-.tl-event-desc { font-size: 0.86rem; color: var(–text-mid); line-height: 1.5; }
-
-/* ─── RSVP ─── */
-.rsvp-section {
-background: var(–cream-dark);
-padding: 90px 20px;
-position: relative;
-overflow: hidden;
-}
-.rsvp-section::before, .rsvp-section::after {
-content: ‘’;
-position: absolute;
-left: 0; right: 0; height: 3px;
-background: linear-gradient(90deg, transparent, var(–saffron) 30%, var(–gold) 50%, var(–saffron) 70%, transparent);
-opacity: 0.5;
-}
-.rsvp-section::before { top: 0; }
-.rsvp-section::after  { bottom: 0; }
-
-.rsvp-card {
-background: var(–cream-light);
-border: 1px solid rgba(122,21,24,0.1);
-border-top: 3px solid var(–saffron);
-padding: 52px 48px;
-max-width: 520px;
-margin: 40px auto 0;
-box-shadow: 0 20px 60px rgba(122,21,24,0.07);
-}
-.form-group { margin-bottom: 24px; text-align: left; }
-.form-label {
-display: block;
-font-family: ‘Cinzel’, serif;
-font-size: 0.57rem; letter-spacing: 0.26em; text-transform: uppercase;
-color: var(–saffron); margin-bottom: 8px;
-}
-.form-input, .form-select {
-width: 100%; border: none;
-border-bottom: 1px solid rgba(122,21,24,0.2);
-background: transparent; padding: 10px 0;
-font-family: ‘Cormorant Garamond’, serif;
-font-size: 1.05rem; color: var(–text-dark); outline: none;
-transition: border-color 0.3s; appearance: none;
-}
-.form-input:focus, .form-select:focus { border-bottom-color: var(–crimson); }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.btn-rsvp {
-width: 100%; margin-top: 16px; padding: 16px;
-background: var(–crimson); color: var(–cream-light);
-border: none; cursor: pointer;
-font-family: ‘Cinzel’, serif;
-font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase;
-transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
-position: relative; overflow: hidden;
-}
-.btn-rsvp::after {
-content: ‘’;
-position: absolute; inset: 0;
-background: linear-gradient(135deg, rgba(201,135,26,0.15), transparent);
-pointer-events: none;
-}
-.btn-rsvp:hover { background: var(–crimson-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(122,21,24,0.28); }
-.btn-rsvp:active { transform: translateY(0); }
-
-/* ─── FOOTER ─── */
-footer {
-background: var(–crimson);
-padding: 56px 20px; text-align: center;
-position: relative; overflow: hidden;
-}
-footer::before {
-content: ‘’; position: absolute; inset: 0;
-background-image: url(“data:image/svg+xml,%3Csvg width=‘40’ height=‘40’ viewBox=‘0 0 40 40’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(255,255,255,0.05)’ stroke-width=‘0.5’%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘8’/%3E%3Ccircle cx=‘20’ cy=‘20’ r=‘15’/%3E%3Cline x1=‘20’ y1=‘0’ x2=‘20’ y2=‘40’/%3E%3Cline x1=‘0’ y1=‘20’ x2=‘40’ y2=‘20’/%3E%3C/g%3E%3C/svg%3E”);
-pointer-events: none;
-}
-.footer-om { font-family: ‘Tiro Devanagari Sanskrit’, serif; font-size: 2rem; color: var(–saffron-light); margin-bottom: 14px; opacity: 0.9; position: relative; }
-.footer-names { font-family: ‘Cormorant Garamond’, serif; font-size: 1.6rem; font-style: italic; color: var(–cream-light); margin-bottom: 10px; position: relative; }
-.footer-note { font-size: 0.78rem; color: rgba(253,246,227,0.6); letter-spacing: 0.14em; position: relative; }
-.footer-gold-line { width: 140px; height: 1px; background: linear-gradient(90deg, transparent, var(–saffron-light), transparent); margin: 16px auto; position: relative; }
-
-/* ─── SCROLL REVEAL ─── */
-.reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1); }
-.reveal.visible { opacity: 1; transform: translateY(0); }
-
-/* ─── CHERRY BLOSSOM PETALS ─── */
-.petals { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-.blossom { position: absolute; top: -80px; opacity: 0; will-change: transform, opacity; animation: blossomFall linear infinite; }
-@keyframes blossomFall {
-0%   { opacity:0;    transform:translateY(0)     rotate(0deg)   translateX(0)   scale(1); }
-4%   { opacity:0.7; }
-30%  { transform:translateY(28vh) rotate(120deg) translateX(25px)  scale(0.95); }
-60%  { transform:translateY(58vh) rotate(270deg) translateX(-20px) scale(1.02); }
-88%  { opacity:0.45; }
-100% { opacity:0;    transform:translateY(112vh) rotate(480deg)  translateX(15px) scale(0.9); }
-}
-
-/* ─── RESPONSIVE ─── */
+/* ── Responsive ── */
 @media (max-width:600px) {
 .corner-lotus { width:130px; }
 .rsvp-card { padding:36px 24px; }
 .form-row { grid-template-columns:1fr; }
 .timeline::before { left:16px; }
-.timeline-item, .timeline-item:nth-child(even) { flex-direction:column; align-items:flex-start; padding-left:36px; }
-.tl-time, .timeline-item:nth-child(even) .tl-time,
-.tl-event, .timeline-item:nth-child(even) .tl-event { text-align:left; }
+.timeline-item,.timeline-item:nth-child(even) { flex-direction:column; align-items:flex-start; padding-left:36px; }
+.tl-time,.timeline-item:nth-child(even) .tl-time,
+.tl-event,.timeline-item:nth-child(even) .tl-event { text-align:left; }
 .tl-dot { position:absolute; left:10px; }
 .timeline-item { position:relative; }
 }
-
-/* ══════════════════════════════════════════════════════════
-ENVELOPE OVERLAY — Wedding themed
-══════════════════════════════════════════════════════════ */
-
-#envelope-overlay {
-position: fixed;
-inset: 0;
-z-index: 10000;
-background: #2a0a08;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-transition: opacity 1.2s ease;
-overflow: hidden;
-}
-
-#envelope-overlay.fading {
-opacity: 0;
-pointer-events: none;
-}
-
-/* Kolam pattern on overlay background */
-#envelope-overlay::before {
-content: ‘’;
-position: absolute;
-inset: 0;
-background-image: url(“data:image/svg+xml,%3Csvg width=‘80’ height=‘80’ viewBox=‘0 0 80 80’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cg fill=‘none’ stroke=‘rgba(201,135,26,0.07)’ stroke-width=‘0.6’%3E%3Cpath d=‘M40 10 L70 40 L40 70 L10 40 Z’/%3E%3Cpath d=‘M40 22 L58 40 L40 58 L22 40 Z’/%3E%3Ccircle cx=‘40’ cy=‘40’ r=‘2.5’/%3E%3Cline x1=‘20’ y1=‘20’ x2=‘30’ y2=‘30’/%3E%3Cline x1=‘60’ y1=‘20’ x2=‘50’ y2=‘30’/%3E%3Cline x1=‘20’ y1=‘60’ x2=‘30’ y2=‘50’/%3E%3Cline x1=‘60’ y1=‘60’ x2=‘50’ y2=‘50’/%3E%3C/g%3E%3C/svg%3E”);
-pointer-events: none;
-opacity: 1;
-}
-
-/* Radial vignette */
-#envelope-overlay::after {
-content: ‘’;
-position: absolute;
-inset: 0;
-background: radial-gradient(ellipse at center, transparent 30%, rgba(20,4,4,0.65) 100%);
-pointer-events: none;
-}
-
-/* ── Top torana decoration ── */
-#env-torana {
-position: absolute;
-top: 0; left: 0; right: 0;
-pointer-events: none;
-animation: envFloat 1s cubic-bezier(0.22,1,0.36,1) both;
-opacity: 0.7;
-}
-
-/* ── Corner flourishes ── */
-.env-corner {
-position: absolute;
-width: 120px;
-opacity: 0.35;
-pointer-events: none;
-}
-.env-corner.tl { top: 0; left: 0; }
-.env-corner.tr { top: 0; right: 0; transform: scaleX(-1); }
-.env-corner.bl { bottom: 0; left: 0; transform: scaleY(-1); }
-.env-corner.br { bottom: 0; right: 0; transform: scale(-1); }
-
-/* ── Envelope wrapper ── */
-#env-wrap {
-position: relative;
-z-index: 2;
-width: min(480px, 90vw);
-cursor: pointer;
-animation: envFloat 1.3s cubic-bezier(0.22,1,0.36,1) both;
-transform-style: preserve-3d;
-}
-
-#env-wrap:not(.env-opened) {
-animation: envFloat 1.3s cubic-bezier(0.22,1,0.36,1) both,
-envIdle 7s ease-in-out 1.5s infinite;
-}
-
-@keyframes envFloat {
-from { opacity: 0; transform: translateY(60px) scale(0.92); }
-to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes envIdle {
-0%, 100% { transform: translateY(0); }
-50%       { transform: translateY(-10px); }
-}
-
-/* ── Envelope body ── */
-#env-body {
-position: relative;
-width: 100%;
-padding-bottom: 62%;  /* 3:2-ish aspect ratio */
-background: var(–cream);
-border-radius: 2px 2px 4px 4px;
-box-shadow:
-0 40px 80px rgba(0,0,0,0.6),
-0 0 0 1px rgba(201,135,26,0.2);
-overflow: hidden;
-}
-
-/* Gold border inset on envelope face */
-#env-body::before {
-content: ‘’;
-position: absolute;
-inset: 8px;
-border: 1px solid rgba(201,135,26,0.25);
-pointer-events: none;
-z-index: 6;
-}
-
-/* ── Envelope diagonal crease lines ── */
-#env-creases {
-position: absolute;
-inset: 0;
-pointer-events: none;
-z-index: 3;
-}
-#env-creases::before,
-#env-creases::after {
-content: ‘’;
-position: absolute;
-background: rgba(122,21,24,0.07);
-width: 1px;
-height: 160%;
-top: -30%;
-left: 50%;
-}
-#env-creases::before { transform: rotate(32deg);  transform-origin: top center; }
-#env-creases::after  { transform: rotate(-32deg); transform-origin: top center; }
-
-/* ── Side & bottom folds (triangles) ── */
-.env-fold-bottom {
-position: absolute;
-bottom: 0; left: 0;
-width: 0; height: 0;
-border-left:  50% solid transparent;
-border-right: 50% solid transparent;
-border-bottom: 38% solid var(–cream-dark);
-z-index: 2;
-width: 100%;  /* override */
-}
-/* Use CSS border trick differently — absolute positioned triangles */
-#env-fold-b {
-position: absolute;
-bottom: 0; left: 0; right: 0;
-height: 0;
-border-style: solid;
-border-color: transparent;
-border-bottom-color: #e8d9b8;
-z-index: 2;
-}
-#env-fold-l {
-position: absolute;
-left: 0; top: 0; bottom: 0;
-width: 0;
-border-style: solid;
-border-color: transparent;
-border-left-color: #eddfc4;
-z-index: 2;
-}
-#env-fold-r {
-position: absolute;
-right: 0; top: 0; bottom: 0;
-width: 0;
-border-style: solid;
-border-color: transparent;
-border-right-color: #eddfc4;
-z-index: 2;
-}
-
-/* ── Envelope front text / decoration ── */
-#env-front {
-position: absolute;
-inset: 0;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-z-index: 4;
-padding: 16px;
-text-align: center;
-pointer-events: none;
-}
-
-#env-front .env-om {
-font-family: ‘Tiro Devanagari Sanskrit’, serif;
-font-size: clamp(1rem, 3vw, 1.5rem);
-color: var(–saffron);
-opacity: 0.7;
-margin-bottom: 4px;
-text-shadow: 0 1px 8px rgba(201,135,26,0.3);
-}
-
-#env-front .env-names {
-font-family: ‘Cormorant Garamond’, serif;
-font-size: clamp(1.1rem, 3.5vw, 1.9rem);
-font-weight: 400;
-color: var(–crimson);
-font-style: italic;
-line-height: 1.2;
-opacity: 0.72;
-letter-spacing: 0.04em;
-}
-
-#env-front .env-amp {
-font-family: ‘Tiro Devanagari Sanskrit’, serif;
-font-size: 0.7em;
-color: var(–saffron);
-opacity: 0.5;
-display: block;
-margin: 2px 0;
-}
-
-#env-front .env-date {
-font-family: ‘Cinzel’, serif;
-font-size: clamp(0.45rem, 1.2vw, 0.6rem);
-letter-spacing: 0.22em;
-text-transform: uppercase;
-color: var(–text-mid);
-opacity: 0.4;
-margin-top: 8px;
-}
-
-/* Gold divider line on envelope face */
-.env-gold-rule {
-width: 55%;
-height: 1px;
-background: linear-gradient(90deg, transparent, var(–saffron) 25%, var(–gold) 50%, var(–saffron) 75%, transparent);
-opacity: 0.45;
-margin: 6px auto;
-}
-
-/* ── Top FLAP ── */
-#env-flap {
-position: absolute;
-top: 0; left: 0; right: 0;
-height: 50%;
-transform-origin: top center;
-transform: rotateX(0deg);
-transition: transform 1.6s cubic-bezier(0.4, 0, 0.2, 1);
-z-index: 10;
-pointer-events: none;
-perspective: 800px;
-}
-
-#env-flap svg {
-width: 100%;
-height: 100%;
-display: block;
-overflow: visible;
-}
-
-.env-opened #env-flap {
-transform: rotateX(-178deg);
-}
-
-/* ── Wax Seal ── */
-#env-seal {
-position: absolute;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%);
-z-index: 15;
-transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1);
-pointer-events: none;
-width: clamp(56px, 12vw, 72px);
-height: clamp(56px, 12vw, 72px);
-}
-
-.env-opened #env-seal {
-opacity: 0;
-transform: translate(-50%, -50%) scale(0.3);
-}
-
-#env-seal-circle {
-width: 100%;
-height: 100%;
-border-radius: 50%;
-background: radial-gradient(circle at 32% 32%,
-#e8c060 0%,
-#c9871a 45%,
-#8a5c0a 100%);
-display: flex;
-align-items: center;
-justify-content: center;
-box-shadow:
-0 4px 14px rgba(0,0,0,0.5),
-inset 0 1px 3px rgba(255,255,255,0.3),
-inset 0 -2px 5px rgba(0,0,0,0.25);
-}
-
-#env-seal-circle .seal-om {
-font-family: ‘Tiro Devanagari Sanskrit’, serif;
-font-size: clamp(1.3rem, 3vw, 1.8rem);
-color: rgba(42, 8, 8, 0.75);
-line-height: 1;
-text-shadow: 0 1px 2px rgba(255,230,150,0.3);
-position: relative;
-top: 1px;
-}
-
-/* Seal outer ring */
-#env-seal::before {
-content: ‘’;
-position: absolute;
-inset: -3px;
-border-radius: 50%;
-border: 1px solid rgba(201,135,26,0.4);
-pointer-events: none;
-}
-
-/* ── Letter (inner paper peeking out) ── */
-#env-letter {
-position: absolute;
-bottom: 4px;
-left: 8px;
-right: 8px;
-height: 90%;
-background: var(–cream-light);
-border-radius: 1px;
-z-index: 5;
-transform: translateY(0);
-transition: transform 1.4s cubic-bezier(0.34, 1.4, 0.64, 1) 0.6s;
-padding: 22px 24px 16px;
-display: flex;
-flex-direction: column;
-gap: 9px;
-box-shadow: 0 -6px 28px rgba(122,21,24,0.12);
-overflow: hidden;
-}
-
-.env-opened #env-letter {
-transform: translateY(-200px);
-}
-
-.env-letter-heading {
-height: 12px;
-width: 38%;
-border-radius: 1px;
-background: rgba(122,21,24,0.18);
-}
-.env-letter-rule {
-height: 1px;
-background: rgba(122,21,24,0.1);
-width: 100%;
-}
-.env-letter-line {
-height: 9px;
-border-radius: 1px;
-background: rgba(122,21,24,0.09);
-}
-.env-letter-line.w-full { width: 100%; }
-.env-letter-line.w-85   { width: 85%; }
-.env-letter-line.w-70   { width: 70%; }
-.env-letter-line.w-55   { width: 55%; }
-
-/* ── Click hint ── */
-#env-hint {
-margin-top: 28px;
-position: relative;
-z-index: 2;
-color: rgba(253,246,227,0.55);
-font-family: ‘Cinzel’, serif;
-font-size: clamp(0.58rem, 1.5vw, 0.72rem);
-letter-spacing: 0.28em;
-text-transform: uppercase;
-animation: envPulse 2.6s ease-in-out 1.6s infinite;
-text-align: center;
-transition: opacity 0.4s ease;
-}
-
-.env-opened #env-hint { opacity: 0; pointer-events: none; }
-
-@keyframes envPulse {
-0%, 100% { opacity: 0.55; }
-50%       { opacity: 0.2; }
-}
-
-/* ── Gold scatter particles ── */
-.env-particle {
-position: fixed;
-pointer-events: none;
-z-index: 10001;
-border-radius: 50%;
-background: var(–saffron);
-animation: envParticleDrift linear forwards;
-}
-
-@keyframes envParticleDrift {
-0%   { opacity: 0.9; transform: translateY(0) scale(1) rotate(0deg); }
-100% { opacity: 0;   transform: translateY(-120px) scale(0.1) rotate(360deg); }
-}
-
 </style>
+
 </head>
-<body class="envelope-active">
+<body class="locked">
 
-<!-- ══════════════════════════════════════════════════════════
-     ENVELOPE OVERLAY
-══════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     THEME PICKER
+══════════════════════════════════════════ -->
 
-<div id="envelope-overlay">
-
-  <!-- Torana string across top -->
-
-  <div id="env-torana">
-    <svg width="100%" height="70" viewBox="0 0 1000 70" preserveAspectRatio="xMidYMax meet" fill="none">
-      <path d="M0 18 Q250 32 500 16 Q750 0 1000 18" stroke="#c9871a" stroke-width="1.8" fill="none" opacity="0.55"/>
-      <circle cx="500" cy="16" r="9" fill="#c9871a" opacity="0.8"/>
-      <circle cx="500" cy="16" r="5" fill="#e2a835"/>
-      <circle cx="500" cy="16" r="2.5" fill="#7a1518"/>
-      <g opacity="0.75">
-        <path d="M80 18 Q76 34 80 50 Q84 34 80 18Z" fill="#2a5a2e" transform="rotate(-10,80,18)"/>
-        <path d="M130 20 Q126 36 130 52 Q134 36 130 20Z" fill="#2a5a2e" transform="rotate(8,130,20)"/>
-        <path d="M185 22 Q181 38 185 54 Q189 38 185 22Z" fill="#1e4422" transform="rotate(-9,185,22)"/>
-        <path d="M240 20 Q236 36 240 52 Q244 36 240 20Z" fill="#2a5a2e" transform="rotate(10,240,20)"/>
-        <path d="M295 17 Q291 33 295 49 Q299 33 295 17Z" fill="#2a5a2e" transform="rotate(-7,295,17)"/>
-        <path d="M350 15 Q346 31 350 47 Q354 31 350 15Z" fill="#1e4422" transform="rotate(9,350,15)"/>
-        <path d="M405 13 Q401 29 405 45 Q409 29 405 13Z" fill="#2a5a2e" transform="rotate(-8,405,13)"/>
-        <path d="M455 13 Q451 29 455 45 Q459 29 455 13Z" fill="#2a5a2e" transform="rotate(6,455,13)"/>
-        <path d="M545 13 Q541 29 545 45 Q549 29 545 13Z" fill="#2a5a2e" transform="rotate(-6,545,13)"/>
-        <path d="M595 13 Q591 29 595 45 Q599 29 595 13Z" fill="#1e4422" transform="rotate(8,595,13)"/>
-        <path d="M650 15 Q646 31 650 47 Q654 31 650 15Z" fill="#2a5a2e" transform="rotate(-9,650,15)"/>
-        <path d="M705 17 Q701 33 705 49 Q709 33 705 17Z" fill="#2a5a2e" transform="rotate(7,705,17)"/>
-        <path d="M760 20 Q756 36 760 52 Q764 36 760 20Z" fill="#1e4422" transform="rotate(-10,760,20)"/>
-        <path d="M815 22 Q811 38 815 54 Q819 38 815 22Z" fill="#2a5a2e" transform="rotate(9,815,22)"/>
-        <path d="M870 20 Q866 36 870 52 Q874 36 870 20Z" fill="#2a5a2e" transform="rotate(-8,870,20)"/>
-        <path d="M920 18 Q916 34 920 50 Q924 34 920 18Z" fill="#2a5a2e" transform="rotate(10,920,18)"/>
-      </g>
-    </svg>
-  </div>
-
-  <!-- Corner lotus ornaments -->
-
-  <svg class="env-corner tl" viewBox="0 0 120 120" fill="none">
-    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
-    <ellipse cx="38" cy="70" rx="14" ry="5.5" fill="#c4748a" opacity="0.35" transform="rotate(-50,38,70)"/>
-    <ellipse cx="55" cy="44" rx="12" ry="5" fill="#7a1518" opacity="0.25" transform="rotate(-32,55,44)"/>
-    <ellipse cx="78" cy="10" rx="8" ry="4" fill="#c9871a" opacity="0.55" transform="rotate(-45,78,10)"/>
-    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.6"/>
-    <circle cx="78" cy="8" r="1.8" fill="#7a1518" opacity="0.75"/>
-  </svg>
-  <svg class="env-corner tr" viewBox="0 0 120 120" fill="none">
-    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
-    <ellipse cx="38" cy="70" rx="14" ry="5.5" fill="#c4748a" opacity="0.35" transform="rotate(-50,38,70)"/>
-    <ellipse cx="78" cy="10" rx="8" ry="4" fill="#c9871a" opacity="0.55" transform="rotate(-45,78,10)"/>
-    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.6"/>
-    <circle cx="78" cy="8" r="1.8" fill="#7a1518" opacity="0.75"/>
-  </svg>
-  <svg class="env-corner bl" viewBox="0 0 120 120" fill="none">
-    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
-    <ellipse cx="55" cy="44" rx="12" ry="5" fill="#c4748a" opacity="0.3" transform="rotate(-32,55,44)"/>
-    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.5"/>
-  </svg>
-  <svg class="env-corner br" viewBox="0 0 120 120" fill="none">
-    <path d="M5 115 Q18 80 40 55 Q58 32 78 10" stroke="#c9871a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
-    <circle cx="78" cy="8" r="3.5" fill="#c9871a" opacity="0.45"/>
-  </svg>
-
-  <!-- The envelope itself -->
-
-  <div id="env-wrap">
-
-```
-<!-- Inner letter paper -->
-<div id="env-letter">
-  <div class="env-letter-heading"></div>
-  <div class="env-letter-rule"></div>
-  <div class="env-letter-line w-full"></div>
-  <div class="env-letter-line w-85"></div>
-  <div class="env-letter-line w-70"></div>
-  <div class="env-letter-line w-full"></div>
-  <div class="env-letter-line w-55"></div>
-  <div class="env-letter-rule" style="margin-top:2px;"></div>
-  <div class="env-letter-line w-70"></div>
+<div class="theme-picker">
+  <button class="theme-btn t-default" onclick="setTheme('default')" title="Crimson &amp; Cream"></button>
+  <button class="theme-btn t-green"   onclick="setTheme('green')"   title="British Racing Green &amp; Gold"></button>
+  <button class="theme-btn t-purple"  onclick="setTheme('purple')"  title="Purple &amp; Cream"></button>
 </div>
 
-<!-- Envelope body container -->
-<div id="env-body">
-  <div id="env-creases"></div>
+<!-- ══════════════════════════════════════════
+     ENVELOPE OVERLAY
+══════════════════════════════════════════ -->
 
-  <!-- SVG folds: bottom, left, right triangles -->
-  <svg style="position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;" viewBox="0 0 480 300" preserveAspectRatio="none">
-    <!-- Bottom fold -->
-    <polygon points="0,300 480,300 240,165" fill="#e2d4b2"/>
-    <!-- Left fold -->
-    <polygon points="0,0 0,300 225,150" fill="#ead7b8"/>
-    <!-- Right fold -->
-    <polygon points="480,0 480,300 255,150" fill="#ead7b8"/>
-    <!-- subtle crease shadows -->
-    <line x1="0" y1="300" x2="240" y2="165" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
-    <line x1="480" y1="300" x2="240" y2="165" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
-    <line x1="0" y1="0" x2="225" y2="150" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
-    <line x1="480" y1="0" x2="255" y2="150" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
-  </svg>
+<div id="envelope-overlay" class="envelope-overlay">
+  <div class="envelope-wrapper">
 
-  <!-- Envelope front text -->
-  <div id="env-front">
-    <div class="env-gold-rule"></div>
-    <div class="env-om">ॐ</div>
-    <div class="env-names">
-      Greeshma
-      <span class="env-amp">weds</span>
-      Vijesh
-    </div>
-    <div class="env-date">Shubha Vivaha &nbsp;·&nbsp; 29 April 2026</div>
-    <div class="env-gold-rule" style="margin-top:8px;"></div>
-  </div>
+```
+<div class="env-back"></div>
 
-  <!-- Top flap SVG -->
-  <div id="env-flap">
-    <svg viewBox="0 0 480 300" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="envFlapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stop-color="#f0e6c4"/>
-          <stop offset="100%" stop-color="#fdf6e3"/>
-        </linearGradient>
-        <filter id="envFlapShadow">
-          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(122,21,24,0.12)"/>
-        </filter>
-      </defs>
-      <polygon
-        points="0,0 480,0 240,172"
-        fill="url(#envFlapGrad)"
-        filter="url(#envFlapShadow)"
-      />
-      <!-- Flap crease lines -->
-      <line x1="0"   y1="0" x2="240" y2="172" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
-      <line x1="480" y1="0" x2="240" y2="172" stroke="rgba(122,21,24,0.06)" stroke-width="1"/>
-      <!-- Gold border along flap edges -->
-      <line x1="2"   y1="2" x2="238" y2="170" stroke="rgba(201,135,26,0.18)" stroke-width="0.8"/>
-      <line x1="478" y1="2" x2="242" y2="170" stroke="rgba(201,135,26,0.18)" stroke-width="0.8"/>
-    </svg>
-  </div>
+<div class="env-letter">
+  <div class="env-om-inner">ॐ</div>
+  <p class="env-couple">G &amp; V</p>
+  <span class="env-date-tag">29 · April · 2026</span>
+</div>
 
-  <!-- Wax seal -->
-  <div id="env-seal">
-    <div id="env-seal-circle">
-      <span class="seal-om">ॐ</span>
-    </div>
-  </div>
+<div class="env-front-bottom"></div>
+<div class="env-front-left"></div>
+<div class="env-front-right"></div>
 
-</div><!-- /env-body -->
+<div class="env-flap-top"></div>
+<!-- Seal is a sibling of the flap so it doesn't inherit the 3D flip -->
+<div class="env-wax-seal">ॐ</div>
 
-<!-- Click hint -->
-<div id="env-hint">Click to open &nbsp; · &nbsp; ಕ್ಲಿಕ್ ಮಾಡಿ</div>
+<p class="env-instruction">Scroll · Tap · Click to Open</p>
 ```
 
-  </div><!-- /env-wrap -->
+  </div>
+</div>
 
-</div><!-- /envelope-overlay -->
-
-<!-- ══════════════════════════════════════════════════════════
-     MAIN WEBSITE
-══════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     MAIN SITE
+══════════════════════════════════════════ -->
 
 <div class="petals" id="petals"></div>
 
 <svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <pattern id="kolam" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-      <path d="M40 10 L70 40 L40 70 L10 40 Z" fill="none" stroke="#7a1518" stroke-width="0.6"/>
-      <path d="M40 22 L58 40 L40 58 L22 40 Z" fill="none" stroke="#c9871a" stroke-width="0.5"/>
-      <circle cx="40" cy="40" r="2.5" fill="#7a1518"/>
-      <circle cx="10" cy="40" r="1.5" fill="#c9871a"/>
-      <circle cx="70" cy="40" r="1.5" fill="#c9871a"/>
-      <circle cx="40" cy="10" r="1.5" fill="#c9871a"/>
-      <circle cx="40" cy="70" r="1.5" fill="#c9871a"/>
-      <line x1="10" y1="10" x2="30" y2="30" stroke="#7a1518" stroke-width="0.4"/>
-      <line x1="70" y1="10" x2="50" y2="30" stroke="#7a1518" stroke-width="0.4"/>
-      <line x1="10" y1="70" x2="30" y2="50" stroke="#7a1518" stroke-width="0.4"/>
-      <line x1="70" y1="70" x2="50" y2="50" stroke="#7a1518" stroke-width="0.4"/>
+      <path d="M40 10 L70 40 L40 70 L10 40 Z" fill="none" stroke="var(--crimson)" stroke-width="0.6"/>
+      <path d="M40 22 L58 40 L40 58 L22 40 Z" fill="none" stroke="var(--saffron)" stroke-width="0.5"/>
+      <circle cx="40" cy="40" r="2.5" fill="var(--crimson)"/>
+      <circle cx="10" cy="40" r="1.5" fill="var(--saffron)"/>
+      <circle cx="70" cy="40" r="1.5" fill="var(--saffron)"/>
+      <circle cx="40" cy="10" r="1.5" fill="var(--saffron)"/>
+      <circle cx="40" cy="70" r="1.5" fill="var(--saffron)"/>
+      <line x1="10" y1="10" x2="30" y2="30" stroke="var(--crimson)" stroke-width="0.4"/>
+      <line x1="70" y1="10" x2="50" y2="30" stroke="var(--crimson)" stroke-width="0.4"/>
+      <line x1="10" y1="70" x2="30" y2="50" stroke="var(--crimson)" stroke-width="0.4"/>
+      <line x1="70" y1="70" x2="50" y2="50" stroke="var(--crimson)" stroke-width="0.4"/>
     </pattern>
   </defs>
   <rect width="100%" height="100%" fill="url(#kolam)"/>
@@ -1001,80 +547,72 @@ animation: envParticleDrift linear forwards;
 
 <div class="page">
 
-  <!-- ═════════════════ HERO ═════════════════ -->
+  <!-- ════ HERO ════ -->
 
   <section class="hero">
+    <div class="torana">
+      <svg width="100%" height="88" viewBox="0 0 1000 88" preserveAspectRatio="xMidYMax meet" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 20 Q250 36 500 18 Q750 0 1000 20" stroke="var(--saffron)" stroke-width="2.2" fill="none" opacity="0.65"/>
+        <circle cx="500" cy="18" r="11" fill="var(--saffron)" opacity="0.88"/>
+        <circle cx="500" cy="18" r="6.5" fill="var(--saffron-light)"/>
+        <circle cx="500" cy="18" r="3" fill="var(--crimson)"/>
+        <g opacity="0.85">
+          <path d="M70 20 Q65 40 70 58 Q75 40 70 20Z" fill="#2a5a2e" transform="rotate(-12,70,20)"/>
+          <path d="M120 22 Q115 42 120 60 Q125 42 120 22Z" fill="#2a5a2e" transform="rotate(9,120,22)"/>
+          <path d="M170 25 Q165 45 170 62 Q175 45 170 25Z" fill="#1e4422" transform="rotate(-10,170,25)"/>
+          <path d="M220 24 Q215 44 220 61 Q225 44 220 24Z" fill="#2a5a2e" transform="rotate(7,220,24)"/>
+          <path d="M270 20 Q265 40 270 57 Q275 40 270 20Z" fill="#2a5a2e" transform="rotate(-8,270,20)"/>
+          <path d="M320 17 Q315 37 320 54 Q325 37 320 17Z" fill="#1e4422" transform="rotate(11,320,17)"/>
+          <path d="M370 15 Q365 35 370 52 Q375 35 370 15Z" fill="#2a5a2e" transform="rotate(-6,370,15)"/>
+          <path d="M420 14 Q415 34 420 51 Q425 34 420 14Z" fill="#2a5a2e" transform="rotate(9,420,14)"/>
+          <path d="M460 14 Q455 34 460 51 Q465 34 460 14Z" fill="#1e4422" transform="rotate(-7,460,14)"/>
+          <path d="M540 14 Q535 34 540 51 Q545 34 540 14Z" fill="#1e4422" transform="rotate(7,540,14)"/>
+          <path d="M580 14 Q575 34 580 51 Q585 34 580 14Z" fill="#2a5a2e" transform="rotate(-9,580,14)"/>
+          <path d="M630 15 Q625 35 630 52 Q635 35 630 15Z" fill="#2a5a2e" transform="rotate(6,630,15)"/>
+          <path d="M680 17 Q675 37 680 54 Q685 37 680 17Z" fill="#1e4422" transform="rotate(-11,680,17)"/>
+          <path d="M730 20 Q725 40 730 57 Q735 40 730 20Z" fill="#2a5a2e" transform="rotate(8,730,20)"/>
+          <path d="M780 24 Q775 44 780 61 Q785 44 780 24Z" fill="#2a5a2e" transform="rotate(-7,780,24)"/>
+          <path d="M830 25 Q825 45 830 62 Q835 45 830 25Z" fill="#1e4422" transform="rotate(10,830,25)"/>
+          <path d="M880 22 Q875 42 880 60 Q885 42 880 22Z" fill="#2a5a2e" transform="rotate(-9,880,22)"/>
+          <path d="M930 20 Q925 40 930 58 Q935 40 930 20Z" fill="#2a5a2e" transform="rotate(12,930,20)"/>
+        </g>
+      </svg>
+    </div>
 
 ```
-<div class="torana">
-  <svg width="100%" height="88" viewBox="0 0 1000 88" preserveAspectRatio="xMidYMax meet" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0 20 Q250 36 500 18 Q750 0 1000 20" stroke="#c9871a" stroke-width="2.2" fill="none" opacity="0.65"/>
-    <circle cx="500" cy="18" r="11" fill="#c9871a" opacity="0.88"/>
-    <circle cx="500" cy="18" r="6.5" fill="#e2a835"/>
-    <circle cx="500" cy="18" r="3" fill="#7a1518"/>
-    <g opacity="0.85">
-      <path d="M70 20 Q65 40 70 58 Q75 40 70 20Z" fill="#2a5a2e" transform="rotate(-12,70,20)"/>
-      <line x1="70" y1="21" x2="70" y2="56" stroke="#c9871a" stroke-width="0.6" transform="rotate(-12,70,20)" opacity="0.45"/>
-      <path d="M120 22 Q115 42 120 60 Q125 42 120 22Z" fill="#2a5a2e" transform="rotate(9,120,22)"/>
-      <line x1="120" y1="23" x2="120" y2="58" stroke="#c9871a" stroke-width="0.6" transform="rotate(9,120,22)" opacity="0.45"/>
-      <path d="M170 25 Q165 45 170 62 Q175 45 170 25Z" fill="#1e4422" transform="rotate(-10,170,25)"/>
-      <path d="M220 24 Q215 44 220 61 Q225 44 220 24Z" fill="#2a5a2e" transform="rotate(7,220,24)"/>
-      <path d="M270 20 Q265 40 270 57 Q275 40 270 20Z" fill="#2a5a2e" transform="rotate(-8,270,20)"/>
-      <path d="M320 17 Q315 37 320 54 Q325 37 320 17Z" fill="#1e4422" transform="rotate(11,320,17)"/>
-      <path d="M370 15 Q365 35 370 52 Q375 35 370 15Z" fill="#2a5a2e" transform="rotate(-6,370,15)"/>
-      <path d="M420 14 Q415 34 420 51 Q425 34 420 14Z" fill="#2a5a2e" transform="rotate(9,420,14)"/>
-      <path d="M460 14 Q455 34 460 51 Q465 34 460 14Z" fill="#1e4422" transform="rotate(-7,460,14)"/>
-      <path d="M540 14 Q535 34 540 51 Q545 34 540 14Z" fill="#1e4422" transform="rotate(7,540,14)"/>
-      <path d="M580 14 Q575 34 580 51 Q585 34 580 14Z" fill="#2a5a2e" transform="rotate(-9,580,14)"/>
-      <path d="M630 15 Q625 35 630 52 Q635 35 630 15Z" fill="#2a5a2e" transform="rotate(6,630,15)"/>
-      <path d="M680 17 Q675 37 680 54 Q685 37 680 17Z" fill="#1e4422" transform="rotate(-11,680,17)"/>
-      <path d="M730 20 Q725 40 730 57 Q735 40 730 20Z" fill="#2a5a2e" transform="rotate(8,730,20)"/>
-      <path d="M780 24 Q775 44 780 61 Q785 44 780 24Z" fill="#2a5a2e" transform="rotate(-7,780,24)"/>
-      <path d="M830 25 Q825 45 830 62 Q835 45 830 25Z" fill="#1e4422" transform="rotate(10,830,25)"/>
-      <path d="M880 22 Q875 42 880 60 Q885 42 880 22Z" fill="#2a5a2e" transform="rotate(-9,880,22)"/>
-      <path d="M930 20 Q925 40 930 58 Q935 40 930 20Z" fill="#2a5a2e" transform="rotate(12,930,20)"/>
-    </g>
-  </svg>
-</div>
-
 <svg class="corner-lotus tl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-  <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
-  <ellipse cx="38" cy="90" rx="17" ry="7" fill="#7a1518" opacity="0.28" transform="rotate(-68,38,90)"/>
-  <ellipse cx="72" cy="76" rx="19" ry="8" fill="#c4748a" opacity="0.38" transform="rotate(-32,72,76)"/>
-  <ellipse cx="52" cy="52" rx="15" ry="6" fill="#7a1518" opacity="0.28" transform="rotate(-58,52,52)"/>
-  <ellipse cx="102" cy="18" rx="10" ry="5" fill="#c9871a" opacity="0.6" transform="rotate(-45,102,18)"/>
-  <ellipse cx="114" cy="6" rx="10" ry="5" fill="#c4748a" opacity="0.48" transform="rotate(-28,114,6)"/>
-  <ellipse cx="90" cy="6" rx="10" ry="5" fill="#c4748a" opacity="0.48" transform="rotate(-62,90,6)"/>
-  <circle cx="102" cy="12" r="5" fill="#c9871a" opacity="0.7"/>
-  <circle cx="102" cy="12" r="2.4" fill="#7a1518" opacity="0.8"/>
+  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="var(--saffron)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="58" cy="118" rx="20" ry="8" fill="var(--crimson-pale)" opacity="0.42" transform="rotate(-50,58,118)"/>
+  <ellipse cx="38" cy="90" rx="17" ry="7" fill="var(--crimson)" opacity="0.28" transform="rotate(-68,38,90)"/>
+  <ellipse cx="72" cy="76" rx="19" ry="8" fill="var(--crimson-pale)" opacity="0.38" transform="rotate(-32,72,76)"/>
+  <ellipse cx="52" cy="52" rx="15" ry="6" fill="var(--crimson)" opacity="0.28" transform="rotate(-58,52,52)"/>
+  <ellipse cx="102" cy="18" rx="10" ry="5" fill="var(--saffron)" opacity="0.6" transform="rotate(-45,102,18)"/>
+  <ellipse cx="114" cy="6" rx="10" ry="5" fill="var(--crimson-pale)" opacity="0.48" transform="rotate(-28,114,6)"/>
+  <ellipse cx="90" cy="6" rx="10" ry="5" fill="var(--crimson-pale)" opacity="0.48" transform="rotate(-62,90,6)"/>
+  <circle cx="102" cy="12" r="5" fill="var(--saffron)" opacity="0.7"/>
+  <circle cx="102" cy="12" r="2.4" fill="var(--crimson)" opacity="0.8"/>
   <ellipse cx="25" cy="162" rx="13" ry="5" fill="#2a5a2e" opacity="0.38" transform="rotate(-38,25,162)"/>
 </svg>
-
 <svg class="corner-lotus tr" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-  <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
-  <ellipse cx="38" cy="90" rx="17" ry="7" fill="#7a1518" opacity="0.28" transform="rotate(-68,38,90)"/>
-  <ellipse cx="72" cy="76" rx="19" ry="8" fill="#c4748a" opacity="0.38" transform="rotate(-32,72,76)"/>
-  <ellipse cx="102" cy="18" rx="10" ry="5" fill="#c9871a" opacity="0.6" transform="rotate(-45,102,18)"/>
-  <ellipse cx="114" cy="6" rx="10" ry="5" fill="#c4748a" opacity="0.48" transform="rotate(-28,114,6)"/>
-  <ellipse cx="90" cy="6" rx="10" ry="5" fill="#c4748a" opacity="0.48" transform="rotate(-62,90,6)"/>
-  <circle cx="102" cy="12" r="5" fill="#c9871a" opacity="0.7"/>
-  <circle cx="102" cy="12" r="2.4" fill="#7a1518" opacity="0.8"/>
+  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="var(--saffron)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="58" cy="118" rx="20" ry="8" fill="var(--crimson-pale)" opacity="0.42" transform="rotate(-50,58,118)"/>
+  <ellipse cx="38" cy="90" rx="17" ry="7" fill="var(--crimson)" opacity="0.28" transform="rotate(-68,38,90)"/>
+  <ellipse cx="72" cy="76" rx="19" ry="8" fill="var(--crimson-pale)" opacity="0.38" transform="rotate(-32,72,76)"/>
+  <ellipse cx="102" cy="18" rx="10" ry="5" fill="var(--saffron)" opacity="0.6" transform="rotate(-45,102,18)"/>
+  <circle cx="102" cy="12" r="5" fill="var(--saffron)" opacity="0.7"/>
+  <circle cx="102" cy="12" r="2.4" fill="var(--crimson)" opacity="0.8"/>
 </svg>
-
 <svg class="corner-lotus bl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-  <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
-  <ellipse cx="72" cy="76" rx="19" ry="8" fill="#c4748a" opacity="0.38" transform="rotate(-32,72,76)"/>
-  <circle cx="102" cy="12" r="5" fill="#c9871a" opacity="0.7"/>
-  <circle cx="102" cy="12" r="2.4" fill="#7a1518" opacity="0.8"/>
+  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="var(--saffron)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="58" cy="118" rx="20" ry="8" fill="var(--crimson-pale)" opacity="0.42" transform="rotate(-50,58,118)"/>
+  <ellipse cx="72" cy="76" rx="19" ry="8" fill="var(--crimson-pale)" opacity="0.38" transform="rotate(-32,72,76)"/>
+  <circle cx="102" cy="12" r="5" fill="var(--saffron)" opacity="0.7"/>
+  <circle cx="102" cy="12" r="2.4" fill="var(--crimson)" opacity="0.8"/>
 </svg>
-
 <svg class="corner-lotus br" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="#c9871a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-  <ellipse cx="58" cy="118" rx="20" ry="8" fill="#c4748a" opacity="0.42" transform="rotate(-50,58,118)"/>
-  <circle cx="102" cy="12" r="5" fill="#c9871a" opacity="0.7"/>
+  <path d="M8 192 Q28 140 58 95 Q78 55 102 18" stroke="var(--saffron)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="58" cy="118" rx="20" ry="8" fill="var(--crimson-pale)" opacity="0.42" transform="rotate(-50,58,118)"/>
+  <circle cx="102" cy="12" r="5" fill="var(--saffron)" opacity="0.7"/>
 </svg>
 
 <div style="position:relative;z-index:2;margin-top:72px;">
@@ -1091,34 +629,32 @@ animation: envParticleDrift linear forwards;
   <p class="hero-date">Wednesday, the 29th of April, 2026</p>
   <p class="hero-venue">Mandara &nbsp;·&nbsp; Bengaluru</p>
   <svg class="hero-flourish" width="300" height="44" viewBox="0 0 300 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <line x1="0" y1="22" x2="115" y2="22" stroke="#c9871a" stroke-width="0.8" opacity="0.42"/>
-    <line x1="185" y1="22" x2="300" y2="22" stroke="#c9871a" stroke-width="0.8" opacity="0.42"/>
-    <ellipse cx="150" cy="22" rx="10" ry="5" fill="#c9871a" opacity="0.48"/>
-    <ellipse cx="150" cy="22" rx="10" ry="5" fill="#c9871a" opacity="0.48" transform="rotate(60,150,22)"/>
-    <ellipse cx="150" cy="22" rx="10" ry="5" fill="#c9871a" opacity="0.48" transform="rotate(120,150,22)"/>
-    <circle cx="150" cy="22" r="4" fill="#7a1518" opacity="0.7"/>
-    <circle cx="150" cy="22" r="2" fill="#c9871a" opacity="0.9"/>
-    <path d="M127 22 L130 19 L133 22 L130 25Z" fill="#c4748a" opacity="0.55"/>
-    <path d="M167 22 L170 19 L173 22 L170 25Z" fill="#c4748a" opacity="0.55"/>
-    <path d="M116 22 L119 19 L122 22 L119 25Z" fill="#c9871a" opacity="0.38"/>
-    <path d="M178 22 L181 19 L184 22 L181 25Z" fill="#c9871a" opacity="0.38"/>
+    <line x1="0" y1="22" x2="115" y2="22" stroke="var(--saffron)" stroke-width="0.8" opacity="0.42"/>
+    <line x1="185" y1="22" x2="300" y2="22" stroke="var(--saffron)" stroke-width="0.8" opacity="0.42"/>
+    <ellipse cx="150" cy="22" rx="10" ry="5" fill="var(--saffron)" opacity="0.48"/>
+    <ellipse cx="150" cy="22" rx="10" ry="5" fill="var(--saffron)" opacity="0.48" transform="rotate(60,150,22)"/>
+    <ellipse cx="150" cy="22" rx="10" ry="5" fill="var(--saffron)" opacity="0.48" transform="rotate(120,150,22)"/>
+    <circle cx="150" cy="22" r="4" fill="var(--crimson)" opacity="0.7"/>
+    <circle cx="150" cy="22" r="2" fill="var(--saffron)" opacity="0.9"/>
+    <path d="M127 22 L130 19 L133 22 L130 25Z" fill="var(--crimson-pale)" opacity="0.55"/>
+    <path d="M167 22 L170 19 L173 22 L170 25Z" fill="var(--crimson-pale)" opacity="0.55"/>
   </svg>
 </div>
 ```
 
   </section>
 
-  <!-- ═════════════════ BLESSINGS ═════════════════ -->
+  <!-- ════ BLESSINGS ════ -->
 
   <section>
     <div class="section-inner reveal">
       <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
-        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
-        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
-        <path d="M87 16 L91 11 L95 16 L91 21Z" fill="#7a1518" opacity="0.4"/>
-        <path d="M105 16 L109 11 L113 16 L109 21Z" fill="#7a1518" opacity="0.4"/>
+        <line x1="0" y1="16" x2="82" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="var(--saffron)" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="var(--crimson)" opacity="0.8"/>
+        <path d="M87 16 L91 11 L95 16 L91 21Z" fill="var(--crimson)" opacity="0.4"/>
+        <path d="M105 16 L109 11 L113 16 L109 21Z" fill="var(--crimson)" opacity="0.4"/>
       </svg>
       <p class="section-tag">Shubha Ashirvaadam</p>
       <h2 class="section-title">A Sacred Union</h2>
@@ -1127,21 +663,19 @@ animation: envParticleDrift linear forwards;
       </p>
       <div style="margin-top:42px;">
         <svg width="52" height="68" viewBox="0 0 56 72" fill="none" style="opacity:0.72;">
-          <path d="M28 4 C24 12 20 18 24 24 C26 28 28 26 28 26 C28 26 30 28 32 24 C36 18 32 12 28 4Z" fill="#e2a835" opacity="0.88"/>
-          <path d="M28 10 C26 15 24 19 26 22 C27 24 28 23 28 23 C28 23 29 24 30 22 C32 19 30 15 28 10Z" fill="#fdf6e3" opacity="0.7"/>
-          <line x1="28" y1="24" x2="28" y2="32" stroke="#7a1518" stroke-width="1.5"/>
-          <path d="M14 32 Q12 40 16 46 Q22 52 28 52 Q34 52 40 46 Q44 40 42 32 Z" fill="#c9871a" opacity="0.72"/>
-          <path d="M12 32 L44 32" stroke="#7a1518" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M40 38 Q50 38 50 30 Q50 24 44 26" stroke="#b8840e" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-          <rect x="20" y="52" width="16" height="3" rx="1.5" fill="#7a1518" opacity="0.5"/>
-          <rect x="16" y="55" width="24" height="4" rx="2" fill="#c9871a" opacity="0.5"/>
-          <rect x="18" y="59" width="20" height="3" rx="1.5" fill="#b8840e" opacity="0.4"/>
+          <path d="M28 4 C24 12 20 18 24 24 C26 28 28 26 28 26 C28 26 30 28 32 24 C36 18 32 12 28 4Z" fill="var(--saffron-light)" opacity="0.88"/>
+          <path d="M28 10 C26 15 24 19 26 22 C27 24 28 23 28 23 C28 23 29 24 30 22 C32 19 30 15 28 10Z" fill="var(--cream-light)" opacity="0.7"/>
+          <line x1="28" y1="24" x2="28" y2="32" stroke="var(--crimson)" stroke-width="1.5"/>
+          <path d="M14 32 Q12 40 16 46 Q22 52 28 52 Q34 52 40 46 Q44 40 42 32 Z" fill="var(--saffron)" opacity="0.72"/>
+          <path d="M12 32 L44 32" stroke="var(--crimson)" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="20" y="52" width="16" height="3" rx="1.5" fill="var(--crimson)" opacity="0.5"/>
+          <rect x="16" y="55" width="24" height="4" rx="2" fill="var(--saffron)" opacity="0.5"/>
         </svg>
       </div>
     </div>
   </section>
 
-  <!-- ═════════════════ DETAILS BAND ═════════════════ -->
+  <!-- ════ DETAILS BAND ════ -->
 
   <section class="details-band">
     <div class="section-inner reveal">
@@ -1150,40 +684,39 @@ animation: envParticleDrift linear forwards;
       <div class="details-grid">
         <div class="detail-item">
           <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <rect x="4" y="8" width="32" height="26" rx="1" stroke="#e2a835" stroke-width="1.2"/>
-            <line x1="4" y1="15" x2="36" y2="15" stroke="#e2a835" stroke-width="1"/>
-            <line x1="12" y1="4" x2="12" y2="12" stroke="#e2a835" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="28" y1="4" x2="28" y2="12" stroke="#e2a835" stroke-width="1.5" stroke-linecap="round"/>
-            <text x="20" y="30" text-anchor="middle" font-family="serif" font-size="13" fill="#e2a835" opacity="0.9">ॐ</text>
+            <rect x="4" y="8" width="32" height="26" rx="1" stroke="var(--saffron-light)" stroke-width="1.2"/>
+            <line x1="4" y1="15" x2="36" y2="15" stroke="var(--saffron-light)" stroke-width="1"/>
+            <line x1="12" y1="4" x2="12" y2="12" stroke="var(--saffron-light)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="28" y1="4" x2="28" y2="12" stroke="var(--saffron-light)" stroke-width="1.5" stroke-linecap="round"/>
+            <text x="20" y="30" text-anchor="middle" font-family="serif" font-size="13" fill="var(--saffron-light)" opacity="0.9">ॐ</text>
           </svg>
           <p class="detail-label">Muhurtham Date</p>
           <p class="detail-value">29 April 2026<br>Wednesday</p>
         </div>
         <div class="detail-item">
           <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <circle cx="20" cy="20" r="14" stroke="#e2a835" stroke-width="1.2"/>
-            <circle cx="20" cy="20" r="10" stroke="#e2a835" stroke-width="0.5" stroke-dasharray="2 2"/>
-            <line x1="20" y1="20" x2="20" y2="10" stroke="#e2a835" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="20" y1="20" x2="26" y2="23" stroke="#e2a835" stroke-width="1.8" stroke-linecap="round"/>
-            <circle cx="20" cy="20" r="2" fill="#e2a835"/>
+            <circle cx="20" cy="20" r="14" stroke="var(--saffron-light)" stroke-width="1.2"/>
+            <line x1="20" y1="20" x2="20" y2="10" stroke="var(--saffron-light)" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="20" y1="20" x2="26" y2="23" stroke="var(--saffron-light)" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="20" cy="20" r="2" fill="var(--saffron-light)"/>
           </svg>
           <p class="detail-label">Muhurtham Time</p>
           <p class="detail-value">9:30 AM<br>Reception 7:00 PM</p>
         </div>
         <div class="detail-item">
           <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <rect x="14" y="22" width="12" height="14" fill="none" stroke="#e2a835" stroke-width="1.2"/>
-            <path d="M12 22 L20 6 L28 22 Z" fill="none" stroke="#e2a835" stroke-width="1.2" stroke-linejoin="round"/>
-            <circle cx="20" cy="5" r="2" fill="#e2a835" opacity="0.75"/>
-            <line x1="20" y1="22" x2="20" y2="36" stroke="#e2a835" stroke-width="1"/>
+            <rect x="14" y="22" width="12" height="14" fill="none" stroke="var(--saffron-light)" stroke-width="1.2"/>
+            <path d="M12 22 L20 6 L28 22 Z" fill="none" stroke="var(--saffron-light)" stroke-width="1.2" stroke-linejoin="round"/>
+            <circle cx="20" cy="5" r="2" fill="var(--saffron-light)" opacity="0.75"/>
+            <line x1="20" y1="22" x2="20" y2="36" stroke="var(--saffron-light)" stroke-width="1"/>
           </svg>
           <p class="detail-label">Venue</p>
           <p class="detail-value">Mandara<br>Bengaluru</p>
         </div>
         <div class="detail-item">
           <svg class="detail-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <path d="M13 4 L20 12 L27 4 L31 8 L26 16 L30 36 L10 36 L14 16 L9 8 Z" stroke="#e2a835" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
-            <path d="M10 28 Q20 25 30 28" stroke="#e2a835" stroke-width="0.7" fill="none"/>
+            <path d="M13 4 L20 12 L27 4 L31 8 L26 16 L30 36 L10 36 L14 16 L9 8 Z" stroke="var(--saffron-light)" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+            <path d="M10 28 Q20 25 30 28" stroke="var(--saffron-light)" stroke-width="0.7" fill="none"/>
           </svg>
           <p class="detail-label">Attire</p>
           <p class="detail-value">Traditional<br>South Indian Silk</p>
@@ -1192,23 +725,22 @@ animation: envParticleDrift linear forwards;
     </div>
   </section>
 
-  <!-- ═════════════════ CEREMONIES ═════════════════ -->
+  <!-- ════ CEREMONIES ════ -->
 
   <section>
     <div class="section-inner reveal">
       <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
-        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
-        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
+        <line x1="0" y1="16" x2="82" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="var(--saffron)" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="var(--crimson)" opacity="0.8"/>
       </svg>
       <p class="section-tag">Utsav Krama</p>
       <h2 class="section-title">Order of Ceremonies</h2>
       <p class="section-body">Each ritual is a sacred thread woven into the tapestry of a new life together.</p>
       <ul class="timeline">
         <li class="timeline-item">
-          <span class="tl-time">7:00 AM</span>
-          <span class="tl-dot"></span>
+          <span class="tl-time">7:00 AM</span><span class="tl-dot"></span>
           <div class="tl-event">
             <p class="tl-event-kannada">ಮಂಗಲ ಸ್ನಾನ</p>
             <p class="tl-event-name">Mangala Snanam</p>
@@ -1216,8 +748,7 @@ animation: envParticleDrift linear forwards;
           </div>
         </li>
         <li class="timeline-item">
-          <span class="tl-time">8:30 AM</span>
-          <span class="tl-dot"></span>
+          <span class="tl-time">8:30 AM</span><span class="tl-dot"></span>
           <div class="tl-event">
             <p class="tl-event-kannada">ವರ ಪೂಜೆ</p>
             <p class="tl-event-name">Vara Pooja</p>
@@ -1225,8 +756,7 @@ animation: envParticleDrift linear forwards;
           </div>
         </li>
         <li class="timeline-item">
-          <span class="tl-time">9:00 AM</span>
-          <span class="tl-dot"></span>
+          <span class="tl-time">9:00 AM</span><span class="tl-dot"></span>
           <div class="tl-event">
             <p class="tl-event-kannada">ಕಾಶಿ ಯಾತ್ರೆ</p>
             <p class="tl-event-name">Kashi Yatra</p>
@@ -1234,8 +764,7 @@ animation: envParticleDrift linear forwards;
           </div>
         </li>
         <li class="timeline-item">
-          <span class="tl-time">9:30 AM</span>
-          <span class="tl-dot"></span>
+          <span class="tl-time">9:30 AM</span><span class="tl-dot"></span>
           <div class="tl-event">
             <p class="tl-event-kannada">ಮುಹೂರ್ತ · ಸಪ್ತಪದಿ</p>
             <p class="tl-event-name">Muhurtham &amp; Saptapadi</p>
@@ -1243,8 +772,7 @@ animation: envParticleDrift linear forwards;
           </div>
         </li>
         <li class="timeline-item">
-          <span class="tl-time">12:00 PM</span>
-          <span class="tl-dot"></span>
+          <span class="tl-time">12:00 PM</span><span class="tl-dot"></span>
           <div class="tl-event">
             <p class="tl-event-kannada">ವಿವಾಹ ಸದ್ಯ</p>
             <p class="tl-event-name">Wedding Sadya</p>
@@ -1252,8 +780,7 @@ animation: envParticleDrift linear forwards;
           </div>
         </li>
         <li class="timeline-item">
-          <span class="tl-time">7:00 PM</span>
-          <span class="tl-dot"></span>
+          <span class="tl-time">7:00 PM</span><span class="tl-dot"></span>
           <div class="tl-event">
             <p class="tl-event-kannada">ಆಶೀರ್ವಾದ ಸ್ವಾಗತ</p>
             <p class="tl-event-name">Ashirvaadam &amp; Reception</p>
@@ -1264,15 +791,15 @@ animation: envParticleDrift linear forwards;
     </div>
   </section>
 
-  <!-- ═════════════════ PHOTO BOOTH ═════════════════ -->
+  <!-- ════ PHOTO BOOTH ════ -->
 
   <section class="photobooth-section reveal">
     <div class="section-inner">
       <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
-        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
-        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
+        <line x1="0" y1="16" x2="82" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="var(--saffron)" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="var(--crimson)" opacity="0.8"/>
       </svg>
       <p class="section-tag">Smriti Chitre · Memory Gallery</p>
       <h2 class="section-title">Capture the Celebration</h2>
@@ -1299,15 +826,15 @@ animation: envParticleDrift linear forwards;
     </div>
   </section>
 
-  <!-- ═════════════════ RSVP ═════════════════ -->
+  <!-- ════ RSVP ════ -->
 
   <section class="rsvp-section">
     <div class="section-inner reveal">
       <svg class="sep" width="200" height="32" viewBox="0 0 200 32" fill="none">
-        <line x1="0" y1="16" x2="82" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <line x1="118" y1="16" x2="200" y2="16" stroke="#c9871a" stroke-width="0.7" opacity="0.6"/>
-        <circle cx="100" cy="16" r="5" fill="#c9871a" opacity="0.55"/>
-        <circle cx="100" cy="16" r="2.5" fill="#7a1518" opacity="0.8"/>
+        <line x1="0" y1="16" x2="82" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <line x1="118" y1="16" x2="200" y2="16" stroke="var(--saffron)" stroke-width="0.7" opacity="0.6"/>
+        <circle cx="100" cy="16" r="5" fill="var(--saffron)" opacity="0.55"/>
+        <circle cx="100" cy="16" r="2.5" fill="var(--crimson)" opacity="0.8"/>
       </svg>
       <p class="section-tag">Nimantrana</p>
       <h2 class="section-title">Kindly Confirm by 1st April</h2>
@@ -1355,16 +882,16 @@ animation: envParticleDrift linear forwards;
     </div>
   </section>
 
-  <!-- ═════════════════ FOOTER ═════════════════ -->
+  <!-- ════ FOOTER ════ -->
 
   <footer>
     <svg width="220" height="28" viewBox="0 0 220 28" fill="none" style="margin-bottom:20px;opacity:0.48;position:relative;">
-      <line x1="0" y1="14" x2="90" y2="14" stroke="#e2a835" stroke-width="0.8"/>
-      <line x1="130" y1="14" x2="220" y2="14" stroke="#e2a835" stroke-width="0.8"/>
-      <ellipse cx="110" cy="14" rx="8" ry="4" fill="#e2a835" opacity="0.55"/>
-      <ellipse cx="110" cy="14" rx="8" ry="4" fill="#e2a835" opacity="0.5" transform="rotate(60,110,14)"/>
-      <ellipse cx="110" cy="14" rx="8" ry="4" fill="#e2a835" opacity="0.5" transform="rotate(120,110,14)"/>
-      <circle cx="110" cy="14" r="3.5" fill="#c9871a" opacity="0.9"/>
+      <line x1="0" y1="14" x2="90" y2="14" stroke="var(--saffron-light)" stroke-width="0.8"/>
+      <line x1="130" y1="14" x2="220" y2="14" stroke="var(--saffron-light)" stroke-width="0.8"/>
+      <ellipse cx="110" cy="14" rx="8" ry="4" fill="var(--saffron-light)" opacity="0.55"/>
+      <ellipse cx="110" cy="14" rx="8" ry="4" fill="var(--saffron-light)" opacity="0.5" transform="rotate(60,110,14)"/>
+      <ellipse cx="110" cy="14" rx="8" ry="4" fill="var(--saffron-light)" opacity="0.5" transform="rotate(120,110,14)"/>
+      <circle cx="110" cy="14" r="3.5" fill="var(--saffron)" opacity="0.9"/>
     </svg>
     <p class="footer-om">ॐ</p>
     <p class="footer-names">Greeshma &amp; Vijesh</p>
@@ -1375,9 +902,11 @@ animation: envParticleDrift linear forwards;
 
 </div><!-- /page -->
 
-<!-- ═════════════════ PHOTO BOOTH MODAL ═════════════════ -->
+<!-- ══════════════════════════════════════════
+     PHOTO BOOTH MODAL
+══════════════════════════════════════════ -->
 
-<div class="booth-modal" id="boothModal" role="dialog" aria-modal="true" aria-label="Wedding Photo Booth">
+<div class="booth-modal" id="boothModal" role="dialog" aria-modal="true">
   <div class="booth-shell">
     <div class="booth-screen" id="screenViewfinder">
       <div class="booth-header">
@@ -1427,9 +956,7 @@ animation: envParticleDrift linear forwards;
   </div>
   <div class="preview-photo-wrap">
     <img id="previewImg" src="" alt="Your photo" class="preview-photo"/>
-    <div class="preview-stamp">
-      <span class="stamp-date">Greeshma &amp; Vijesh · 29 April 2026</span>
-    </div>
+    <div class="preview-stamp"><span class="stamp-date">Greeshma &amp; Vijesh · 29 April 2026</span></div>
   </div>
   <div class="preview-form">
     <div class="pf-group">
@@ -1486,184 +1013,13 @@ animation: envParticleDrift linear forwards;
   </div>
 </div>
 
-<style>
-/* ── Photo Booth Section ── */
-.photobooth-section { padding: 88px 20px; background: var(--cream-dark); position: relative; overflow: hidden; }
-.photobooth-section::before, .photobooth-section::after {
-  content: ''; position: absolute; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, transparent, var(--saffron) 30%, var(--gold) 50%, var(--saffron) 70%, transparent);
-  opacity: 0.4;
-}
-.photobooth-section::before { top: 0; }
-.photobooth-section::after  { bottom: 0; }
+<!-- Background music — place tulasi.mp3 in same folder -->
 
-.btn-booth-open {
-  margin-top: 36px; padding: 16px 44px;
-  background: var(--crimson); color: var(--cream-light);
-  border: none; cursor: pointer;
-  font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase;
-  display: inline-flex; align-items: center; gap: 12px;
-  transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
-  position: relative; overflow: hidden;
-}
-.btn-booth-open::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,135,26,.18),transparent); pointer-events:none; }
-.btn-booth-open:hover { background: var(--crimson-light); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(122,21,24,.3); }
-
-.photo-wall-wrap { margin-top: 56px; }
-.photo-wall-label { font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--saffron); margin-bottom: 24px; }
-.photo-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; min-height: 80px; }
-.photo-wall-empty { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--text-mid); opacity: 0.55; }
-.wall-card { position: relative; overflow: hidden; border: 1px solid rgba(122,21,24,.1); background: var(--cream-light); animation: cardIn 0.5s cubic-bezier(.22,1,.36,1) both; cursor: pointer; }
-@keyframes cardIn { from { opacity:0; transform:scale(.92) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
-.wall-card img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
-.wall-card-meta { padding: 10px 12px; border-top: 1px solid rgba(122,21,24,.08); }
-.wall-card-name { font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--crimson); margin-bottom:3px; }
-.wall-card-msg  { font-family:'Cormorant Garamond',serif; font-size:.88rem; font-style:italic; color:var(--text-mid); line-height:1.4; }
-.wall-card::before { content: '✦'; position:absolute; top:8px; right:8px; width:26px; height:26px; background:var(--saffron); border-radius:50%; font-size:10px; color:var(--cream-light); opacity:0.85; z-index:2; display:grid; place-items:center; }
-
-/* ── Booth Modal ── */
-.booth-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(10,2,2,0.94); backdrop-filter: blur(8px); align-items: flex-end; justify-content: center; }
-.booth-modal.open { display: flex; }
-.booth-shell { width: 100%; max-width: 480px; max-height: 96vh; background: var(--cream-light); border-top: 3px solid var(--saffron); overflow-y: auto; animation: sheetUp 0.42s cubic-bezier(.22,1,.36,1) both; position: relative; }
-@keyframes sheetUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
-@media (min-width:600px) {
-  .booth-modal { align-items: center; }
-  .booth-shell { border-radius: 2px; max-height: 90vh; animation: modalPop .38s cubic-bezier(.22,1,.36,1) both; }
-  @keyframes modalPop { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
-}
-.booth-screen { padding: 0 0 24px; }
-.booth-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 12px; border-bottom: 1px solid rgba(122,21,24,.1); position: sticky; top: 0; background: var(--cream-light); z-index: 10; }
-.booth-tag { font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.32em; text-transform:uppercase; color:var(--saffron); }
-.booth-close-btn { background:transparent; border:none; cursor:pointer; color:var(--text-mid); padding:4px; transition:color .2s; }
-.booth-close-btn:hover { color:var(--crimson); }
-.booth-viewfinder { position: relative; width: 100%; aspect-ratio: 1; background: #0a0101; overflow: hidden; }
-#booth-video { width:100%; height:100%; object-fit:cover; display:block; }
-.vf-frame span { position: absolute; width: 32px; height: 32px; border-color: var(--saffron); border-style: solid; opacity: 0.8; }
-.vf-frame .vf-tl { top:12px; left:12px;  border-width:2px 0 0 2px; }
-.vf-frame .vf-tr { top:12px; right:12px; border-width:2px 2px 0 0; }
-.vf-frame .vf-bl { bottom:12px; left:12px;  border-width:0 0 2px 2px; }
-.vf-frame .vf-br { bottom:12px; right:12px; border-width:0 2px 2px 0; }
-.booth-countdown { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 9rem; font-weight: 300; color: var(--cream-light); text-shadow: 0 4px 30px rgba(0,0,0,.6); pointer-events: none; opacity: 0; transition: opacity .15s; }
-.booth-countdown.active { opacity: 1; }
-.booth-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity .05s; }
-.booth-flash.flash { opacity: 1; }
-.booth-denied { display: none; padding: 40px 24px; text-align: center; font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--text-mid); font-size: 1rem; line-height: 1.7; }
-.btn-retry { margin-top: 16px; padding: 10px 24px; background: var(--crimson); color: var(--cream-light); border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: .63rem; letter-spacing: .2em; text-transform: uppercase; transition: background .25s; }
-.btn-retry:hover { background: var(--crimson-light); }
-.booth-hint { padding: 12px 24px 4px; font-family: 'Jost', sans-serif; font-size: .8rem; color: var(--text-mid); letter-spacing: .06em; text-align: center; }
-.booth-controls { display: flex; align-items: center; justify-content: space-between; padding: 20px 36px 8px; }
-.booth-flip-btn { width: 48px; height: 48px; border-radius: 50%; background: transparent; border: 1px solid rgba(122,21,24,.25); color: var(--text-mid); cursor: pointer; display: grid; place-items: center; transition: border-color .25s, color .25s; }
-.booth-flip-btn:hover { border-color: var(--crimson); color: var(--crimson); }
-.booth-shutter { width: 74px; height: 74px; border-radius: 50%; background: var(--crimson); border: none; cursor: pointer; position: relative; display: grid; place-items: center; transition: transform .15s, box-shadow .25s; box-shadow: 0 6px 22px rgba(122,21,24,.35); }
-.booth-shutter:hover { transform: scale(1.06); box-shadow: 0 10px 30px rgba(122,21,24,.45); }
-.booth-shutter:active { transform: scale(.95); }
-.shutter-ring { position: absolute; inset: 5px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); }
-.shutter-dot { width: 40px; height: 40px; border-radius: 50%; background: var(--cream-light); opacity: .9; }
-.preview-photo-wrap { position: relative; margin: 20px 24px 0; }
-.preview-photo { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border: 1px solid rgba(122,21,24,.1); }
-.preview-stamp { background: var(--crimson); padding: 8px 16px; text-align: center; }
-.stamp-date { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .22em; text-transform: uppercase; color: var(--saffron-light); }
-.preview-form { padding: 20px 24px 8px; }
-.pf-group { margin-bottom: 18px; }
-.pf-label { display:block; font-family:'Cinzel',serif; font-size:.56rem; letter-spacing:.24em; text-transform:uppercase; color:var(--saffron); margin-bottom:7px; }
-.pf-input { width: 100%; border: none; border-bottom: 1px solid rgba(122,21,24,.22); background: transparent; padding: 8px 0; font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: var(--text-dark); outline: none; resize: none; transition: border-color .3s; }
-.pf-input:focus { border-bottom-color: var(--crimson); }
-.pf-textarea { line-height: 1.5; }
-.preview-actions { display: flex; gap: 12px; padding: 8px 24px; }
-.btn-retake { padding: 12px 20px; flex-shrink: 0; background: transparent; border: 1px solid rgba(122,21,24,.28); color: var(--text-mid); cursor: pointer; font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; display: flex; align-items: center; gap: 7px; transition: all .25s; }
-.btn-retake:hover { border-color: var(--crimson); color: var(--crimson); }
-.btn-submit-photo { flex: 1; padding: 12px 20px; background: var(--crimson); color: var(--cream-light); border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .25em; text-transform: uppercase; transition: background .25s, box-shadow .25s; position: relative; overflow: hidden; }
-.btn-submit-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,135,26,.18),transparent); pointer-events:none; }
-.btn-submit-photo:hover { background: var(--crimson-light); box-shadow: 0 6px 20px rgba(122,21,24,.28); }
-.btn-submit-photo:disabled { opacity: .5; cursor: default; }
-.upload-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 24px; gap: 20px; }
-.upload-spinner .spin-arc { animation: spinArc 1.1s linear infinite; transform-origin: center; }
-@keyframes spinArc { to { stroke-dashoffset: -164; } }
-.upload-label { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-style:italic; color:var(--text-mid); }
-.upload-bar-wrap { width:200px; height:3px; background:rgba(122,21,24,.12); border-radius:2px; overflow:hidden; }
-.upload-bar { height:100%; width:0%; background:var(--saffron); border-radius:2px; transition:width .3s ease; }
-.success-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 32px; text-align: center; gap: 16px; }
-.success-icon { animation: popIn .5s cubic-bezier(.22,1,.36,1) .1s both; }
-@keyframes popIn { from{opacity:0;transform:scale(.5)} to{opacity:1;transform:scale(1)} }
-.success-title { font-family:'Tiro Devanagari Sanskrit',serif; font-size:1.6rem; color:var(--saffron); }
-.success-body { font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-style:italic; color:var(--text-mid); line-height:1.7; max-width:320px; }
-.success-thumb { width:140px; height:140px; object-fit:cover; border:2px solid rgba(122,21,24,.15); }
-.success-actions { display:flex; gap:12px; margin-top:4px; }
-.btn-another { padding:12px 24px; background:transparent; border:1px solid rgba(122,21,24,.3); color:var(--text-mid); cursor:pointer; font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; transition:all .25s; }
-.btn-another:hover { border-color:var(--crimson); color:var(--crimson); }
-.btn-close-done { padding:12px 24px; background:var(--crimson); color:var(--cream-light); border:none; cursor:pointer; font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; transition:background .25s; }
-.btn-close-done:hover { background:var(--crimson-light); }
-</style>
+<audio id="bg-music" loop preload="none">
+  <source src="tulasi.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-/* ═══════════════════════════════════════════════════════
-   ENVELOPE OPEN LOGIC
-═══════════════════════════════════════════════════════ */
-let envOpened = false;
-const overlay = document.getElementById('envelope-overlay');
-
-// Compute triangle folds based on actual rendered size
-function sizeEnvFolds() {
-  const body = document.getElementById('env-body');
-  const w = body.offsetWidth;
-  const h = body.offsetHeight;
-  // Already using SVG viewBox — no dynamic sizing needed
-}
-
-function spawnGoldParticles() {
-  for (let i = 0; i < 28; i++) {
-    const p = document.createElement('div');
-    p.className = 'env-particle';
-    const sz    = Math.random() * 8 + 3;
-    const delay = Math.random() * 1.0;
-    const dur   = 1.5 + Math.random() * 2;
-    // Bias particles around centre of screen
-    p.style.cssText = `
-      width: ${sz}px;
-      height: ${sz}px;
-      left: ${25 + Math.random() * 50}vw;
-      top: ${40 + Math.random() * 22}vh;
-      animation-duration: ${dur}s;
-      animation-delay: ${delay}s;
-      background: ${Math.random() > 0.5 ? '#c9871a' : '#e2a835'};
-    `;
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), (dur + delay + 0.5) * 1000);
-  }
-}
-
-function openEnvelope() {
-  if (envOpened) return;
-  envOpened = true;
-
-  const wrap = document.getElementById('env-wrap');
-  wrap.classList.add('env-opened');
-
-  // Start audio
-  const audio = document.getElementById('weddingAudio');
-  if (audio) {
-    audio.volume = 0.08;
-    audio.play().catch(() => {}); // graceful fail if autoplay blocked
-  }
-
-  // Gold particle burst
-  spawnGoldParticles();
-
-  // After animation, fade out overlay and restore scroll
-  setTimeout(() => {
-    overlay.classList.add('fading');
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      document.body.classList.remove('envelope-active');
-    }, 1300);
-  }, 1800);
-}
-
-document.getElementById('env-wrap').addEventListener('click', openEnvelope);
-document.addEventListener('keydown', e => {
-  if (!envOpened && (e.key === ' ' || e.key === 'Enter')) openEnvelope();
-});
-
 /* ═══════════════════════════════════════════════════════
    CHERRY BLOSSOM PETALS
 ═══════════════════════════════════════════════════════ */
@@ -1699,7 +1055,7 @@ document.addEventListener('keydown', e => {
 const revEls = document.querySelectorAll('.reveal');
 const revObs = new IntersectionObserver(entries => {
   entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); revObs.unobserve(e.target); } });
-}, { threshold: .12 });
+}, { threshold: 0.12 });
 revEls.forEach(el => revObs.observe(el));
 
 /* ═══════════════════════════════════════════════════════
@@ -1714,19 +1070,43 @@ function handleRsvp(e) {
 }
 
 /* ═══════════════════════════════════════════════════════
+   THEME SWITCHER
+═══════════════════════════════════════════════════════ */
+function setTheme(name) {
+  document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+  if (name !== 'default') document.body.classList.add('theme-' + name);
+}
+
+/* ═══════════════════════════════════════════════════════
+   ENVELOPE OPEN
+═══════════════════════════════════════════════════════ */
+const envelope = document.getElementById('envelope-overlay');
+const bgAudio  = document.getElementById('bg-music');
+bgAudio.volume = 0.12;
+
+function openEnvelope() {
+  if (envelope.classList.contains('is-open')) return;
+  envelope.classList.add('is-open');
+  setTimeout(() => { document.body.classList.remove('locked'); }, 1500);
+  bgAudio.play().catch(() => {});
+}
+
+window.addEventListener('wheel',      openEnvelope, { once: true });
+window.addEventListener('touchstart', openEnvelope, { once: true });
+envelope.addEventListener('click',    openEnvelope, { once: true });
+
+/* ═══════════════════════════════════════════════════════
    PHOTO WALL
 ═══════════════════════════════════════════════════════ */
 const photoCache = [];
 
-async function loadPhotoWall() {
-  renderWall(photoCache);
-}
+function loadPhotoWall() { renderWall(photoCache); }
 
 function renderWall(photos) {
   const wall  = document.getElementById('photoWall');
   const empty = document.getElementById('photoWallEmpty');
   wall.querySelectorAll('.wall-card').forEach(c => c.remove());
-  if (!photos.length) { empty.style.display='flex'; return; }
+  if (!photos.length) { empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
   photos.slice().reverse().forEach(p => {
     const card = document.createElement('div');
@@ -1744,9 +1124,9 @@ function renderWall(photos) {
    PHOTO BOOTH
 ═══════════════════════════════════════════════════════ */
 let boothStream = null, boothFacing = 'environment', capturedDataUrl = null, countdownTimer = null;
-const boothModal = document.getElementById('boothModal');
-const boothVid   = document.getElementById('booth-video');
-const boothCanvas= document.getElementById('booth-canvas');
+const boothModal     = document.getElementById('boothModal');
+const boothVid       = document.getElementById('booth-video');
+const boothCanvas    = document.getElementById('booth-canvas');
 const boothCountdown = document.getElementById('boothCountdown');
 const boothFlashEl   = document.getElementById('boothFlash');
 const boothDenied    = document.getElementById('boothDenied');
@@ -1769,7 +1149,7 @@ function openBooth() {
 
 function closeBooth() {
   boothStopCamera();
-  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer=null; }
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
   boothModal.classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -1786,7 +1166,7 @@ async function boothStartCamera() {
     await boothVid.play();
   } catch(err) {
     boothStopCamera();
-    if (err.name==='NotAllowedError' || err.name==='PermissionDeniedError') {
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
       boothViewfinder.style.display = 'none';
       boothHint.style.display = 'none';
       boothDenied.style.display = 'flex';
@@ -1795,11 +1175,11 @@ async function boothStartCamera() {
 }
 
 function boothStopCamera() {
-  if (boothStream) { boothStream.getTracks().forEach(t=>t.stop()); boothStream=null; }
+  if (boothStream) { boothStream.getTracks().forEach(t => t.stop()); boothStream = null; }
   boothVid.srcObject = null;
 }
 
-function boothFlip() { boothFacing = boothFacing==='environment' ? 'user' : 'environment'; boothStartCamera(); }
+function boothFlip() { boothFacing = boothFacing === 'environment' ? 'user' : 'environment'; boothStartCamera(); }
 
 function startCountdown() {
   document.getElementById('shutterBtn').disabled = true;
@@ -1848,13 +1228,12 @@ async function submitPhoto() {
   const bar = document.getElementById('uploadBar');
   const prog = setInterval(() => { pct = Math.min(pct + Math.random()*18, 88); bar.style.width = pct + '%'; }, 220);
   try {
-    // ── HOOK: Replace with your real API ──────────────────────────────────
+    // ── HOOK: replace with your real API call ─────────────────────────────
     await new Promise(r => setTimeout(r, 1600));
     const imageUrl = capturedDataUrl;
     photoCache.push({ id: Date.now(), url: imageUrl, guest_name: name, message: msg });
     // ─────────────────────────────────────────────────────────────────────
-    clearInterval(prog);
-    bar.style.width = '100%';
+    clearInterval(prog); bar.style.width = '100%';
     await new Promise(r => setTimeout(r, 200));
     showScreen('screenSuccess');
     loadPhotoWall();
@@ -1875,16 +1254,10 @@ function takeAnother() {
   boothStartCamera();
 }
 
-boothModal.addEventListener('click', e => { if(e.target===boothModal) closeBooth(); });
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeBooth(); });
+boothModal.addEventListener('click', e => { if(e.target === boothModal) closeBooth(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeBooth(); });
 loadPhotoWall();
 </script>
-
-<!-- Wedding audio — place tulasi.mp3 in same folder -->
-
-<audio id="weddingAudio" loop preload="none">
-  <source src="tulasi.mp3" type="audio/mpeg">
-</audio>
 
 </body>
 </html>
