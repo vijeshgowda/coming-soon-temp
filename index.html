@@ -132,17 +132,10 @@ opacity: 0.055;
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
-  body {
-    background-color: var(--cream);
-    color: var(--text-dark);
-    font-family: 'Jost', sans-serif;
-    font-weight: 300;
-    overflow-x: hidden;
-    transition: background-color 0.5s ease;
-  }
-
+  
   .bg-pattern { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.055; }
   .page { position: relative; z-index: 1; }
+
 
 /* ─── HERO ─── */
 .hero {
@@ -388,6 +381,28 @@ margin-bottom: 14px;
 <audio id="weddingMusic" loop preload="auto"><source src="tulasi.mp3" type="audio/mpeg"></audio>
 
 <div class="petals" id="petals"></div>
+
+
+
+<div id="envelope-overlay" class="envelope-overlay">
+  <div class="envelope-wrapper">
+    <div class="env-back"></div>
+    <div class="env-letter">
+      <p>G & V</p>
+      <span>29 April 2026</span>
+    </div>
+    <div class="env-front-bottom"></div>
+    <div class="env-front-left"></div>
+    <div class="env-front-right"></div>
+    <div class="env-flap-top">
+      <div class="env-wax-seal">ॐ</div>
+    </div>
+    <p class="env-instruction">Scroll or Tap to Open</p>
+  </div>
+</div>
+
+
+<!-- Kolam background pattern -->
 
 <svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg">
   <defs><pattern id="kolam" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
@@ -854,66 +869,194 @@ document.addEventListener('click',e=>{
     const wrap=document.createElement('div');wrap.className='blossom';wrap.style.cssText='left:'+left+'vw;animation-duration:'+dur+'s;animation-delay:-'+del+'s;--sway:'+sway+'px;';
     wrap.appendChild(svg);container.appendChild(wrap);
   }
-  const st=document.createElement('style');st.textContent='@keyframes blossomFall{0%{opacity:0;transform:translateY(0) translateX(0) rotate(0deg) scale(1)}4%{opacity:.75}28%{transform:translateY(26vh) translateX(calc(var(--sway)*.4)) rotate(110deg) scale(.97)}55%{transform:translateY(55vh) translateX(calc(var(--sway)*-.3)) rotate(240deg) scale(1.03)}80%{transform:translateY(82vh) translateX(calc(var(--sway)*.6)) rotate(380deg) scale(.95)}92%{opacity:.45}100%{opacity:0;transform:translateY(112vh) translateX(calc(var(--sway)*.1)) rotate(490deg) scale(.88)}}';
-  document.head.appendChild(st);
-})();
 
-/* ── 15. SCROLL REVEAL ── */
-const revEls=document.querySelectorAll('.reveal');
-new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');}});},{threshold:0.12}).observe && document.querySelectorAll('.reveal').forEach(el=>new IntersectionObserver((entries,obs)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});},{threshold:0.12}).observe(el));
+  function boothStopCamera() {
+    if (boothStream) { boothStream.getTracks().forEach(t=>t.stop()); boothStream=null; }
+    boothVid.srcObject = null;
+  }
 
-/* ── 16. RSVP ── */
-function handleRsvp(e){e.preventDefault();const msg=document.getElementById('rsvp-msg');msg.style.display='block';msg.textContent='ಧನ್ಯವಾದಗಳು — Thank you! We look forward to your blessings and presence. 🌸';e.target.style.opacity='.45';e.target.style.pointerEvents='none';}
+  function boothFlip() {
+    boothFacing = boothFacing==='environment' ? 'user' : 'environment';
+    boothStartCamera();
+  }
 
-/* ── 17. PHOTO WALL ── */
-const photoCache=[];
-async function loadPhotoWall(){renderWall(photoCache);}
-function renderWall(photos){
-  const wall=document.getElementById('photoWall'),empty=document.getElementById('photoWallEmpty');
-  wall.querySelectorAll('.wall-card').forEach(c=>c.remove());
-  if(!photos.length){empty.style.display='flex';return;}
-  empty.style.display='none';
-  photos.slice().reverse().forEach(p=>{const card=document.createElement('div');card.className='wall-card';card.innerHTML='<img src="'+p.url+'" alt="'+p.guest_name+'" loading="lazy"><div class="wall-card-meta"><p class="wall-card-name">'+(p.guest_name||'A Guest')+'</p>'+(p.message?'<p class="wall-card-msg">'+p.message+'</p>':'')+'</div>';wall.appendChild(card);});
-}
+  /* ── Countdown ── */
+  function startCountdown() {
+    document.getElementById('shutterBtn').disabled = true;
+    let count = 3;
+    boothCountdown.textContent = count;
+    boothCountdown.classList.add('active');
 
-/* ── 18. PHOTO BOOTH ── */
-let boothStream=null,boothFacing='environment',capturedDataUrl=null,countdownTimer=null;
-const boothModal=document.getElementById('boothModal'),boothVid=document.getElementById('booth-video'),boothCanvas=document.getElementById('booth-canvas'),boothCdEl=document.getElementById('boothCountdown'),boothFlashEl=document.getElementById('boothFlash'),boothDenied=document.getElementById('boothDenied'),boothVF=document.getElementById('boothViewfinder'),boothHint=document.getElementById('boothHint'),boothCtx=boothCanvas.getContext('2d');
-function showScreen(id){['screenViewfinder','screenPreview','screenUploading','screenSuccess'].forEach(s=>document.getElementById(s).style.display=s===id?'block':'none');}
-function openBooth(){boothModal.classList.add('open');document.body.style.overflow='hidden';showScreen('screenViewfinder');boothStartCamera();loadPhotoWall();}
-function closeBooth(){boothStopCamera();if(countdownTimer){clearTimeout(countdownTimer);countdownTimer=null;}boothModal.classList.remove('open');document.body.style.overflow='';}
-async function boothStartCamera(){
-  boothStopCamera();boothDenied.style.display='none';boothVF.style.display='block';boothHint.style.display='block';document.getElementById('shutterBtn').disabled=false;
-  try{boothStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:boothFacing,width:{ideal:1280},height:{ideal:1280}},audio:false});boothVid.srcObject=boothStream;await boothVid.play();}
-  catch(err){boothStopCamera();if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){boothVF.style.display='none';boothHint.style.display='none';boothDenied.style.display='flex';}else{boothHint.textContent='Camera error: '+err.message;}}
-}
-function boothStopCamera(){if(boothStream){boothStream.getTracks().forEach(t=>t.stop());boothStream=null;}boothVid.srcObject=null;}
-function boothFlip(){boothFacing=boothFacing==='environment'?'user':'environment';boothStartCamera();}
-function startCountdown(){
-  document.getElementById('shutterBtn').disabled=true;let count=3;boothCdEl.textContent=count;boothCdEl.classList.add('active');
-  const tick=()=>{count--;if(count>0){boothCdEl.textContent=count;countdownTimer=setTimeout(tick,1000);}else{boothCdEl.textContent='';boothCdEl.classList.remove('active');capturePhoto();}};
-  countdownTimer=setTimeout(tick,1000);
-}
-function capturePhoto(){
-  boothFlashEl.classList.add('flash');setTimeout(()=>boothFlashEl.classList.remove('flash'),150);
-  const vw=boothVid.videoWidth||boothVid.clientWidth,vh=boothVid.videoHeight||boothVid.clientHeight,size=Math.min(vw,vh),ox=(vw-size)/2,oy=(vh-size)/2;
-  boothCanvas.width=size;boothCanvas.height=size;boothCtx.drawImage(boothVid,ox,oy,size,size,0,0,size,size);
-  capturedDataUrl=boothCanvas.toDataURL('image/jpeg',0.88);boothStopCamera();
-  document.getElementById('previewImg').src=capturedDataUrl;document.getElementById('successThumb').src=capturedDataUrl;showScreen('screenPreview');
-}
-function retakePhoto(){capturedDataUrl=null;document.getElementById('guestName').value='';document.getElementById('guestMsg').value='';showScreen('screenViewfinder');boothStartCamera();}
-async function submitPhoto(){
-  const name=document.getElementById('guestName').value.trim()||'A Guest',msg=document.getElementById('guestMsg').value.trim(),btn=document.getElementById('submitBtn');btn.disabled=true;
-  showScreen('screenUploading');let pct=0;const bar=document.getElementById('uploadBar'),prog=setInterval(()=>{pct=Math.min(pct+Math.random()*18,88);bar.style.width=pct+'%';},220);
-  try{
-    await new Promise(r=>setTimeout(r,1600));photoCache.push({id:Date.now(),url:capturedDataUrl,guest_name:name,message:msg});
-    clearInterval(prog);bar.style.width='100%';await new Promise(r=>setTimeout(r,200));showScreen('screenSuccess');loadPhotoWall();
-  }catch(err){clearInterval(prog);showScreen('screenPreview');btn.disabled=false;alert('Upload failed: '+err.message);}
-}
-function takeAnother(){capturedDataUrl=null;document.getElementById('guestName').value='';document.getElementById('guestMsg').value='';document.getElementById('uploadBar').style.width='0%';showScreen('screenViewfinder');boothStartCamera();}
-boothModal.addEventListener('click',e=>{if(e.target===boothModal)closeBooth();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBooth();});
-loadPhotoWall();
+    const tick = () => {
+      count--;
+      if (count > 0) {
+        boothCountdown.textContent = count;
+        countdownTimer = setTimeout(tick, 1000);
+      } else {
+        boothCountdown.textContent = '';
+        boothCountdown.classList.remove('active');
+        capturePhoto();
+      }
+    };
+    countdownTimer = setTimeout(tick, 1000);
+  }
+
+  /* ── Capture ── */
+  function capturePhoto() {
+    // Flash effect
+    boothFlashEl.classList.add('flash');
+    setTimeout(() => boothFlashEl.classList.remove('flash'), 150);
+
+    const vw = boothVid.videoWidth  || boothVid.clientWidth;
+    const vh = boothVid.videoHeight || boothVid.clientHeight;
+    const size = Math.min(vw, vh);
+    const ox = (vw - size) / 2;
+    const oy = (vh - size) / 2;
+
+    boothCanvas.width  = size;
+    boothCanvas.height = size;
+    boothCtx.drawImage(boothVid, ox, oy, size, size, 0, 0, size, size);
+
+    capturedDataUrl = boothCanvas.toDataURL('image/jpeg', 0.88);
+    boothStopCamera();
+
+    document.getElementById('previewImg').src    = capturedDataUrl;
+    document.getElementById('successThumb').src  = capturedDataUrl;
+    showScreen('screenPreview');
+  }
+
+  function retakePhoto() {
+    capturedDataUrl = null;
+    document.getElementById('guestName').value = '';
+    document.getElementById('guestMsg').value  = '';
+    showScreen('screenViewfinder');
+    boothStartCamera();
+  }
+
+  /* ── Upload ── */
+  async function submitPhoto() {
+    const name = document.getElementById('guestName').value.trim() || 'A Guest';
+    const msg  = document.getElementById('guestMsg').value.trim();
+    const btn  = document.getElementById('submitBtn');
+    btn.disabled = true;
+
+    showScreen('screenUploading');
+
+    // Animate progress bar for UX
+    let pct = 0;
+    const bar = document.getElementById('uploadBar');
+    const prog = setInterval(() => { pct = Math.min(pct + Math.random()*18, 88); bar.style.width = pct + '%'; }, 220);
+
+    try {
+      // ── Convert dataURL → Blob for FormData ──────────────────────────────
+      const blob = await (await fetch(capturedDataUrl)).blob();
+      const filename = `wedding_${Date.now()}.jpg`;
+      const fd = new FormData();
+      fd.append('image',      blob, filename);
+      fd.append('guest_name', name);
+      fd.append('message',    msg);
+      fd.append('taken_at',   new Date().toISOString());
+
+      // ── HOOK: Your API endpoint ──────────────────────────────────────────
+      // const res  = await fetch('/api/photos', { method:'POST', body: fd });
+      // const data = await res.json();   // expect { id, url }
+      // const imageUrl = data.url;
+      //
+      // ── STORAGE OPTIONS (choose one, see notes below) ────────────────────
+      // Option A — Supabase Storage (RECOMMENDED if you're already on Postgres):
+      //   const { data:upload } = await supabase.storage.from('wedding-photos').upload(filename, blob);
+      //   const { data:{publicUrl} } = supabase.storage.from('wedding-photos').getPublicUrl(upload.path);
+      //   then INSERT into your `wedding_photos` table via supabase.from('wedding_photos').insert({...})
+      //
+      // Option B — Cloudinary (best auto-optimisation + CDN):
+      //   fd.append('upload_preset', 'YOUR_PRESET');
+      //   const r = await fetch('https://api.cloudinary.com/v1_1/YOUR_CLOUD/image/upload', {method:'POST',body:fd});
+      //   const { secure_url } = await r.json();
+      //
+      // Option C — AWS S3 presigned URL (enterprise):
+      //   1. GET /api/presign → { upload_url, public_url }
+      //   2. PUT upload_url with blob body
+      //   3. POST /api/photos with { public_url, guest_name, message }
+      // ─────────────────────────────────────────────────────────────────────
+
+      // ── DEMO: store in memory & show locally ──────────────────────────────
+      await new Promise(r => setTimeout(r, 1600)); // simulate network
+      const imageUrl = capturedDataUrl;             // <-- replace with real URL
+      photoCache.push({ id: Date.now(), url: imageUrl, guest_name: name, message: msg });
+      // ─────────────────────────────────────────────────────────────────────
+
+      clearInterval(prog);
+      bar.style.width = '100%';
+      await new Promise(r => setTimeout(r, 200));
+
+      showScreen('screenSuccess');
+      loadPhotoWall();   // refresh the wall
+    } catch(err) {
+      clearInterval(prog);
+      showScreen('screenPreview');
+      btn.disabled = false;
+      alert('Upload failed: ' + err.message + '\nPlease try again.');
+    }
+  }
+
+  function takeAnother() {
+    capturedDataUrl = null;
+    document.getElementById('guestName').value = '';
+    document.getElementById('guestMsg').value  = '';
+    document.getElementById('uploadBar').style.width = '0%';
+    showScreen('screenViewfinder');
+    boothStartCamera();
+  }
+
+  /* ── Escape key / backdrop ── */
+  boothModal.addEventListener('click', e => { if(e.target===boothModal) closeBooth(); });
+  document.addEventListener('keydown', e => { if(e.key==='Escape') closeBooth(); });
+
+  /* ── Load wall on page ready ── */
+  loadPhotoWall();
+  
+  
+    /* ─── SCROLL REVEAL ─── */
+  const revEls = document.querySelectorAll('.reveal');
+  const revObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  revEls.forEach(el => revObs.observe(el));
+
+
+  /* ─── THEME SWITCHER ─── */
+  function setTheme(themeName) {
+    // Remove existing theme classes
+    document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+    if (themeName !== 'default') {
+      document.body.classList.add('theme-' + themeName);
+    }
+  }
+
+  /* ─── ENVELOPE OVERLAY & AUDIO PLAY ─── */
+  const envelope = document.getElementById('envelope-overlay');
+  const bgAudio = document.getElementById('bg-music');
+  
+  // Set background music to a very low volume
+  bgAudio.volume = 0.15; 
+
+  function openEnvelope() {
+    if (envelope.classList.contains('is-open')) return;
+    
+    // Trigger animation
+    envelope.classList.add('is-open');
+    
+    // Unlock scrolling after animation clears the screen
+    setTimeout(() => { document.body.classList.remove('locked'); }, 1500);
+
+    // Play music. Using .catch() suppresses console errors if the browser blocks it for any strict policy reason.
+    bgAudio.play().catch(e => console.log("Audio play deferred by browser policy."));
+  }
+
+  // Listen for Scroll, Swipe, or Click to open the envelope
+  window.addEventListener('wheel', openEnvelope, { once: true });
+  window.addEventListener('touchstart', openEnvelope, { once: true });
+  envelope.addEventListener('click', openEnvelope, { once: true });
 </script>
 
 </body>
