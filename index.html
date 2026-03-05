@@ -97,7 +97,8 @@ box-shadow: 0 2px 5px rgba(0,0,0,0.22);
 ENVELOPE OVERLAY
 ══════════════════════════════════════════ */
 .envelope-overlay {
-position: fixed; inset: 0; z-index: 9999;
+position: fixed; inset: 0; z-index: 2147483647;
+isolation: isolate;
 background: var(–cream-dark);
 display: flex; flex-direction: column;
 align-items: center; justify-content: center;
@@ -259,7 +260,7 @@ z-index: 2; transition: color 0.5s;
 BACKGROUND PATTERN
 ══════════════════════════════════════════ */
 .bg-pattern { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.055; }
-.page { position: relative; z-index: 1; }
+.page { position: relative; }
 
 /* ══════════════════════════════════════════
 HERO
@@ -491,36 +492,6 @@ PHOTO BOOTH
 </div>
 
 <!-- ══════════════════════════════════════════
-     ENVELOPE OVERLAY
-══════════════════════════════════════════ -->
-
-<div id="envelope-overlay" class="envelope-overlay">
-  <div class="envelope-wrapper">
-
-```
-<div class="env-back"></div>
-
-<div class="env-letter">
-  <div class="env-om-inner">ॐ</div>
-  <p class="env-couple">G &amp; V</p>
-  <span class="env-date-tag">29 · April · 2026</span>
-</div>
-
-<div class="env-front-bottom"></div>
-<div class="env-front-left"></div>
-<div class="env-front-right"></div>
-
-<div class="env-flap-top"></div>
-<!-- Seal is a sibling of the flap so it doesn't inherit the 3D flip -->
-<div class="env-wax-seal">ॐ</div>
-
-<p class="env-instruction">Scroll · Tap · Click to Open</p>
-```
-
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
      MAIN SITE
 ══════════════════════════════════════════ -->
 
@@ -657,14 +628,9 @@ PHOTO BOOTH
         <path d="M105 16 L109 11 L113 16 L109 21Z" fill="var(--crimson)" opacity="0.4"/>
       </svg>
       <p class="section-tag">Shubha Ashirvaadam</p>
-      <h2 class="section-title">✨ A Tale Written in Time</h2>
+      <h2 class="section-title">A Sacred Union</h2>
       <p class="section-body">
-        Eight years ago, two young souls crossed paths without knowing that life had quietly begun stitching their names into the same destiny.
-        Greeshma and Vijesh were simply best friends then — the kind who shared laughter without reason, secrets without fear, and dreams without hesitation. Their bond felt effortless, like a melody that had always existed.
-
-        As seasons passed, friendship ripened into something deeper… something gentler. Love didn’t arrive with fireworks; it arrived like dawn — slow, warm, and certain. They found in each other a familiar comfort, a steady companionship, and a promise that felt older than time itself.
-
-        Today, as they stand on the threshold of forever, they look back at those eight years with full hearts — grateful for every moment that led them from friendship to fate.
+        Blessed by Sri Ganapati and united under auspicious stars, Greeshma and Vijesh embark on their journey as one. Rooted in the rich traditions of Karnataka, bound by love, and celebrated with the warmth of family and friends — we joyfully invite you to witness and bless this sacred bond.
       </p>
       <div style="margin-top:42px;">
         <svg width="52" height="68" viewBox="0 0 56 72" fill="none" style="opacity:0.72;">
@@ -1078,7 +1044,7 @@ function handleRsvp(e) {
    THEME SWITCHER
 ═══════════════════════════════════════════════════════ */
 function setTheme(name) {
-  document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+  document.body.classList.remove('theme-green', 'theme-purple');
   if (name !== 'default') document.body.classList.add('theme-' + name);
 }
 
@@ -1263,6 +1229,35 @@ boothModal.addEventListener('click', e => { if(e.target === boothModal) closeBoo
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeBooth(); });
 loadPhotoWall();
 </script>
+
+<!-- ══════════════════════════════════════════
+     ENVELOPE OVERLAY — must be last in <body> to guarantee it sits on top
+══════════════════════════════════════════ -->
+
+<div id="envelope-overlay" class="envelope-overlay">
+  <div class="envelope-wrapper">
+
+```
+<div class="env-back"></div>
+
+<div class="env-letter">
+  <div class="env-om-inner">ॐ</div>
+  <p class="env-couple">G &amp; V</p>
+  <span class="env-date-tag">29 · April · 2026</span>
+</div>
+
+<div class="env-front-bottom"></div>
+<div class="env-front-left"></div>
+<div class="env-front-right"></div>
+
+<div class="env-flap-top"></div>
+<div class="env-wax-seal">ॐ</div>
+
+<p class="env-instruction">Scroll · Tap · Click to Open</p>
+```
+
+  </div>
+</div>
 
 </body>
 </html>
