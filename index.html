@@ -67,7 +67,7 @@ position:fixed; inset:0; z-index:0; pointer-events:none;
 #entrance-stage {
 height:320vh;
 position:relative;
-z-index:1;
+z-index:10;
 }
 #entrance-sticky {
 position:sticky; top:0;
@@ -371,7 +371,7 @@ text-align:center;
 /* ══════════════════════ MAIN CONTENT ══════════════════════ */
 #main-content {
 display:none;
-position:relative; z-index:1;
+position:relative; z-index:2;
 }
 
 /* ── MAIN HERO ── */
@@ -1210,8 +1210,6 @@ opacity:0; pointer-events:none; transition:opacity .06s;
     <h2 class="section-head reveal">The Sacred <em>Rituals</em></h2>
     <div class="timeline-wrap reveal" style="transition-delay:.1s">
       <div class="timeline-spine"></div>
-
-```
   <div class="tl-item">
     <div class="tl-card">
       <div class="tl-time">9:00 AM</div>
@@ -1288,9 +1286,6 @@ opacity:0; pointer-events:none; transition:opacity .06s;
     <div class="tl-node"><div class="tl-node-disc">🌙</div></div>
     <div class="tl-spacer"></div>
   </div>
-
-</div>
-```
 
   </section>
 
@@ -1410,8 +1405,6 @@ opacity:0; pointer-events:none; transition:opacity .06s;
     <p class="reveal" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;color:rgba(242,234,216,.4);margin-bottom:40px;letter-spacing:.04em;transition-delay:.05s">
       Write a message that will be treasured forever
     </p>
-
-```
 <!-- Composer -->
 <div class="wishes-composer reveal" style="transition-delay:.1s">
   <textarea class="wish-field" id="wish-text" rows="3" placeholder="Write your wish for Greeshma & Vijesh…"></textarea>
@@ -1425,7 +1418,6 @@ opacity:0; pointer-events:none; transition:opacity .06s;
 <div class="wishes-wall" id="wishes-wall">
   <div class="wish-empty" id="wishes-empty">Be the first to leave a wish for the couple ✦</div>
 </div>
-```
 
   </section>
 
