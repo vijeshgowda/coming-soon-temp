@@ -28,35 +28,8 @@ document.addEventListener('mouseover', (e) => {
   }
 });
 
-// Scroll to reveal
-const heroIntro = document.getElementById('hero-intro');
-const envelopeScene = document.getElementById('envelope-scene');
-const entranceStage = document.getElementById('entrance-stage');
-
-window.addEventListener('scroll', () => {
-  const scrollTop = window.pageYOffset;
-  const stageHeight = entranceStage.offsetHeight;
-  const windowHeight = window.innerHeight;
-  const progress = Math.min(scrollTop / (stageHeight - windowHeight), 1);
-
-  heroIntro.style.opacity = 1 - progress;
-  heroIntro.style.transform = `translateY(${progress * -50}px)`;
-
-  envelopeScene.style.opacity = progress;
-  envelopeScene.style.transform = `translateY(${progress * 50}px)`;
-  envelopeScene.style.pointerEvents = progress > 0.1 ? 'auto' : 'none';
-});
-
-// Envelope click
-const envelope = document.querySelector('.envelope');
-const mainContent = document.getElementById('main-content');
-const envCtaText = document.querySelector('.env-cta-text');
-
-envelope.addEventListener('click', () => {
-  envelope.classList.add('opened');
-  setTimeout(() => {
-    envelopeScene.style.opacity = '0';
-    mainContent.style.display = 'block';
-    envCtaText.classList.add('visible');
-  }, 1500); // after animation
-});
+// Scroll to reveal and envelope interactions are handled 
+// by the inline scripts in index.html's <script> tags.
+// This app.js file only handles:
+// - Custom cursor movement
+// - Hover effects
