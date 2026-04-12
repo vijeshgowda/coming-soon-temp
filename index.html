@@ -1981,27 +1981,42 @@ CAMERA MODAL
     .wax-seal { animation: sealPulse 2.5s ease-in-out infinite; cursor: pointer; }
 
     .env-open-btn {
-      position: absolute;
-      bottom: -70px;
+      position: fixed;
+      bottom: 120px;
       left: 50%;
       transform: translateX(-50%);
       background: transparent;
-      border: 1px solid rgba(212,184,150,0.6);
-      color: rgba(212,184,150,0.9);
+      border: 1.5px solid rgba(232,200,150,0.8);
+      color: #e8c896;
       font-family: 'Jost', sans-serif;
-      font-size: 0.65rem;
-      letter-spacing: 0.35em;
+      font-size: 0.7rem;
+      letter-spacing: 0.4em;
       text-transform: uppercase;
-      padding: 12px 32px;
+      font-weight: 500;
+      padding: 14px 36px;
       cursor: pointer;
-      transition: all 0.3s;
-      animation: pulseHint 2s ease-in-out infinite;
+      transition: all 0.4s ease;
+      animation: pulseGold 2.5s ease-in-out infinite;
       z-index: 10;
+      box-shadow: 0 0 20px rgba(232,200,150,0.3);
     }
     .env-open-btn:hover {
-      background: rgba(212,184,150,0.15);
-      border-color: rgba(212,184,150,0.95);
-      transform: translateX(-50%) scale(1.05);
+      background: rgba(232,200,150,0.12);
+      border-color: #e8c896;
+      transform: translateX(-50%) translateY(-4px);
+      box-shadow: 0 0 30px rgba(232,200,150,0.6);
+      color: #f5e8c8;
+    }
+    
+    @keyframes pulseGold {
+      0%, 100% {
+        opacity: 0.7;
+        transform: translateX(-50%) translateY(0);
+      }
+      50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-3px);
+      }
     }
     
     /* Make envelope clickable */
@@ -2012,6 +2027,11 @@ CAMERA MODAL
     
     .env-scene {
       cursor: pointer;
+    }
+    
+    @keyframes pulseHint {
+      0%,100% { opacity: 0.5; }
+      50% { opacity: 1; }
     }
   </style>
 </head>
@@ -2118,7 +2138,7 @@ CAMERA MODAL
     </div>
 
     <!-- Click prompt -->
-    <button class="env-open-btn" onclick="openEnvelope()">Click to Open</button>
+    <button class="env-open-btn" onclick="openEnvelope()">Welcome</button>
   </div>
 
   <canvas id="leafCanvas"></canvas>
@@ -2958,7 +2978,7 @@ CAMERA MODAL
     
     /* Auto-open envelope after delay */
     window.addEventListener('load', () => {
-      setTimeout(openEnvelope, 2000);
+      setTimeout(openEnvelope, 4000);
     });
 
     /* ══════════════════════════
