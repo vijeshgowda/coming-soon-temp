@@ -1862,10 +1862,264 @@ CAMERA MODAL
     #sflash.on {
       opacity: 0.92;
     }
+
+    /* ══════════════════════════════════════════════
+       ENVELOPE INTRO OVERLAY
+    ══════════════════════════════════════════════ */
+    #envelopeOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, #283628 0%, #1a2018 100%);
+      transition: opacity 1.2s ease, visibility 1.2s;
+    }
+    #envelopeOverlay.gone {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .env-scene {
+      perspective: 1200px;
+      width: min(520px, 92vw);
+      position: relative;
+    }
+
+    .env-body {
+      width: 100%;
+      position: relative;
+    }
+
+    .env-svg-wrap {
+      width: 100%;
+      filter: drop-shadow(0 30px 80px rgba(196,170,130,0.25));
+    }
+
+    .env-card-peek {
+      position: absolute;
+      left: 10%;
+      width: 80%;
+      bottom: 46%;
+      text-align: center;
+      transform: translateY(100%);
+      opacity: 0;
+      transition: transform 1.4s cubic-bezier(0.22,1,0.36,1), opacity 0.8s ease;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .env-card-peek.risen {
+      transform: translateY(0%);
+      opacity: 1;
+    }
+    .env-card-peek-inner {
+      background: linear-gradient(160deg, #f5e8c8 0%, #e8d080 100%);
+      border: 1px solid rgba(196,170,130,0.6);
+      padding: 28px 20px 22px;
+      position: relative;
+    }
+    .env-card-peek-inner::before {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border: 1px solid rgba(196,170,130,0.25);
+      pointer-events: none;
+    }
+    .env-peek-om {
+      font-family: 'Jost', sans-serif;
+      font-size: 1.8rem;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .env-peek-names {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-style: italic;
+      color: #283628;
+      line-height: 1.2;
+    }
+    .env-peek-date {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.3em;
+      color: var(--accent);
+      margin-top: 8px;
+      text-transform: uppercase;
+    }
+
+    .env-hint {
+      text-align: center;
+      margin-top: 32px;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      color: rgba(196,170,130,0.7);
+      text-transform: uppercase;
+      animation: pulseHint 2s ease-in-out infinite;
+    }
+    @keyframes pulseHint {
+      0%,100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .env-flap-group {
+      transform-origin: top center;
+      transform-style: preserve-3d;
+      transition: transform 1.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .env-flap-group.open {
+      transform: rotateX(-175deg);
+    }
+
+    @keyframes sealPulse {
+      0%,100% { filter: drop-shadow(0 0 8px rgba(196,170,130,0.3)); }
+      50% { filter: drop-shadow(0 0 22px rgba(196,170,130,0.7)); }
+    }
+    .wax-seal { animation: sealPulse 2.5s ease-in-out infinite; cursor: pointer; }
+
+    .env-open-btn {
+      position: absolute;
+      bottom: -70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: transparent;
+      border: 1px solid rgba(212,184,150,0.6);
+      color: rgba(212,184,150,0.9);
+      font-family: 'Jost', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      padding: 12px 32px;
+      cursor: pointer;
+      transition: all 0.3s;
+      animation: pulseHint 2s ease-in-out infinite;
+      z-index: 10;
+    }
+    .env-open-btn:hover {
+      background: rgba(212,184,150,0.15);
+      border-color: rgba(212,184,150,0.95);
+      transform: translateX(-50%) scale(1.05);
+    }
+    
+    /* Make envelope clickable */
+    .env-svg-wrap,
+    .wax-seal {
+      cursor: pointer;
+    }
+    
+    .env-scene {
+      cursor: pointer;
+    }
   </style>
 </head>
 
 <body data-theme="forest">
+
+  <!-- ══════════════ ENVELOPE INTRO ══════════════ -->
+  <div id="envelopeOverlay">
+    <div class="env-scene">
+      <div class="env-body">
+        <!-- Card peeking out from inside -->
+        <div class="env-card-peek" id="envCard">
+          <div class="env-card-peek-inner">
+            <span class="env-peek-om">✦</span>
+            <div class="env-peek-names">Greeshma<br>&amp; Vijesh</div>
+            <div class="env-peek-date">29 April 2026</div>
+          </div>
+        </div>
+
+        <!-- Envelope SVG -->
+        <div class="env-svg-wrap" onclick="openEnvelope()">
+          <svg viewBox="0 0 520 340" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" onclick="openEnvelope()">
+            <defs>
+              <linearGradient id="envGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f5e8c8"/>
+                <stop offset="100%" stop-color="#e8cc80"/>
+              </linearGradient>
+              <linearGradient id="flapGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f5e5a8"/>
+                <stop offset="100%" stop-color="#e0b878"/>
+              </linearGradient>
+              <filter id="envShadow">
+                <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000" flood-opacity="0.45"/>
+              </filter>
+            </defs>
+
+            <!-- Envelope body -->
+            <rect x="4" y="80" width="512" height="256" rx="3" fill="url(#envGrad)" filter="url(#envShadow)"/>
+
+            <!-- Inner shadow lines -->
+            <line x1="4" y1="80" x2="260" y2="210" stroke="#d4b896" stroke-width="1" opacity="0.4"/>
+            <line x1="516" y1="80" x2="260" y2="210" stroke="#d4b896" stroke-width="1" opacity="0.4"/>
+            <line x1="4" y1="336" x2="260" y2="210" stroke="#d4b896" stroke-width="1" opacity="0.4"/>
+            <line x1="516" y1="336" x2="260" y2="210" stroke="#d4b896" stroke-width="1" opacity="0.4"/>
+
+            <!-- Border -->
+            <rect x="4" y="80" width="512" height="256" rx="3" fill="none" stroke="#d4b896" stroke-width="1.5" opacity="0.7"/>
+            <rect x="12" y="88" width="496" height="240" rx="2" fill="none" stroke="#d4b896" stroke-width="0.6" opacity="0.4"/>
+
+            <!-- Decorative pattern -->
+            <g opacity="0.15" fill="#5a7a4a">
+              <circle cx="60" cy="280" r="2"/><circle cx="80" cy="260" r="1.5"/>
+              <circle cx="100" cy="280" r="2"/><circle cx="440" cy="280" r="2"/>
+              <circle cx="460" cy="260" r="1.5"/><circle cx="480" cy="280" r="2"/>
+            </g>
+
+            <!-- Envelope FLAP group -->
+            <g id="envFlapGroup" class="env-flap-group" style="transform-origin: 260px 80px;">
+              <!-- Flap triangle -->
+              <path d="M4 80 L260 220 L516 80 Z" fill="url(#flapGrad)" stroke="#d4b896" stroke-width="1.2" stroke-linejoin="round"/>
+              <path d="M4 80 L260 220 L516 80" fill="none" stroke="#c9a86a" stroke-width="0.5" opacity="0.6"/>
+
+              <!-- Corner flowers on flap -->
+              <g opacity="0.75" fill="#d4b896">
+                <circle cx="30" cy="85" r="3.5"/>
+                <circle cx="30" cy="78" r="2.5" opacity="0.6"/>
+                <circle cx="23" cy="90" r="2.5" opacity="0.6"/>
+                <circle cx="37" cy="90" r="2.5" opacity="0.6"/>
+                <circle cx="23" cy="82" r="2.5" opacity="0.6"/>
+                <circle cx="37" cy="82" r="2.5" opacity="0.6"/>
+
+                <circle cx="490" cy="85" r="3.5"/>
+                <circle cx="490" cy="78" r="2.5" opacity="0.6"/>
+                <circle cx="483" cy="90" r="2.5" opacity="0.6"/>
+                <circle cx="497" cy="90" r="2.5" opacity="0.6"/>
+                <circle cx="483" cy="82" r="2.5" opacity="0.6"/>
+                <circle cx="497" cy="82" r="2.5" opacity="0.6"/>
+              </g>
+
+              <!-- Wax seal -->
+              <g class="wax-seal" id="waxSeal" style="cursor:pointer;" onclick="openEnvelope()">
+                <circle cx="260" cy="165" r="30" fill="#5a7a4a"/>
+                <circle cx="260" cy="165" r="26" fill="#3d5a30"/>
+                <circle cx="260" cy="165" r="22" fill="none" stroke="#d4b896" stroke-width="1.2" opacity="0.7"/>
+                <text x="260" y="172" text-anchor="middle" font-family="serif" font-size="26" fill="#e8c896" opacity="0.95">ॐ</text>
+                <g opacity="0.6" fill="#d4b896">
+                  <circle cx="260" cy="138" r="1.8"/>
+                  <circle cx="260" cy="192" r="1.8"/>
+                  <circle cx="233" cy="165" r="1.8"/>
+                  <circle cx="287" cy="165" r="1.8"/>
+                  <circle cx="241" cy="146" r="1.5"/>
+                  <circle cx="279" cy="146" r="1.5"/>
+                  <circle cx="241" cy="184" r="1.5"/>
+                  <circle cx="279" cy="184" r="1.5"/>
+                </g>
+              </g>
+            </g>
+
+            <!-- Bottom crease -->
+            <line x1="4" y1="336" x2="516" y2="336" stroke="#d4b896" stroke-width="0.8" opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Click prompt -->
+    <button class="env-open-btn" onclick="openEnvelope()">Click to Open</button>
+  </div>
 
   <canvas id="leafCanvas"></canvas>
 
@@ -2680,6 +2934,34 @@ CAMERA MODAL
     })();
 
     /* ══════════════════════════
+       ENVELOPE
+    ══════════════════════════ */
+    let envelopeOpened = false;
+    function openEnvelope() {
+      if (envelopeOpened) return;
+      envelopeOpened = true;
+      const btn = document.querySelector('.env-open-btn');
+      if (btn) btn.style.opacity = '0';
+      const flapGroup = document.getElementById('envFlapGroup');
+      flapGroup.classList.add('open');
+      setTimeout(() => {
+        document.getElementById('envCard').classList.add('risen');
+      }, 900);
+      setTimeout(() => {
+        aud.volume = 0.08;
+        aud.play().catch(() => {});
+      }, 1200);
+      setTimeout(() => {
+        document.getElementById('envelopeOverlay').classList.add('gone');
+      }, 3200);
+    }
+    
+    /* Auto-open envelope after delay */
+    window.addEventListener('load', () => {
+      setTimeout(openEnvelope, 2000);
+    });
+
+    /* ══════════════════════════
        THEME SWITCHER
     ══════════════════════════ */
     function setTheme(theme, btn) {
@@ -2746,11 +3028,11 @@ CAMERA MODAL
     /* ══════════════════════════
        RSVP
     ══════════════════════════ */
-    document.getElementById('rsvpForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      this.style.display = 'none';
-      document.getElementById('rsvpConfirm').style.display = 'block';
-    });
+    // document.getElementById('rsvpForm').addEventListener('submit', function (e) {
+    //   e.preventDefault();
+    //   this.style.display = 'none';
+    //   document.getElementById('rsvpConfirm').style.display = 'block';
+    // });
 
     /* ══════════════════════════
        GUESTBOOK
