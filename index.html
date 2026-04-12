@@ -299,7 +299,7 @@ NAV
       align-items: center;
       gap: 14px;
       padding-left: 1em;
-      padding-right: 1em;
+      padding-right: 0.5em;
     }
 
     .nav-music {
@@ -888,6 +888,10 @@ STORY
       line-height: 1.9;
       color: var(--mid);
       margin-bottom: 16px;
+      text-align: justify;
+      text-justify: inter-word;
+      hyphens: auto;
+      -webkit-hyphens: auto;
     }
 
     .story-quote {
@@ -1858,7 +1862,7 @@ CAMERA MODAL
 
   <!-- ── PALETTE SWITCHER ── -->
 
-  <div id="palette-switcher">
+  <!-- <div id="palette-switcher">
     <button class="palette-btn active" data-p="forest" onclick="setTheme('forest',this)"> <span
         class="palette-tooltip">Forest</span></button>
     <button class="palette-btn" data-p="burgundy" onclick="setTheme('burgundy',this)"><span
@@ -1869,7 +1873,7 @@ CAMERA MODAL
         Gold</span></button>
     <button class="palette-btn" data-p="slate" onclick="setTheme('slate',this)"> <span
         class="palette-tooltip">Slate</span></button>
-  </div>
+  </div> -->
 
   <!-- ── NAV ── -->
 
@@ -2048,7 +2052,6 @@ CAMERA MODAL
               <path d="M20 380 C50 340 40 300 20 260" stroke="rgba(196,170,130,.3)" stroke-width=".7" fill="none" />
               <path d="M280 380 C250 340 260 300 280 260" stroke="rgba(196,170,130,.3)" stroke-width=".7" fill="none" />
 
-              ```
               <!-- Central lotus illustration -->
               <g transform="translate(150,200)">
                 <defs>
@@ -2122,20 +2125,21 @@ CAMERA MODAL
 
         <div>
           <p class="section-kicker" data-reveal>Our Story</p>
-          <h2 class="section-title" data-reveal data-delay="1">Two hearts,<br />one destiny</h2>
+          <h2 class="section-title" data-reveal data-delay="1">A Tale Written in Time</h2>
           <div class="section-rule" data-reveal data-delay="2"></div>
-          <p class="story-body" data-reveal data-delay="2">Some love stories are written in the stars — ours was written
-            in warmth of a shared glance, in late evenings filled with laughter, and in the quiet certainty that this
-            was where we were always meant to be.</p>
-          <p class="story-body" data-reveal data-delay="3">Greeshma and Vijesh invite you to witness the beginning of
-            their forever. Surrounded by family, blessed by tradition, and celebrated with every heart in the room —
-            this day has been a long time coming.</p>
+          <p class="story-body" data-reveal data-delay="2">Eight years ago, two young souls crossed paths without knowing that life had quietly begun stitching their names into the same destiny.
+            Greeshma and Vijesh were simply best friends then — the kind who shared laughter without reason, 
+            secrets without fear, and dreams without hesitation. Their bond felt effortless, 
+            like a melody that had always existed.</p>
+          <p class="story-body" data-reveal data-delay="3">As seasons passed, friendship ripened into something deeper something gentler. 
+            Love didn't arrive with fireworks; it arrived like dawn, slow, warm, and certain. 
+            They found in each other a familiar comfort, a steady companionship, and a promise that felt older than time itself. 
+            Today, as they stand on the threshold of forever,
+            they look back at those eight years with full hearts — grateful for every moment that led them from friendship to fate.</p>
           <p class="story-quote" data-reveal data-delay="4">"ಪ್ರೀತಿ ಎಂದಿಗೂ ಕೊನೆಗೊಳ್ಳುವುದಿಲ್ಲ"<br /><span
               style="font-size:.75em;opacity:.7">— Love never ends.</span></p>
         </div>
       </div>
-      ```
-
     </div>
   </section>
 
@@ -2346,7 +2350,7 @@ CAMERA MODAL
 ══════════════════════════════════ -->
 
   <section class="section" id="rsvp" style="background:var(--bg2);border-top:1px solid rgba(0,0,0,0.05)">
-    <div class="rsvp-wrap container">
+    <!-- <div class="rsvp-wrap container">
       <p class="section-kicker" data-reveal>Kindly Respond</p>
       <h2 class="section-title" data-reveal data-delay="1">Will you join us?</h2>
       <div class="section-rule" data-reveal data-delay="2"></div>
@@ -2386,7 +2390,7 @@ CAMERA MODAL
       <div class="form-confirm" id="rsvpConfirm">
         <p>Thank you — we can't wait to celebrate with you.</p>
       </div>
-    </div>
+    </div> -->
   </section>
 
   <!-- ══════════════════════════════════
@@ -2440,7 +2444,7 @@ CAMERA MODAL
 ══════════════════════════════════ -->
 
   <section class="section" id="guestbook" style="background:var(--bg2)">
-    <div class="container">
+    <!-- <div class="container">
       <div class="guestbook-header">
         <p class="section-kicker" data-reveal>Leave a Note</p>
         <h2 class="section-title" data-reveal data-delay="1">Blessings Wall</h2>
@@ -2485,7 +2489,7 @@ CAMERA MODAL
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
   </section>
 
   <!-- ══════════════════════════════════
@@ -2822,7 +2826,6 @@ CAMERA MODAL
       ctx.fillText('Greeshma & Vijesh', W / 2, H - bH * 0.52);
       ctx.font = `300 ${W * 0.015}px 'Jost', sans-serif`; ctx.fillStyle = 'rgba(196,170,130,.75)';
       ctx.fillText('29 APRIL 2026  ·  MANDARA, BENGALURU', W / 2, H - bH * 0.2);
-      ctx.fillText('Thank you for being part of our special day!', W / 2, H - bH * 0.1);
       const fl = document.getElementById('sflash'); fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 130);
       document.getElementById('prev-sec').style.display = 'block';
       document.getElementById('camBtns').style.display = 'none';
