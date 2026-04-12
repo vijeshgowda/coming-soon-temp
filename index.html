@@ -2046,7 +2046,73 @@ CAMERA MODAL
     <div class="container">
       <div class="story-grid">
         <div class="story-frame" data-reveal="left">
-          <div class="story-illustration" style="position:relative;background-color:var(--leaf1)">
+          <div class="story-illustration" style="position:relative;background-color:var(--hero-bg)">
+            <!-- Royal Wedding Venue SVG -->
+            <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;position:absolute;top:0;left:0;opacity:0.4">
+              <defs>
+                <linearGradient id="royalGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FFD700" />
+                  <stop offset="50%" stop-color="#FFA500" />
+                  <stop offset="100%" stop-color="#FF8C00" />
+                </linearGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <!-- Grand Chandelier -->
+              <circle cx="200" cy="30" r="8" fill="url(#royalGold)" filter="url(#glow)"/>
+              <line x1="200" y1="38" x2="200" y2="60" stroke="url(#royalGold)" stroke-width="2"/>
+              <circle cx="180" cy="55" r="4" fill="url(#royalGold)"/>
+              <circle cx="220" cy="55" r="4" fill="url(#royalGold)"/>
+              <circle cx="170" cy="70" r="3" fill="url(#royalGold)"/>
+              <circle cx="230" cy="70" r="3" fill="url(#royalGold)"/>
+              <circle cx="200" cy="75" r="5" fill="url(#royalGold)" filter="url(#glow)"/>
+              <!-- Left Pillar -->
+              <rect x="20" y="80" width="15" height="300" fill="url(#royalGold)" opacity="0.6"/>
+              <rect x="15" y="75" width="25" height="10" fill="url(#royalGold)" opacity="0.5"/>
+              <rect x="15" y="380" width="25" height="12" fill="url(#royalGold)" opacity="0.5"/>
+              <!-- Right Pillar -->
+              <rect x="365" y="80" width="15" height="300" fill="url(#royalGold)" opacity="0.6"/>
+              <rect x="360" y="75" width="25" height="10" fill="url(#royalGold)" opacity="0.5"/>
+              <rect x="360" y="380" width="25" height="12" fill="url(#royalGold)" opacity="0.5"/>
+              <!-- Royal Arch -->
+              <path d="M 50 150 Q 200 60 350 150" stroke="url(#royalGold)" stroke-width="3" opacity="0.7"/>
+              <path d="M 50 150 Q 200 65 350 150" stroke="url(#royalGold)" stroke-width="1" opacity="0.4"/>
+              <!-- Decorative Rose Left -->
+              <circle cx="60" cy="140" r="8" fill="#DC143C" opacity="0.7"/>
+              <circle cx="50" cy="135" r="5" fill="#FF69B4" opacity="0.6"/>
+              <circle cx="70" cy="135" r="5" fill="#FF69B4" opacity="0.6"/>
+              <circle cx="55" cy="125" r="4" fill="#FFB6C1" opacity="0.5"/>
+              <circle cx="65" cy="125" r="4" fill="#FFB6C1" opacity="0.5"/>
+              <!-- Decorative Rose Right -->
+              <circle cx="340" cy="140" r="8" fill="#DC143C" opacity="0.7"/>
+              <circle cx="330" cy="135" r="5" fill="#FF69B4" opacity="0.6"/>
+              <circle cx="350" cy="135" r="5" fill="#FF69B4" opacity="0.6"/>
+              <circle cx="335" cy="125" r="4" fill="#FFB6C1" opacity="0.5"/>
+              <circle cx="345" cy="125" r="4" fill="#FFB6C1" opacity="0.5"/>
+              <!-- Ornamental Swirls Left -->
+              <path d="M 45 200 Q 30 210 45 220" stroke="url(#royalGold)" stroke-width="2" opacity="0.5"/>
+              <path d="M 45 250 Q 30 260 45 270" stroke="url(#royalGold)" stroke-width="2" opacity="0.5"/>
+              <!-- Ornamental Swirls Right -->
+              <path d="M 355 200 Q 370 210 355 220" stroke="url(#royalGold)" stroke-width="2" opacity="0.5"/>
+              <path d="M 355 250 Q 370 260 355 270" stroke="url(#royalGold)" stroke-width="2" opacity="0.5"/>
+              <!-- Center Spotlight -->
+              <circle cx="200" cy="300" r="25" fill="url(#royalGold)" opacity="0.15"/>
+              <circle cx="200" cy="300" r="15" fill="url(#royalGold)" opacity="0.25"/>
+              <!-- Floral Garland Bottom -->
+              <circle cx="80" cy="420" r="6" fill="#DC143C" opacity="0.6"/>
+              <circle cx="120" cy="415" r="6" fill="#DC143C" opacity="0.6"/>
+              <circle cx="160" cy="420" r="6" fill="#DC143C" opacity="0.6"/>
+              <circle cx="200" cy="425" r="6" fill="#DC143C" opacity="0.6"/>
+              <circle cx="240" cy="420" r="6" fill="#DC143C" opacity="0.6"/>
+              <circle cx="280" cy="415" r="6" fill="#DC143C" opacity="0.6"/>
+              <circle cx="320" cy="420" r="6" fill="#DC143C" opacity="0.6"/>
+              <path d="M 80 420 Q 100 410 120 415 Q 140 420 160 420 Q 180 415 200 425 Q 220 415 240 420 Q 260 418 280 415 Q 300 420 320 420" stroke="url(#royalGold)" stroke-width="1.5" opacity="0.4"/>
+            </svg>
             <!-- Background mandala SVG -->
             <svg viewBox="0 0 300 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;position:absolute;top:0;left:0;opacity:0.35">
               <defs>
@@ -2101,7 +2167,7 @@ CAMERA MODAL
             </svg>
             
             <!-- Foreground: your SVG image -->
-            <img src="wedding2.svg" alt="Wedding illustration" style="width:100%;height:100%;position:relative;z-index:1" />
+            <!-- <img src="wedding3.svg" alt="Wedding illustration" style="width:100%;height:100%;position:relative;z-index:1" /> -->
           </div>
           <div class="story-offset"></div>
         </div>
@@ -2139,80 +2205,7 @@ CAMERA MODAL
      SCHEDULE
 ══════════════════════════════════ -->
 
-  <section class="section" id="schedule" style="background:var(--hero-bg);transition:background .6s">
-    <div class="container">
-      <div class="schedule-wrap">
-        <p class="section-kicker sch-kicker" data-reveal>The Ceremony</p>
-        <h2 class="section-title sch-title" data-reveal data-delay="1">Utsav Krama</h2>
-        <div class="sch-list">
-          <!-- <div class="sch-item" data-reveal data-delay="1">
-            <div class="sch-time">Dawn</div>
-            <div class="sch-pipe">
-              <div class="sch-dot"></div>
-              <div class="sch-line"></div>
-            </div>
-            <div>
-              <div class="sch-kann">ಗಣಪತಿ ಪೂಜೆ</div>
-              <div class="sch-name">Ganapati Pooja</div>
-              <p class="sch-desc">Invoking Lord Ganesha — remover of obstacles — to bless the union before all else
-                begins.</p>
-            </div>
-          </div> -->
-          <!-- <div class="sch-item" data-reveal data-delay="2">
-            <div class="sch-time">Morning</div>
-            <div class="sch-pipe">
-              <div class="sch-dot"></div>
-              <div class="sch-line"></div>
-            </div>
-            <div>
-              <div class="sch-kann">ಕಾಶೀ ಯಾತ್ರೆ</div>
-              <div class="sch-name">Kashi Yaatre</div>
-              <p class="sch-desc">The groom sets off for Kashi — only to be turned back by the greatest offer: the
-                bride's hand.</p>
-            </div>
-          </div> -->
-          <div class="sch-item" data-reveal data-delay="1">
-            <div class="sch-time">Muhurtham</div>
-            <div class="sch-pipe">
-              <div class="sch-dot"></div>
-              <div class="sch-line"></div>
-            </div>
-            <div>
-              <div class="sch-kann">ಸಪ್ತಪದಿ</div>
-              <div class="sch-name">Saptapadi</div>
-              <p class="sch-desc">The seven holy steps.</p>
-            </div>
-          </div>
-          <div class="sch-item" data-reveal data-delay="2">
-            <div class="sch-time">Noon</div>
-            <div class="sch-pipe">
-              <div class="sch-dot"></div>
-              <div class="sch-line"></div>
-            </div>
-            <div>
-              <div class="sch-kann">ಮಂಗಲಸೂತ್ರ ಧಾರಣ</div>
-              <div class="sch-name">Mangalsutra Dharana</div>
-              <p class="sch-desc">The groom ties the golden thread — a symbol of love, devotion, and a lifetime of
-                togetherness.</p>
-            </div>
-          </div>
-          <div class="sch-item" data-reveal data-delay="3">
-            <div class="sch-time">Afternoon</div>
-            <div class="sch-pipe">
-              <div class="sch-dot"></div>
-              <div class="sch-line"></div>
-            </div>
-            <div>
-              <div class="sch-kann">ಆಶೀರ್ವಾದ · ಭೋಜನ</div>
-              <div class="sch-name">Blessings & Reception Feast</div>
-              <p class="sch-desc">Elders shower the couple with flowers and prayers. Followed by a grand South Indian
-                feast.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+
 
   <!-- ══════════════════════════════════
      DETAILS
