@@ -1633,6 +1633,7 @@ CAMERA MODAL
       align-items: center;
       justify-content: center;
       padding: 20px;
+      overflow-y: auto;
     }
 
     #cam-modal.open {
@@ -1661,6 +1662,7 @@ CAMERA MODAL
       position: relative;
       box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
       animation: boxIn 0.3s cubic-bezier(.22, 1, .36, 1);
+      margin: auto;
     }
 
     @keyframes boxIn {
@@ -1672,6 +1674,34 @@ CAMERA MODAL
       to {
         opacity: 1;
         transform: none
+      }
+    }
+
+    @media(max-width:640px) {
+      .cam-box {
+        padding: 24px;
+        max-height: calc(100vh - 40px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .vf {
+        flex-shrink: 0;
+      }
+
+      .f-row {
+        overflow-x: auto;
+        padding-bottom: 8px;
+        flex-shrink: 0;
+      }
+
+      .cam-btns {
+        flex-shrink: 0;
+      }
+
+      #prev-sec {
+        flex: 1;
+        overflow-y: auto;
       }
     }
 
@@ -1731,6 +1761,11 @@ CAMERA MODAL
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
+    }
+
+    .vf video.mirrored {
+      transform: scaleX(-1);
     }
 
     .vf-corners {
@@ -2814,7 +2849,7 @@ CAMERA MODAL
       <h3 class="cam-title">Photo Booth</h3>
       <p class="cam-sub">Greeshma & Vijesh · 29 April 2026</p>
       <div class="vf" id="vfWrap">
-        <video id="camVid" autoplay playsinline muted style="display:block"></video>
+        <video id="camVid" autoplay playsinline muted style="display:block" class="mirrored"></video>
         <div class="vf-corners">
           <div class="vf-c tl"></div>
           <div class="vf-c tr"></div>
@@ -2827,6 +2862,13 @@ CAMERA MODAL
             class="cam-btn g" onclick="retake()">Retake</button></div>
       </div>
       <div class="f-row" id="fRow">
+        <button class="f-chip" id="camSwitch" onclick="switchCamera()" title="Switch camera">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px">
+            <path d="M12 5v14M5 12l7-7 7 7" style="opacity:0.5"/>
+            <circle cx="12" cy="12" r="8"/>
+          </svg>
+          Flip
+        </button>
         <button class="f-chip on" onclick="sf('none',this)">Natural</button>
         <button class="f-chip" onclick="sf('sepia(.5) contrast(1.1) brightness(1.05)',this)">Warm</button>
         <button class="f-chip" onclick="sf('saturate(1.4) contrast(1.1)',this)">Vivid</button>
@@ -3083,62 +3125,180 @@ CAMERA MODAL
     /* ══════════════════════════
        CAMERA
     ══════════════════════════ */
-    let stream = null, filt = 'none', capData = null;
+    let stream = null, filt = 'none', capData = null, facingMode = 'user';
+    
     async function openCamera() {
       document.getElementById('cam-modal').classList.add('open');
       document.getElementById('prev-sec').style.display = 'none';
       document.getElementById('camBtns').style.display = 'flex';
       document.getElementById('fRow').style.display = 'flex';
-      const vid = document.getElementById('camVid'); vid.style.display = 'block';
+      const vid = document.getElementById('camVid'); 
+      vid.style.display = 'block';
+      // Apply mirroring to user-facing camera
+      if (facingMode === 'user') {
+        vid.classList.add('mirrored');
+      } else {
+        vid.classList.remove('mirrored');
+      }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: facingMode, 
+            width: { ideal: 1280 }, 
+            height: { ideal: 960 } 
+          }, 
+          audio: false 
+        });
         vid.srcObject = stream;
-      } catch (e) { alert('Camera access required for the photo booth.'); }
+      } catch (e) { 
+        alert('Camera access required for the photo booth.'); 
+      }
     }
+    
+    async function switchCamera() {
+      if (!stream) return;
+      // Stop current stream
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+      // Switch mode
+      facingMode = facingMode === 'user' ? 'environment' : 'user';
+      // Update button text
+      const btn = document.getElementById('camSwitch');
+      if (btn) btn.textContent = (facingMode === 'environment' ? '📷 Rear' : '📱 Front');
+      // Reopen camera
+      await openCamera();
+    }
+    
     function closeCamera() {
       if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
       document.getElementById('cam-modal').classList.remove('open');
     }
+    
     function sf(f, btn) {
-      filt = f; document.getElementById('camVid').style.filter = f;
+      filt = f; 
+      document.getElementById('camVid').style.filter = f;
       document.querySelectorAll('.f-chip').forEach(b => b.classList.remove('on'));
       btn.classList.add('on');
     }
+    
+    function drawBotanical(ctx, x, y, size, opacity) {
+      // Draw a simplified botanical element
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.translate(x, y);
+      ctx.scale(size, size);
+      
+      // Main branch
+      ctx.strokeStyle = 'rgba(196,170,130,0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(15, -20, 25, -15, 35, -25);
+      ctx.stroke();
+      
+      // Main branch 2
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-15, -15, -20, -5, -25, -20);
+      ctx.stroke();
+      
+      // Leaves
+      for (let i = 0; i < 4; i++) {
+        const angle = (Math.PI / 2) * i;
+        const leafX = Math.cos(angle) * 20;
+        const leafY = Math.sin(angle) * 20;
+        
+        ctx.beginPath();
+        ctx.ellipse(leafX, leafY, 8, 12, angle + Math.PI / 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(196,170,130,0.4)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(196,170,130,0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      
+      ctx.restore();
+    }
+    
     function capturePhoto() {
       const vid = document.getElementById('camVid'), cv = document.getElementById('prevCv');
       const W = vid.videoWidth || 1280, H = vid.videoHeight || 960;
       cv.width = W; cv.height = H;
       const ctx = cv.getContext('2d');
-      ctx.filter = filt === 'none' ? 'none' : filt;
-      ctx.drawImage(vid, 0, 0, W, H);
-      ctx.filter = 'none';
+      
+      // Mirror the canvas context if using front camera
+      if (facingMode === 'user') {
+        ctx.scale(-1, 1);
+        ctx.drawImage(vid, -W, 0, W, H);
+        ctx.scale(-1, 1);
+      } else {
+        ctx.drawImage(vid, 0, 0, W, H);
+      }
+      
+      // Apply filter
+      if (filt !== 'none') {
+        ctx.filter = filt;
+        ctx.drawImage(cv, 0, 0);
+        ctx.filter = 'none';
+      }
+      
+      // Draw botanical overlays on corners (subtle)
+      drawBotanical(ctx, W * 0.08, H * 0.08, 2.5, 0.15);
+      drawBotanical(ctx, W * 0.92, H * 0.08, -2.5, 0.15);
+      drawBotanical(ctx, W * 0.08, H * 0.92, 2.5, 0.12);
+      drawBotanical(ctx, W * 0.92, H * 0.92, -2.5, 0.12);
+      
+      // Add watermark banner at bottom
       const bH = Math.floor(H * 0.1);
       const g = ctx.createLinearGradient(0, H - bH, 0, H);
-      g.addColorStop(0, 'rgba(40,54,40,0)'); g.addColorStop(0.4, 'rgba(40,54,40,.72)'); g.addColorStop(1, 'rgba(20,30,20,.92)');
-      ctx.fillStyle = g; ctx.fillRect(0, H - bH, W, bH);
+      g.addColorStop(0, 'rgba(40,54,40,0)'); 
+      g.addColorStop(0.4, 'rgba(40,54,40,.72)'); 
+      g.addColorStop(1, 'rgba(20,30,20,.92)');
+      ctx.fillStyle = g; 
+      ctx.fillRect(0, H - bH, W, bH);
+      
       ctx.textAlign = 'center';
-      ctx.font = `300 ${W * 0.03}px 'Cormorant Garamond', serif`; ctx.fillStyle = 'rgba(249,246,240,.9)';
+      ctx.font = `300 ${W * 0.03}px 'Cormorant Garamond', serif`; 
+      ctx.fillStyle = 'rgba(249,246,240,.9)';
       ctx.fillText('Greeshma & Vijesh', W / 2, H - bH * 0.52);
-      ctx.font = `300 ${W * 0.015}px 'Jost', sans-serif`; ctx.fillStyle = 'rgba(196,170,130,.75)';
+      
+      ctx.font = `300 ${W * 0.015}px 'Jost', sans-serif`; 
+      ctx.fillStyle = 'rgba(196,170,130,.75)';
       ctx.fillText('29 APRIL 2026  ·  MANDARA, BENGALURU', W / 2, H - bH * 0.2);
-      const fl = document.getElementById('sflash'); fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 130);
+      
+      // Flash effect
+      const fl = document.getElementById('sflash'); 
+      fl.classList.add('on'); 
+      setTimeout(() => fl.classList.remove('on'), 130);
+      
+      // Update UI - hide video and filters, show preview
       document.getElementById('prev-sec').style.display = 'block';
       document.getElementById('camBtns').style.display = 'none';
       document.getElementById('fRow').style.display = 'none';
       vid.style.display = 'none';
+      
       capData = cv.toDataURL('image/jpeg', 0.93);
     }
+    
     function downloadPhoto() {
       if (!capData) return;
-      const a = document.createElement('a'); a.href = capData; a.download = 'Greeshma-Vijesh-2026.jpg'; a.click();
+      const a = document.createElement('a'); 
+      a.href = capData; 
+      a.download = 'Greeshma-Vijesh-2026.jpg'; 
+      a.click();
     }
+    
     function retake() {
       document.getElementById('prev-sec').style.display = 'none';
       document.getElementById('camBtns').style.display = 'flex';
       document.getElementById('fRow').style.display = 'flex';
       document.getElementById('camVid').style.display = 'block';
+      capData = null;
     }
-    document.getElementById('cam-modal').addEventListener('click', function (e) { if (e.target === this) closeCamera(); });
+    
+    document.getElementById('cam-modal').addEventListener('click', function (e) { 
+      if (e.target === this) closeCamera(); 
+    });
 
     /* ══════════════════════════
        HOVER PARALLAX on story frame
