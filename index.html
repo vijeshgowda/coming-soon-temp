@@ -3225,47 +3225,84 @@ CAMERA MODAL
           }, 
           audio: false 
         });
-        vid.srcObject = stream;
+        if (vid && stream) {
+          vid.srcObject = stream;
+        }
       } catch (e) { 
-        alert('Camera access required for the photo booth.'); 
+        console.error('Camera error:', e);
+        alert('Camera access required for the photo booth. Please check your browser permissions.'); 
       }
     }
     
     async function openDualCamera() {
       try {
-        // Get front camera
-        const vidFront = document.getElementById('camVidFront');
+        // Stop existing streams
         if (stream) {
           stream.getTracks().forEach(t => t.stop());
+          stream = null;
         }
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'user', 
-            width: { ideal: 1280 }, 
-            height: { ideal: 960 } 
-          }, 
-          audio: false 
-        });
-        vidFront.srcObject = stream;
-        vidFront.classList.add('mirrored');
-        
-        // Get rear camera
-        const vidRear = document.getElementById('camVidRear');
         if (streamRear) {
           streamRear.getTracks().forEach(t => t.stop());
+          streamRear = null;
         }
-        streamRear = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'environment', 
-            width: { ideal: 1280 }, 
-            height: { ideal: 960 } 
-          }, 
-          audio: false 
-        });
-        vidRear.srcObject = streamRear;
-        vidRear.classList.remove('mirrored');
+        
+        // Request both cameras simultaneously using Promise.allSettled
+        // This ensures iOS prompts for BOTH camera permissions instead of just one
+        const [frontResult, rearResult] = await Promise.allSettled([
+          navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              facingMode: { ideal: 'user' },
+              width: { ideal: 1280 }, 
+              height: { ideal: 960 } 
+            }, 
+            audio: false 
+          }),
+          navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 }, 
+              height: { ideal: 960 } 
+            }, 
+            audio: false 
+          })
+        ]);
+        
+        // Handle front camera result
+        const vidFront = document.getElementById('camVidFront');
+        if (frontResult.status === 'fulfilled') {
+          stream = frontResult.value;
+          if (vidFront) {
+            vidFront.srcObject = stream;
+            vidFront.classList.add('mirrored');
+            console.log('Front camera stream loaded successfully');
+          }
+        } else {
+          console.warn('Front camera access failed or denied:', frontResult.reason?.message || frontResult.reason);
+          if (vidFront) vidFront.style.backgroundColor = 'rgba(0,0,0,0.3)';
+        }
+        
+        // Handle rear camera result
+        const vidRear = document.getElementById('camVidRear');
+        if (rearResult.status === 'fulfilled') {
+          streamRear = rearResult.value;
+          if (vidRear) {
+            vidRear.srcObject = streamRear;
+            vidRear.classList.remove('mirrored');
+            console.log('Rear camera stream loaded successfully');
+          }
+        } else {
+          console.warn('Rear camera access failed or denied:', rearResult.reason?.message || rearResult.reason);
+          if (vidRear) vidRear.style.backgroundColor = 'rgba(0,0,0,0.3)';
+        }
+        
+        // If both failed, show alert
+        if (frontResult.status === 'rejected' && rearResult.status === 'rejected') {
+          console.error('Both cameras failed');
+          alert('Camera access is required for the photo booth. Please grant camera permissions in your browser settings.');
+        }
       } catch (e) { 
-        alert('Camera access required for the photo booth.'); 
+        console.error('Dual camera error:', e);
+        alert('Camera access required for the photo booth. Please check your browser permissions.'); 
       }
     }
     
