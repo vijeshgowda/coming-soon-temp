@@ -1726,6 +1726,9 @@ CAMERA MODAL
       height: 100%;
       object-fit: cover;
       display: block;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .dual-cam-half h4 {
@@ -1796,6 +1799,9 @@ CAMERA MODAL
       height: 100%;
       object-fit: cover;
       display: block;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     video.mirrored {
@@ -3174,7 +3180,7 @@ CAMERA MODAL
     /* ══════════════════════════
        CAMERA
     ══════════════════════════ */
-    let stream = null, streamRear = null, filt = 'none', capData = null, facingMode = 'user', isDualMode = false;
+    let stream = null, streamRear = null, filt = 'none', capData = null, facingMode = 'user', isDualMode = false, cameraRequestInProgress = false;
     
     function isMobile() {
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -3182,6 +3188,10 @@ CAMERA MODAL
     }
     
     async function openCamera() {
+      // Prevent repeated requests
+      if (cameraRequestInProgress) return;
+      cameraRequestInProgress = true;
+      
       document.getElementById('cam-modal').classList.add('open');
       isDualMode = isMobile();
       
@@ -3192,15 +3202,19 @@ CAMERA MODAL
       document.getElementById('camBtns').style.display = 'flex';
       document.getElementById('fRow').style.display = 'flex';
       
-      if (isDualMode) {
-        // Dual camera mode for mobile
-        document.getElementById('camSwitch').style.display = 'none';
-        await openDualCamera();
-      } else {
-        // Single camera mode for desktop
-        document.getElementById('camSwitch').style.display = 'inline-flex';
-        document.getElementById('camSwitchText').textContent = 'Flip';
-        await openSingleCamera();
+      try {
+        if (isDualMode) {
+          // Dual camera mode for mobile
+          document.getElementById('camSwitch').style.display = 'none';
+          await openDualCamera();
+        } else {
+          // Single camera mode for desktop
+          document.getElementById('camSwitch').style.display = 'inline-flex';
+          document.getElementById('camSwitchText').textContent = 'Flip';
+          await openSingleCamera();
+        }
+      } finally {
+        cameraRequestInProgress = false;
       }
     }
     
@@ -3246,57 +3260,65 @@ CAMERA MODAL
           streamRear = null;
         }
         
-        // Request both cameras simultaneously using Promise.allSettled
-        // This ensures iOS prompts for BOTH camera permissions instead of just one
-        const [frontResult, rearResult] = await Promise.allSettled([
-          navigator.mediaDevices.getUserMedia({ 
+        const vidFront = document.getElementById('camVidFront');
+        const vidRear = document.getElementById('camVidRear');
+        
+        // Reset video backgrounds
+        if (vidFront) vidFront.style.backgroundColor = '#000';
+        if (vidRear) vidRear.style.backgroundColor = '#000';
+        
+        // Request front camera first, then rear with a small delay
+        // This ensures iOS shows permission prompts for both cameras
+        console.log('Requesting front camera...');
+        let frontStream = null;
+        try {
+          frontStream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
               facingMode: { ideal: 'user' },
               width: { ideal: 1280 }, 
               height: { ideal: 960 } 
             }, 
             audio: false 
-          }),
-          navigator.mediaDevices.getUserMedia({ 
+          });
+          stream = frontStream;
+          if (vidFront) {
+            vidFront.srcObject = stream;
+            vidFront.classList.add('mirrored');
+            vidFront.style.backgroundColor = 'transparent';
+            console.log('Front camera stream loaded');
+          }
+        } catch (e) {
+          console.warn('Front camera failed:', e.message);
+          if (vidFront) vidFront.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        }
+        
+        // Small delay to ensure iOS shows both permission prompts distinctly
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        console.log('Requesting rear camera...');
+        try {
+          const rearStream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
               facingMode: { ideal: 'environment' },
               width: { ideal: 1280 }, 
               height: { ideal: 960 } 
             }, 
             audio: false 
-          })
-        ]);
-        
-        // Handle front camera result
-        const vidFront = document.getElementById('camVidFront');
-        if (frontResult.status === 'fulfilled') {
-          stream = frontResult.value;
-          if (vidFront) {
-            vidFront.srcObject = stream;
-            vidFront.classList.add('mirrored');
-            console.log('Front camera stream loaded successfully');
-          }
-        } else {
-          console.warn('Front camera access failed or denied:', frontResult.reason?.message || frontResult.reason);
-          if (vidFront) vidFront.style.backgroundColor = 'rgba(0,0,0,0.3)';
-        }
-        
-        // Handle rear camera result
-        const vidRear = document.getElementById('camVidRear');
-        if (rearResult.status === 'fulfilled') {
-          streamRear = rearResult.value;
+          });
+          streamRear = rearStream;
           if (vidRear) {
             vidRear.srcObject = streamRear;
             vidRear.classList.remove('mirrored');
-            console.log('Rear camera stream loaded successfully');
+            vidRear.style.backgroundColor = 'transparent';
+            console.log('Rear camera stream loaded');
           }
-        } else {
-          console.warn('Rear camera access failed or denied:', rearResult.reason?.message || rearResult.reason);
-          if (vidRear) vidRear.style.backgroundColor = 'rgba(0,0,0,0.3)';
+        } catch (e) {
+          console.warn('Rear camera failed:', e.message);
+          if (vidRear) vidRear.style.backgroundColor = 'rgba(0,0,0,0.5)';
         }
         
         // If both failed, show alert
-        if (frontResult.status === 'rejected' && rearResult.status === 'rejected') {
+        if (!stream && !streamRear) {
           console.error('Both cameras failed');
           alert('Camera access is required for the photo booth. Please grant camera permissions in your browser settings.');
         }
@@ -3307,17 +3329,22 @@ CAMERA MODAL
     }
     
     async function switchCamera() {
-      if (isDualMode) return;
+      if (isDualMode || cameraRequestInProgress) return;
+      cameraRequestInProgress = true;
       
-      if (stream) { 
-        stream.getTracks().forEach(t => t.stop()); 
-        stream = null; 
+      try {
+        if (stream) { 
+          stream.getTracks().forEach(t => t.stop()); 
+          stream = null; 
+        }
+        
+        facingMode = facingMode === 'user' ? 'environment' : 'user';
+        document.getElementById('camSwitchText').textContent = facingMode === 'environment' ? '📷 Rear' : '📱 Front';
+        
+        await openSingleCamera();
+      } finally {
+        cameraRequestInProgress = false;
       }
-      
-      facingMode = facingMode === 'user' ? 'environment' : 'user';
-      document.getElementById('camSwitchText').textContent = facingMode === 'environment' ? '📷 Rear' : '📱 Front';
-      
-      await openSingleCamera();
     }
     
     function closeCamera() {
@@ -3523,6 +3550,19 @@ CAMERA MODAL
     
     document.getElementById('cam-modal').addEventListener('click', function (e) {
       if (e.target === this) closeCamera();
+    });
+    
+    // Prevent video elements from accidentally triggering requests
+    const vidFront = document.getElementById('camVidFront');
+    const vidRear = document.getElementById('camVidRear');
+    const vidSingle = document.getElementById('camVid');
+    
+    [vidFront, vidRear, vidSingle].forEach(vid => {
+      if (vid) {
+        vid.addEventListener('click', function(e) {
+          e.stopPropagation();
+        });
+      }
     });
 
     /* ══════════════════════════
