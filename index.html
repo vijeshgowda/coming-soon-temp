@@ -609,7 +609,7 @@ HERO
       font-weight: 300;
       letter-spacing: 5px;
       text-transform: uppercase;
-      color: rgba(249, 246, 240, 0.55);
+      color: var(--accent);
       text-align: center;
       opacity: 0;
       animation: fUp 1s ease forwards 1.2s;
@@ -620,7 +620,7 @@ HERO
       font-style: italic;
       font-weight: 300;
       font-size: clamp(14px, 2vw, 18px);
-      color: rgba(249, 246, 240, 0.35);
+      color: var(--accent);
       text-align: center;
       margin-top: 10px;
       letter-spacing: 1px;
@@ -2264,7 +2264,7 @@ CAMERA MODAL
 
     <!-- Text -->
 
-    <p class="hero-eyebrow">Bengaluru · 29 April 2026</p>
+    <!-- <p class="hero-eyebrow">Bengaluru · 29 April 2026</p> -->
     <h1 class="hero-names">
       Greeshma
       <span class="and">and</span>
@@ -2276,7 +2276,7 @@ CAMERA MODAL
       <div class="hero-divider-line"></div>
     </div>
     <p class="hero-date">Wednesday · 29 April 2026</p>
-    <p class="hero-venue">Mandara, Bengaluru · Traditional South Indian Wedding</p>
+    <p class="hero-venue">Mandara, Bengaluru</p>
 
     <div class="hero-scroll">
       <div class="hero-scroll-line"></div>
@@ -2984,7 +2984,7 @@ CAMERA MODAL
     
     /* Auto-open envelope after delay */
     window.addEventListener('load', () => {
-      setTimeout(openEnvelope, 4000);
+      setTimeout(openEnvelope, 2500);
     });
 
     /* ══════════════════════════
