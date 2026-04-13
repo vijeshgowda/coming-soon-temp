@@ -3180,12 +3180,8 @@ CAMERA MODAL
     /* ══════════════════════════
        CAMERA
     ══════════════════════════ */
-    let stream = null, streamRear = null, filt = 'none', capData = null, facingMode = 'user', isDualMode = false, cameraRequestInProgress = false;
+    let stream = null, filt = 'none', capData = null, facingMode = 'user', cameraRequestInProgress = false;
     
-    function isMobile() {
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-             window.innerWidth <= 768;
-    }
     
     async function openCamera() {
       // Prevent repeated requests
@@ -3193,26 +3189,18 @@ CAMERA MODAL
       cameraRequestInProgress = true;
       
       document.getElementById('cam-modal').classList.add('open');
-      isDualMode = isMobile();
       
-      // Reset all UI states
-      document.getElementById('vfWrap').style.display = isDualMode ? 'none' : 'block';
-      document.getElementById('dualVfWrap').style.display = isDualMode ? 'grid' : 'none';
+      // Always use single camera mode with flip button
+      document.getElementById('vfWrap').style.display = 'block';
+      document.getElementById('dualVfWrap').style.display = 'none';
       document.getElementById('prev-sec').style.display = 'none';
       document.getElementById('camBtns').style.display = 'flex';
       document.getElementById('fRow').style.display = 'flex';
+      document.getElementById('camSwitch').style.display = 'inline-flex';
+      document.getElementById('camSwitchText').textContent = 'Flip';
       
       try {
-        if (isDualMode) {
-          // Dual camera mode for mobile
-          document.getElementById('camSwitch').style.display = 'none';
-          await openDualCamera();
-        } else {
-          // Single camera mode for desktop
-          document.getElementById('camSwitch').style.display = 'inline-flex';
-          document.getElementById('camSwitchText').textContent = 'Flip';
-          await openSingleCamera();
-        }
+        await openSingleCamera();
       } finally {
         cameraRequestInProgress = false;
       }
@@ -3248,88 +3236,9 @@ CAMERA MODAL
       }
     }
     
-    async function openDualCamera() {
-      try {
-        // Stop existing streams
-        if (stream) {
-          stream.getTracks().forEach(t => t.stop());
-          stream = null;
-        }
-        if (streamRear) {
-          streamRear.getTracks().forEach(t => t.stop());
-          streamRear = null;
-        }
-        
-        const vidFront = document.getElementById('camVidFront');
-        const vidRear = document.getElementById('camVidRear');
-        
-        // Reset video backgrounds
-        if (vidFront) vidFront.style.backgroundColor = '#000';
-        if (vidRear) vidRear.style.backgroundColor = '#000';
-        
-        // Request front camera first, then rear with a small delay
-        // This ensures iOS shows permission prompts for both cameras
-        console.log('Requesting front camera...');
-        let frontStream = null;
-        try {
-          frontStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-              facingMode: { ideal: 'user' },
-              width: { ideal: 1280 }, 
-              height: { ideal: 960 } 
-            }, 
-            audio: false 
-          });
-          stream = frontStream;
-          if (vidFront) {
-            vidFront.srcObject = stream;
-            vidFront.classList.add('mirrored');
-            vidFront.style.backgroundColor = 'transparent';
-            console.log('Front camera stream loaded');
-          }
-        } catch (e) {
-          console.warn('Front camera failed:', e.message);
-          if (vidFront) vidFront.style.backgroundColor = 'rgba(0,0,0,0.5)';
-        }
-        
-        // Small delay to ensure iOS shows both permission prompts distinctly
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        console.log('Requesting rear camera...');
-        try {
-          const rearStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-              facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 }, 
-              height: { ideal: 960 } 
-            }, 
-            audio: false 
-          });
-          streamRear = rearStream;
-          if (vidRear) {
-            vidRear.srcObject = streamRear;
-            vidRear.classList.remove('mirrored');
-            vidRear.style.backgroundColor = 'transparent';
-            console.log('Rear camera stream loaded');
-          }
-        } catch (e) {
-          console.warn('Rear camera failed:', e.message);
-          if (vidRear) vidRear.style.backgroundColor = 'rgba(0,0,0,0.5)';
-        }
-        
-        // If both failed, show alert
-        if (!stream && !streamRear) {
-          console.error('Both cameras failed');
-          alert('Camera access is required for the photo booth. Please grant camera permissions in your browser settings.');
-        }
-      } catch (e) { 
-        console.error('Dual camera error:', e);
-        alert('Camera access required for the photo booth. Please check your browser permissions.'); 
-      }
-    }
     
     async function switchCamera() {
-      if (isDualMode || cameraRequestInProgress) return;
+      if (cameraRequestInProgress) return;
       cameraRequestInProgress = true;
       
       try {
@@ -3349,7 +3258,6 @@ CAMERA MODAL
     
     function closeCamera() {
       if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-      if (streamRear) { streamRear.getTracks().forEach(t => t.stop()); streamRear = null; }
       document.getElementById('cam-modal').classList.remove('open');
     }
     
@@ -3403,12 +3311,7 @@ CAMERA MODAL
       const fl = document.getElementById('sflash'); 
       fl.classList.add('on'); 
       setTimeout(() => fl.classList.remove('on'), 130);
-      
-      if (isDualMode) {
-        captureDualPhoto();
-      } else {
-        captureSinglePhoto();
-      }
+      captureSinglePhoto();
     }
     
     function captureSinglePhoto() {
@@ -3447,65 +3350,6 @@ CAMERA MODAL
       capData = cv.toDataURL('image/jpeg', 0.93);
     }
     
-    function captureDualPhoto() {
-      const vidFront = document.getElementById('camVidFront');
-      const vidRear = document.getElementById('camVidRear');
-      const cv = document.getElementById('prevCv');
-      
-      const WF = vidFront.videoWidth || 1280;
-      const HF = vidFront.videoHeight || 960;
-      const WR = vidRear.videoWidth || 1280;
-      const HR = vidRear.videoHeight || 960;
-      
-      // Create composite: front on left, rear on right
-      const totalW = WF + WR;
-      const totalH = Math.max(HF, HR);
-      
-      cv.width = totalW;
-      cv.height = totalH;
-      const ctx = cv.getContext('2d');
-      
-      // Draw front (mirrored)
-      ctx.scale(-1, 1);
-      ctx.drawImage(vidFront, -WF, 0, WF, HF);
-      ctx.scale(-1, 1);
-      
-      // Draw rear (normal)
-      ctx.drawImage(vidRear, WF, 0, WR, HR);
-      
-      // Apply filter
-      if (filt !== 'none') {
-        ctx.filter = filt;
-        ctx.drawImage(cv, 0, 0);
-        ctx.filter = 'none';
-      }
-      
-      // Add watermark to entire composite
-      const bH = Math.floor(totalH * 0.1);
-      const g = ctx.createLinearGradient(0, totalH - bH, 0, totalH);
-      g.addColorStop(0, 'rgba(40,54,40,0)');
-      g.addColorStop(0.4, 'rgba(40,54,40,.72)');
-      g.addColorStop(1, 'rgba(20,30,20,.92)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, totalH - bH, totalW, bH);
-      
-      ctx.textAlign = 'center';
-      ctx.font = `300 ${totalW * 0.02}px 'Cormorant Garamond', serif`;
-      ctx.fillStyle = 'rgba(249,246,240,.9)';
-      ctx.fillText('Greeshma & Vijesh', totalW / 2, totalH - bH * 0.52);
-      
-      ctx.font = `300 ${totalW * 0.01}px 'Jost', sans-serif`;
-      ctx.fillStyle = 'rgba(196,170,130,.75)';
-      ctx.fillText('29 APRIL 2026  ·  MANDARA, BENGALURU', totalW / 2, totalH - bH * 0.2);
-      
-      document.getElementById('prev-sec').style.display = 'block';
-      document.getElementById('camBtns').style.display = 'none';
-      document.getElementById('fRow').style.display = 'none';
-      document.getElementById('vfWrap').style.display = 'none';
-      document.getElementById('dualVfWrap').style.display = 'none';
-      
-      capData = cv.toDataURL('image/jpeg', 0.93);
-    }
     
     function addWatermark(ctx, W, H) {
       const bH = Math.floor(H * 0.1);
@@ -3538,12 +3382,7 @@ CAMERA MODAL
       document.getElementById('prev-sec').style.display = 'none';
       document.getElementById('camBtns').style.display = 'flex';
       document.getElementById('fRow').style.display = 'flex';
-      
-      if (isDualMode) {
-        document.getElementById('dualVfWrap').style.display = 'grid';
-      } else {
-        document.getElementById('vfWrap').style.display = 'block';
-      }
+      document.getElementById('vfWrap').style.display = 'block';
       
       capData = null;
     }
@@ -3552,18 +3391,13 @@ CAMERA MODAL
       if (e.target === this) closeCamera();
     });
     
-    // Prevent video elements from accidentally triggering requests
-    const vidFront = document.getElementById('camVidFront');
-    const vidRear = document.getElementById('camVidRear');
+    // Prevent video element from accidentally triggering requests
     const vidSingle = document.getElementById('camVid');
-    
-    [vidFront, vidRear, vidSingle].forEach(vid => {
-      if (vid) {
-        vid.addEventListener('click', function(e) {
-          e.stopPropagation();
-        });
-      }
-    });
+    if (vidSingle) {
+      vidSingle.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    }
 
     /* ══════════════════════════
        HOVER PARALLAX on story frame
