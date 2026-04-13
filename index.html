@@ -2308,7 +2308,7 @@ CAMERA MODAL
             class="cd-lbl">Seconds</span></div>
       </div>
       <div class="blessing-band" data-reveal data-delay="3">
-        <p>॥ ಶ್ರೀ ಗಣೇಶಾಯ ನಮಃ ॥ &nbsp;&nbsp;·&nbsp;&nbsp; ಶುಭ ಮುಹೂರ್ತ</p>
+        <p>॥ ಶ್ರೀ ಗಣೇಶಾಯ ನಮಃ ॥</p>
       </div>
     </div>
   </section>
@@ -3017,7 +3017,7 @@ CAMERA MODAL
        COUNTDOWN
     ══════════════════════════ */
     function tick() {
-      const diff = new Date('2026-04-29T08:00:00') - Date.now();
+      const diff = new Date('2026-04-29T04:00:00Z') - Date.now();
       if (diff <= 0) { ['cdD', 'cdH', 'cdM', 'cdS'].forEach(id => document.getElementById(id).textContent = '0'); return; }
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);
