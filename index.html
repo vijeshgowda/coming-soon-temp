@@ -1705,6 +1705,40 @@ CAMERA MODAL
       }
     }
 
+    /* Dual camera view for mobile */
+    .dual-vf {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .dual-cam-half {
+      aspect-ratio: 3/4;
+      background: #0a0a0a;
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .dual-cam-half video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .dual-cam-half h4 {
+      position: absolute;
+      top: 8px;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      margin: 0;
+      background: rgba(0,0,0,0.3);
+      padding: 4px;
+    }
+
     .cam-x {
       position: absolute;
       top: 16px;
@@ -2848,8 +2882,10 @@ CAMERA MODAL
       <button class="cam-x" onclick="closeCamera()">✕</button>
       <h3 class="cam-title">Photo Booth</h3>
       <p class="cam-sub">Greeshma & Vijesh · 29 April 2026</p>
+      
+      <!-- Single camera view (desktop) -->
       <div class="vf" id="vfWrap">
-        <video id="camVid" autoplay playsinline muted style="display:block" class="mirrored"></video>
+        <video id="camVid" autoplay playsinline muted class="mirrored"></video>
         <div class="vf-corners">
           <div class="vf-c tl"></div>
           <div class="vf-c tr"></div>
@@ -2857,6 +2893,19 @@ CAMERA MODAL
           <div class="vf-c br"></div>
         </div>
       </div>
+      
+      <!-- Dual camera view (mobile) -->
+      <div class="dual-vf" id="dualVfWrap">
+        <div class="dual-cam-half">
+          <h4 style="font-size: 10px; margin-bottom: 8px; text-align: center; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase;">Front</h4>
+          <video id="camVidFront" autoplay playsinline muted class="mirrored"></video>
+        </div>
+        <div class="dual-cam-half">
+          <h4 style="font-size: 10px; margin-bottom: 8px; text-align: center; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase;">Rear</h4>
+          <video id="camVidRear" autoplay playsinline muted></video>
+        </div>
+      </div>
+      
       <div id="prev-sec"><canvas id="prevCv"></canvas>
         <div class="prev-btns"><button class="cam-btn p" onclick="downloadPhoto()">Download</button><button
             class="cam-btn g" onclick="retake()">Retake</button></div>
@@ -2867,7 +2916,7 @@ CAMERA MODAL
             <path d="M12 5v14M5 12l7-7 7 7" style="opacity:0.5"/>
             <circle cx="12" cy="12" r="8"/>
           </svg>
-          Flip
+          <span id="camSwitchText">Flip</span>
         </button>
         <button class="f-chip on" onclick="sf('none',this)">Natural</button>
         <button class="f-chip" onclick="sf('sepia(.5) contrast(1.1) brightness(1.05)',this)">Warm</button>
@@ -3125,22 +3174,49 @@ CAMERA MODAL
     /* ══════════════════════════
        CAMERA
     ══════════════════════════ */
-    let stream = null, filt = 'none', capData = null, facingMode = 'user';
+    let stream = null, streamRear = null, filt = 'none', capData = null, facingMode = 'user', isDualMode = false;
+    
+    function isMobile() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+             window.innerWidth <= 768;
+    }
     
     async function openCamera() {
       document.getElementById('cam-modal').classList.add('open');
+      isDualMode = isMobile();
+      
+      // Reset all UI states
+      document.getElementById('vfWrap').style.display = isDualMode ? 'none' : 'block';
+      document.getElementById('dualVfWrap').style.display = isDualMode ? 'grid' : 'none';
       document.getElementById('prev-sec').style.display = 'none';
       document.getElementById('camBtns').style.display = 'flex';
       document.getElementById('fRow').style.display = 'flex';
-      const vid = document.getElementById('camVid'); 
-      vid.style.display = 'block';
-      // Apply mirroring to user-facing camera
+      
+      if (isDualMode) {
+        // Dual camera mode for mobile
+        document.getElementById('camSwitch').style.display = 'none';
+        await openDualCamera();
+      } else {
+        // Single camera mode for desktop
+        document.getElementById('camSwitch').style.display = 'inline-flex';
+        document.getElementById('camSwitchText').textContent = 'Flip';
+        await openSingleCamera();
+      }
+    }
+    
+    async function openSingleCamera() {
+      const vid = document.getElementById('camVid');
       if (facingMode === 'user') {
         vid.classList.add('mirrored');
       } else {
         vid.classList.remove('mirrored');
       }
+      
       try {
+        if (stream) {
+          stream.getTracks().forEach(t => t.stop());
+        }
+        
         stream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: facingMode, 
@@ -3155,40 +3231,81 @@ CAMERA MODAL
       }
     }
     
+    async function openDualCamera() {
+      try {
+        // Get front camera
+        const vidFront = document.getElementById('camVidFront');
+        if (stream) {
+          stream.getTracks().forEach(t => t.stop());
+        }
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'user', 
+            width: { ideal: 1280 }, 
+            height: { ideal: 960 } 
+          }, 
+          audio: false 
+        });
+        vidFront.srcObject = stream;
+        vidFront.classList.add('mirrored');
+        
+        // Get rear camera
+        const vidRear = document.getElementById('camVidRear');
+        if (streamRear) {
+          streamRear.getTracks().forEach(t => t.stop());
+        }
+        streamRear = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment', 
+            width: { ideal: 1280 }, 
+            height: { ideal: 960 } 
+          }, 
+          audio: false 
+        });
+        vidRear.srcObject = streamRear;
+        vidRear.classList.remove('mirrored');
+      } catch (e) { 
+        alert('Camera access required for the photo booth.'); 
+      }
+    }
+    
     async function switchCamera() {
-      if (!stream) return;
-      // Stop current stream
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      // Switch mode
+      if (isDualMode) return;
+      
+      if (stream) { 
+        stream.getTracks().forEach(t => t.stop()); 
+        stream = null; 
+      }
+      
       facingMode = facingMode === 'user' ? 'environment' : 'user';
-      // Update button text
-      const btn = document.getElementById('camSwitch');
-      if (btn) btn.textContent = (facingMode === 'environment' ? '📷 Rear' : '📱 Front');
-      // Reopen camera
-      await openCamera();
+      document.getElementById('camSwitchText').textContent = facingMode === 'environment' ? '📷 Rear' : '📱 Front';
+      
+      await openSingleCamera();
     }
     
     function closeCamera() {
       if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      if (streamRear) { streamRear.getTracks().forEach(t => t.stop()); streamRear = null; }
       document.getElementById('cam-modal').classList.remove('open');
     }
     
     function sf(f, btn) {
-      filt = f; 
-      document.getElementById('camVid').style.filter = f;
-      document.querySelectorAll('.f-chip').forEach(b => b.classList.remove('on'));
+      filt = f;
+      const vid = document.getElementById('camVid');
+      if (vid) vid.style.filter = f;
+      
+      document.querySelectorAll('.f-chip').forEach(b => {
+        if (b.id !== 'camSwitch') b.classList.remove('on');
+      });
       btn.classList.add('on');
     }
     
     function drawBotanical(ctx, x, y, size, opacity) {
-      // Draw a simplified botanical element
       ctx.save();
       ctx.globalAlpha = opacity;
       ctx.translate(x, y);
       ctx.scale(size, size);
       
-      // Main branch
       ctx.strokeStyle = 'rgba(196,170,130,0.6)';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -3196,13 +3313,11 @@ CAMERA MODAL
       ctx.bezierCurveTo(15, -20, 25, -15, 35, -25);
       ctx.stroke();
       
-      // Main branch 2
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.bezierCurveTo(-15, -15, -20, -5, -25, -20);
       ctx.stroke();
       
-      // Leaves
       for (let i = 0; i < 4; i++) {
         const angle = (Math.PI / 2) * i;
         const leafX = Math.cos(angle) * 20;
@@ -3221,12 +3336,23 @@ CAMERA MODAL
     }
     
     function capturePhoto() {
+      const fl = document.getElementById('sflash'); 
+      fl.classList.add('on'); 
+      setTimeout(() => fl.classList.remove('on'), 130);
+      
+      if (isDualMode) {
+        captureDualPhoto();
+      } else {
+        captureSinglePhoto();
+      }
+    }
+    
+    function captureSinglePhoto() {
       const vid = document.getElementById('camVid'), cv = document.getElementById('prevCv');
       const W = vid.videoWidth || 1280, H = vid.videoHeight || 960;
       cv.width = W; cv.height = H;
       const ctx = cv.getContext('2d');
       
-      // Mirror the canvas context if using front camera
       if (facingMode === 'user') {
         ctx.scale(-1, 1);
         ctx.drawImage(vid, -W, 0, W, H);
@@ -3235,6 +3361,54 @@ CAMERA MODAL
         ctx.drawImage(vid, 0, 0, W, H);
       }
       
+      if (filt !== 'none') {
+        ctx.filter = filt;
+        ctx.drawImage(cv, 0, 0);
+        ctx.filter = 'none';
+      }
+      
+      drawBotanical(ctx, W * 0.08, H * 0.08, 2.5, 0.15);
+      drawBotanical(ctx, W * 0.92, H * 0.08, -2.5, 0.15);
+      drawBotanical(ctx, W * 0.08, H * 0.92, 2.5, 0.12);
+      drawBotanical(ctx, W * 0.92, H * 0.92, -2.5, 0.12);
+      
+      addWatermark(ctx, W, H);
+      
+      document.getElementById('prev-sec').style.display = 'block';
+      document.getElementById('camBtns').style.display = 'none';
+      document.getElementById('fRow').style.display = 'none';
+      document.getElementById('vfWrap').style.display = 'none';
+      document.getElementById('dualVfWrap').style.display = 'none';
+      
+      capData = cv.toDataURL('image/jpeg', 0.93);
+    }
+    
+    function captureDualPhoto() {
+      const vidFront = document.getElementById('camVidFront');
+      const vidRear = document.getElementById('camVidRear');
+      const cv = document.getElementById('prevCv');
+      
+      const WF = vidFront.videoWidth || 1280;
+      const HF = vidFront.videoHeight || 960;
+      const WR = vidRear.videoWidth || 1280;
+      const HR = vidRear.videoHeight || 960;
+      
+      // Create composite: front on left, rear on right
+      const totalW = WF + WR;
+      const totalH = Math.max(HF, HR);
+      
+      cv.width = totalW;
+      cv.height = totalH;
+      const ctx = cv.getContext('2d');
+      
+      // Draw front (mirrored)
+      ctx.scale(-1, 1);
+      ctx.drawImage(vidFront, -WF, 0, WF, HF);
+      ctx.scale(-1, 1);
+      
+      // Draw rear (normal)
+      ctx.drawImage(vidRear, WF, 0, WR, HR);
+      
       // Apply filter
       if (filt !== 'none') {
         ctx.filter = filt;
@@ -3242,49 +3416,57 @@ CAMERA MODAL
         ctx.filter = 'none';
       }
       
-      // Draw botanical overlays on corners (subtle)
-      drawBotanical(ctx, W * 0.08, H * 0.08, 2.5, 0.15);
-      drawBotanical(ctx, W * 0.92, H * 0.08, -2.5, 0.15);
-      drawBotanical(ctx, W * 0.08, H * 0.92, 2.5, 0.12);
-      drawBotanical(ctx, W * 0.92, H * 0.92, -2.5, 0.12);
-      
-      // Add watermark banner at bottom
-      const bH = Math.floor(H * 0.1);
-      const g = ctx.createLinearGradient(0, H - bH, 0, H);
-      g.addColorStop(0, 'rgba(40,54,40,0)'); 
-      g.addColorStop(0.4, 'rgba(40,54,40,.72)'); 
+      // Add watermark to entire composite
+      const bH = Math.floor(totalH * 0.1);
+      const g = ctx.createLinearGradient(0, totalH - bH, 0, totalH);
+      g.addColorStop(0, 'rgba(40,54,40,0)');
+      g.addColorStop(0.4, 'rgba(40,54,40,.72)');
       g.addColorStop(1, 'rgba(20,30,20,.92)');
-      ctx.fillStyle = g; 
-      ctx.fillRect(0, H - bH, W, bH);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, totalH - bH, totalW, bH);
       
       ctx.textAlign = 'center';
-      ctx.font = `300 ${W * 0.03}px 'Cormorant Garamond', serif`; 
+      ctx.font = `300 ${totalW * 0.02}px 'Cormorant Garamond', serif`;
       ctx.fillStyle = 'rgba(249,246,240,.9)';
-      ctx.fillText('Greeshma & Vijesh', W / 2, H - bH * 0.52);
+      ctx.fillText('Greeshma & Vijesh', totalW / 2, totalH - bH * 0.52);
       
-      ctx.font = `300 ${W * 0.015}px 'Jost', sans-serif`; 
+      ctx.font = `300 ${totalW * 0.01}px 'Jost', sans-serif`;
       ctx.fillStyle = 'rgba(196,170,130,.75)';
-      ctx.fillText('29 APRIL 2026  ·  MANDARA, BENGALURU', W / 2, H - bH * 0.2);
+      ctx.fillText('29 APRIL 2026  ·  MANDARA, BENGALURU', totalW / 2, totalH - bH * 0.2);
       
-      // Flash effect
-      const fl = document.getElementById('sflash'); 
-      fl.classList.add('on'); 
-      setTimeout(() => fl.classList.remove('on'), 130);
-      
-      // Update UI - hide video and filters, show preview
       document.getElementById('prev-sec').style.display = 'block';
       document.getElementById('camBtns').style.display = 'none';
       document.getElementById('fRow').style.display = 'none';
-      vid.style.display = 'none';
+      document.getElementById('vfWrap').style.display = 'none';
+      document.getElementById('dualVfWrap').style.display = 'none';
       
       capData = cv.toDataURL('image/jpeg', 0.93);
     }
     
+    function addWatermark(ctx, W, H) {
+      const bH = Math.floor(H * 0.1);
+      const g = ctx.createLinearGradient(0, H - bH, 0, H);
+      g.addColorStop(0, 'rgba(40,54,40,0)');
+      g.addColorStop(0.4, 'rgba(40,54,40,.72)');
+      g.addColorStop(1, 'rgba(20,30,20,.92)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, H - bH, W, bH);
+      
+      ctx.textAlign = 'center';
+      ctx.font = `300 ${W * 0.03}px 'Cormorant Garamond', serif`;
+      ctx.fillStyle = 'rgba(249,246,240,.9)';
+      ctx.fillText('Greeshma & Vijesh', W / 2, H - bH * 0.52);
+      
+      ctx.font = `300 ${W * 0.015}px 'Jost', sans-serif`;
+      ctx.fillStyle = 'rgba(196,170,130,.75)';
+      ctx.fillText('29 APRIL 2026  ·  MANDARA, BENGALURU', W / 2, H - bH * 0.2);
+    }
+    
     function downloadPhoto() {
       if (!capData) return;
-      const a = document.createElement('a'); 
-      a.href = capData; 
-      a.download = 'Greeshma-Vijesh-2026.jpg'; 
+      const a = document.createElement('a');
+      a.href = capData;
+      a.download = 'Greeshma-Vijesh-2026.jpg';
       a.click();
     }
     
@@ -3292,12 +3474,18 @@ CAMERA MODAL
       document.getElementById('prev-sec').style.display = 'none';
       document.getElementById('camBtns').style.display = 'flex';
       document.getElementById('fRow').style.display = 'flex';
-      document.getElementById('camVid').style.display = 'block';
+      
+      if (isDualMode) {
+        document.getElementById('dualVfWrap').style.display = 'grid';
+      } else {
+        document.getElementById('vfWrap').style.display = 'block';
+      }
+      
       capData = null;
     }
     
-    document.getElementById('cam-modal').addEventListener('click', function (e) { 
-      if (e.target === this) closeCamera(); 
+    document.getElementById('cam-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeCamera();
     });
 
     /* ══════════════════════════
