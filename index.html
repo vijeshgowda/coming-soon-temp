@@ -2371,7 +2371,7 @@ CAMERA MODAL
     <div class="container">
       <div class="countdown-top">
         <span class="section-kicker" data-reveal>The Big Day</span>
-        <p class="countdown-sub" data-reveal data-delay="1">Counting down to forever</p>
+        <p class="countdown-sub" data-reveal data-delay="1">Days of our forever</p>
       </div>
       <div class="cd-wrap">
         <div class="cd-unit" data-reveal data-delay="1"><span class="cd-num" id="cdD">--</span><span
@@ -3115,8 +3115,7 @@ CAMERA MODAL
        COUNTDOWN
     ══════════════════════════ */
     function tick() {
-      const diff = new Date('2026-04-29T04:00:00Z') - Date.now();
-      if (diff <= 0) { ['cdD', 'cdH', 'cdM', 'cdS'].forEach(id => document.getElementById(id).textContent = '0'); return; }
+      const diff = Date.now() - new Date('2026-04-29T04:00:00Z');
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
