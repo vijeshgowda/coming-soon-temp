@@ -1,34 +1,43 @@
 /* ────────────────────────────────────────────────────────────
    Project A — Stylesheet
-   Dark, refined, terminal-meets-luxury aesthetic
+   Warm dark aesthetic — pastel orange accent, Claude-inspired
    Fonts: Syne (display) + IBM Plex Mono (codes) + IBM Plex Sans (body)
 ──────────────────────────────────────────────────────────── */
 
 /* ── Tokens ──────────────────────────────────────────────── */
 :root {
-  --bg:          #07090f;
-  --bg-2:        #0d1220;
-  --bg-3:        #111827;
-  --bg-4:        #1a2235;
-  --border:      #1e2d42;
-  --border-hi:   #2a3f5f;
+  /* Backgrounds — slightly warmer dark than pure navy */
+  --bg:          #0c0a09;
+  --bg-2:        #141210;
+  --bg-3:        #1c1916;
+  --bg-4:        #262118;
 
-  --accent:      #cf6107;     /* cyan — trust / security */
-  --accent-dim:  #c48013;
-  --accent-glow: rgba(34, 211, 238, 0.12);
+  /* Borders */
+  --border:      #2e2620;
+  --border-hi:   #3d3228;
 
-  --text:        #f0f4f8;
-  --text-2:      #94a3b8;
-  --text-3:      #475569;
+  /* Pastel orange accent — warm, soft, Claude-adjacent */
+  --accent:      #f4956a;
+  --accent-dim:  #7a3d22;
+  --accent-glow: rgba(244, 149, 106, 0.14);
+  --accent-hover:#e8795a;
 
+  /* Text */
+  --text:        #f5f0eb;
+  --text-2:      #a89888;
+  --text-3:      #5c4f45;
+
+  /* Semantic */
   --danger:      #f43f5e;
   --danger-dim:  rgba(244, 63, 94, 0.15);
-  --success:     #10b981;
+  --success:     #4ade80;
 
+  /* Shape */
   --radius:      8px;
   --radius-lg:   16px;
   --radius-xl:   24px;
 
+  /* Typography */
   --font-display: 'Syne', sans-serif;
   --font-mono:    'IBM Plex Mono', monospace;
   --font-body:    'IBM Plex Sans', sans-serif;
@@ -69,11 +78,11 @@ html, body {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(34,211,238,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(244, 149, 106, 0.07) 0%, transparent 70%),
     var(--bg);
 }
 
-/* Subtle grid texture */
+/* Subtle warm grid texture */
 #screen-home::before {
   content: '';
   position: absolute;
@@ -82,7 +91,7 @@ html, body {
     linear-gradient(var(--border) 1px, transparent 1px),
     linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 64px 64px;
-  opacity: 0.25;
+  opacity: 0.3;
   pointer-events: none;
 }
 
@@ -97,7 +106,7 @@ html, body {
   padding: 32px 24px;
 }
 
-/* Wordmark */
+/* ── Wordmark ────────────────────────────────────────── */
 .wordmark {
   display: flex;
   align-items: center;
@@ -146,7 +155,7 @@ html, body {
   margin-top: 2px;
 }
 
-/* Hero */
+/* ── Hero ────────────────────────────────────────────── */
 .home-hero {
   text-align: center;
 }
@@ -174,7 +183,7 @@ html, body {
   margin-inline: auto;
 }
 
-/* Actions */
+/* ── Actions ─────────────────────────────────────────── */
 .home-actions {
   display: flex;
   flex-direction: column;
@@ -204,7 +213,7 @@ html, body {
   gap: 8px;
 }
 
-/* ── Buttons ────────────────────────────────────────── */
+/* ── Buttons ─────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -227,8 +236,8 @@ html, body {
   width: 100%;
 }
 .btn-primary:hover {
-  background: #06b6d4;
-  box-shadow: 0 0 20px rgba(34,211,238,0.3);
+  background: var(--accent-hover);
+  box-shadow: 0 0 24px rgba(244, 149, 106, 0.25);
 }
 .btn-primary:active { transform: scale(0.98); }
 
@@ -262,7 +271,7 @@ html, body {
 
 .btn-sm { padding: 8px 14px; font-size: 13px; }
 
-/* Code input */
+/* ── Code input ──────────────────────────────────────── */
 .code-input {
   flex: 1;
   padding: 12px 16px;
@@ -285,7 +294,7 @@ html, body {
 }
 .code-input::placeholder { color: var(--text-3); letter-spacing: 0.1em; }
 
-/* Error */
+/* ── Error ───────────────────────────────────────────── */
 .error-msg {
   color: var(--danger);
   font-size: 13px;
@@ -293,10 +302,10 @@ html, body {
   padding: 10px 14px;
   background: var(--danger-dim);
   border-radius: var(--radius);
-  border: 1px solid rgba(244,63,94,0.2);
+  border: 1px solid rgba(244, 63, 94, 0.2);
 }
 
-/* Trust badges */
+/* ── Footer / trust badges ───────────────────────────── */
 .home-footer {
   display: flex;
   flex-direction: column;
@@ -335,7 +344,7 @@ html, body {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(34,211,238,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(244, 149, 106, 0.06) 0%, transparent 70%),
     var(--bg);
   flex-direction: column;
 }
@@ -386,7 +395,7 @@ html, body {
   color: var(--accent);
 }
 
-/* Pulse dot */
+/* ── Pulse dot ───────────────────────────────────────── */
 .lobby-status-row {
   display: flex;
   align-items: center;
@@ -411,6 +420,18 @@ html, body {
   color: var(--text-2);
 }
 
+/* ── Custom code lobby variant ───────────────────────── */
+.lobby-code.custom-code {
+  color: var(--text);
+  letter-spacing: 0.15em;
+}
+.lobby-code.custom-code::after {
+  content: ' ✦';
+  font-size: 1rem;
+  color: var(--accent);
+  vertical-align: super;
+}
+
 /* ═══════════════════════════════════════════════════════════
    CALL SCREEN
 ═══════════════════════════════════════════════════════════ */
@@ -430,11 +451,11 @@ html, body {
   width: 100%;
 }
 
-/* ── Video area ─────────────────────────────────────── */
+/* ── Video area ──────────────────────────────────────── */
 .video-area {
   grid-area: video;
   position: relative;
-  background: #020408;
+  background: #060403;
   overflow: hidden;
 }
 
@@ -460,7 +481,6 @@ html, body {
 }
 
 .remote-avatar span {
-  font-size: 64px;
   width: 96px;
   height: 96px;
   display: flex;
@@ -486,7 +506,7 @@ html, body {
   border-radius: var(--radius);
   overflow: hidden;
   border: 2px solid var(--border-hi);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   aspect-ratio: 4/3;
 }
 
@@ -494,10 +514,10 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(-1); /* Mirror self-view */
+  transform: scaleX(-1);
 }
 
-/* Badges */
+/* ── Badges ──────────────────────────────────────────── */
 .video-badges {
   position: absolute;
   top: 14px;
@@ -512,14 +532,15 @@ html, body {
   padding: 4px 10px;
   border-radius: 100px;
   border: 1px solid var(--border);
-  background: rgba(7, 9, 15, 0.7);
+  background: rgba(12, 10, 9, 0.75);
   backdrop-filter: blur(8px);
 }
 
-.connection-badge.connected    { color: var(--success); border-color: rgba(16,185,129,0.3); }
+.connection-badge.connected    { color: var(--success); border-color: rgba(74, 222, 128, 0.3); }
+.connection-badge.reconnecting { color: var(--accent);  border-color: rgba(244, 149, 106, 0.3); }
 .connection-badge.connecting   { color: var(--text-2); }
-.connection-badge.disconnected { color: var(--danger); border-color: rgba(244,63,94,0.3); }
-.connection-badge.failed       { color: var(--danger); border-color: rgba(244,63,94,0.3); }
+.connection-badge.disconnected { color: var(--danger);  border-color: rgba(244, 63, 94, 0.3); }
+.connection-badge.failed       { color: var(--danger);  border-color: rgba(244, 63, 94, 0.3); }
 
 .encrypted-badge {
   color: var(--text-3);
@@ -528,11 +549,11 @@ html, body {
 }
 .encrypted-badge.active {
   color: var(--accent);
-  border-color: rgba(34,211,238,0.3);
+  border-color: rgba(244, 149, 106, 0.35);
   opacity: 1;
 }
 
-/* ── Controls bar ───────────────────────────────────── */
+/* ── Controls bar ────────────────────────────────────── */
 .controls-bar {
   grid-area: controls;
   display: flex;
@@ -567,12 +588,12 @@ html, body {
 
 .ctrl-btn.active {
   background: var(--bg-4);
-  border-color: var(--accent-dim);
+  border-color: var(--accent);
   color: var(--accent);
 }
 
 .ctrl-btn.danger {
-  border-color: rgba(244,63,94,0.3);
+  border-color: rgba(244, 63, 94, 0.3);
 }
 .ctrl-btn.danger:hover {
   background: var(--danger-dim);
@@ -580,10 +601,10 @@ html, body {
   color: var(--danger);
 }
 
-.ctrl-btn .icon    { font-size: 20px; line-height: 1; }
+.ctrl-btn .icon      { font-size: 20px; line-height: 1; }
 .ctrl-btn .ctrl-label { font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
 
-/* ── Chat sidebar ───────────────────────────────────── */
+/* ── Chat sidebar ────────────────────────────────────── */
 .chat-sidebar {
   grid-area: chat;
   display: flex;
@@ -688,7 +709,7 @@ html, body {
   max-width: 100%;
 }
 
-/* File download message */
+/* File download */
 .file-download {
   display: flex;
   align-items: center;
@@ -705,7 +726,7 @@ html, body {
 .file-download:hover { border-color: var(--accent); }
 .file-download .file-size { color: var(--text-3); font-size: 11px; margin-left: auto; }
 
-/* Chat input */
+/* ── Chat input ──────────────────────────────────────── */
 .chat-input-row {
   display: flex;
   gap: 8px;
@@ -729,7 +750,7 @@ html, body {
   transition: border-color 0.15s;
   max-height: 96px;
 }
-.chat-input:focus { border-color: var(--accent-dim); }
+.chat-input:focus { border-color: var(--accent); }
 .chat-input::placeholder { color: var(--text-3); }
 
 .btn-send {
@@ -746,9 +767,9 @@ html, body {
   align-self: flex-end;
   transition: background 0.15s;
 }
-.btn-send:hover { background: #06b6d4; }
+.btn-send:hover { background: var(--accent-hover); }
 
-/* ── Responsive ─────────────────────────────────────── */
+/* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 768px) {
   .call-layout {
     grid-template-columns: 1fr;
@@ -768,7 +789,10 @@ html, body {
   .local-video-wrap { width: 100px; }
 }
 
-/* ── Custom code toggle ─────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   CUSTOM CODE TOGGLE
+═══════════════════════════════════════════════════════════ */
+
 .custom-toggle {
   display: flex;
   justify-content: center;
@@ -826,16 +850,4 @@ html, body {
   color: var(--text-3);
   text-align: center;
   line-height: 1.5;
-}
-
-/* Custom code — subtle accent in lobby to distinguish from generated codes */
-.lobby-code.custom-code {
-  color: var(--text);
-  letter-spacing: 0.15em;
-}
-.lobby-code.custom-code::after {
-  content: ' ✦';
-  font-size: 1rem;
-  color: var(--accent);
-  vertical-align: super;
 }
