@@ -54,7 +54,7 @@ html, body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+  overflow: hidden; /* overridden for call screen below */
 }
 
 /* ── Screen system ───────────────────────────────────────── */
@@ -438,16 +438,17 @@ html, body {
 
 #screen-call {
   flex-direction: column;
+  overflow-y: auto;  /* enables scrolling within the fixed overlay */
 }
 
 .call-layout {
   display: grid;
   grid-template-columns: 1fr 320px;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(300px, 52vh) auto;
   grid-template-areas:
     "video chat"
     "controls chat";
-  height: 100vh;
+  min-height: 100vh;   /* allows scrolling past viewport */
   width: 100%;
 }
 
@@ -612,6 +613,7 @@ html, body {
   background: var(--bg-2);
   border-left: 1px solid var(--border);
   overflow: hidden;
+  min-height: 0;  /* prevents flex blowout */
 }
 
 .chat-header {
@@ -773,17 +775,19 @@ html, body {
 @media (max-width: 768px) {
   .call-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto auto;
+    grid-template-rows: minmax(240px, 44vh) auto auto;
     grid-template-areas:
       "video"
       "controls"
       "chat";
+    min-height: 100vh;
   }
 
   .chat-sidebar {
     border-left: none;
     border-top: 1px solid var(--border);
-    max-height: 220px;
+    /* no max-height — let chat grow so input is always visible */
+    min-height: 260px;
   }
 
   .local-video-wrap { width: 100px; }
