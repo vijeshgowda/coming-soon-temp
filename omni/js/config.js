@@ -3,12 +3,13 @@
  *
  * After deploying your signaling server to Render, update SIGNALING_URL below.
  * Get free TURN credentials at https://www.metered.ca/stun-turn
+ * 
  */
 
 export const CONFIG = {
   // Your Render signaling server WebSocket URL
   // After deploying, it will be: wss://project-a-signal.onrender.com
-  SIGNALING_URL: 'wss://project-a-signal.onrender.com',
+  SIGNALING_URL: 'wss://omni-8t2t.onrender.com',
 
   ICE_SERVERS: [
     // Free public STUN servers — no setup needed
@@ -19,18 +20,18 @@ export const CONFIG = {
     // Replace with your credentials from https://www.metered.ca/stun-turn
     {
       urls: 'turn:global.relay.metered.ca:80',
-      username: 'YOUR_METERED_USERNAME',
-      credential: 'YOUR_METERED_CREDENTIAL',
+      username: '0cefb2fbcb33b85faa1dcbc2',
+      credential: ' P3sNIoL2SmEjGV4Z',
     },
     {
       urls: 'turn:global.relay.metered.ca:443',
-      username: 'YOUR_METERED_USERNAME',
-      credential: 'YOUR_METERED_CREDENTIAL',
+      username: '0cefb2fbcb33b85faa1dcbc2',
+      credential: ' P3sNIoL2SmEjGV4Z',
     },
     {
       urls: 'turns:global.relay.metered.ca:443',
-      username: 'YOUR_METERED_USERNAME',
-      credential: 'YOUR_METERED_CREDENTIAL',
+      username: '0cefb2fbcb33b85faa1dcbc2',
+      credential: ' P3sNIoL2SmEjGV4Z',
     },
   ],
 };
