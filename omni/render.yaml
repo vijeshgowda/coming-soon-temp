@@ -1,0 +1,24 @@
+# render.yaml — Render deployment config for Project A signaling server
+# Deploy by connecting your GitHub repo to Render and pointing it here.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: project-a-signal
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install --omit=dev
+    startCommand: node index.js
+    healthCheckPath: /health
+
+    # Render free tier spins down after 15 min of inactivity.
+    # Your existing cron job (every 14 min) handles this correctly.
+    # The health check endpoint GET /health keeps it confirmed alive.
+
+    envVars:
+      - key: PORT
+        value: 10000    # Render's default internal port
+
+    # Required for WebSocket support on Render
+    # Render automatically handles WSS (TLS) — your client uses wss://
