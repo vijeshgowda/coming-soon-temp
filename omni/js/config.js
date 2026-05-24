@@ -21,17 +21,17 @@ export const CONFIG = {
     {
       urls: 'turn:global.relay.metered.ca:80',
       username: '0cefb2fbcb33b85faa1dcbc2',
-      credential: ' P3sNIoL2SmEjGV4Z',
+      credential: 'P3sNIoL2SmEjGV4Z',
     },
     {
       urls: 'turn:global.relay.metered.ca:443',
       username: '0cefb2fbcb33b85faa1dcbc2',
-      credential: ' P3sNIoL2SmEjGV4Z',
+      credential: 'P3sNIoL2SmEjGV4Z',
     },
     {
       urls: 'turns:global.relay.metered.ca:443',
       username: '0cefb2fbcb33b85faa1dcbc2',
-      credential: ' P3sNIoL2SmEjGV4Z',
+      credential: 'P3sNIoL2SmEjGV4Z',
     },
   ],
 };

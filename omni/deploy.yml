@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: [client/**]   # Only redeploy when client files change
+    paths-ignore: [server/**]   # Don't redeploy when only server files change
 
   workflow_dispatch:       # Allow manual deploys
 
@@ -34,7 +34,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./client
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment
