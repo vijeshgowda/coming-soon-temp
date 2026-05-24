@@ -228,6 +228,7 @@ html, body {
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  touch-action: manipulation; /* kills 300ms tap delay + double-tap zoom on iOS */
 }
 
 .btn-primary {
@@ -451,9 +452,10 @@ html, body {
 
 /* ── Video area ──────────────────────────────────────── */
 .video-area {
-  height: 52vh;
-  min-height: 280px;
-  flex-shrink: 0;        /* never let controls push the video up */
+  height: 100vh;         /* fallback for older browsers */
+  height: 90dvh;         /* dynamic viewport height — accounts for iOS address bar */
+  min-height: 300px;
+  flex-shrink: 0;
   position: relative;
   background: #060403;
   overflow: hidden;
@@ -578,6 +580,7 @@ html, body {
   transition: all 0.15s;
   font-family: var(--font-body);
   min-width: 64px;
+  touch-action: manipulation;
 }
 
 .ctrl-btn:hover {
@@ -744,7 +747,7 @@ html, body {
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 16px;       /* ← must be 16px+ to prevent iOS Safari zoom on focus */
   resize: none;
   outline: none;
   line-height: 1.5;
@@ -774,8 +777,8 @@ html, body {
 /* Layout is single-column everywhere — no breakpoint needed for structure.
    Only tweak: shrink local PiP on small screens. */
 @media (max-width: 480px) {
-  .video-area    { height: 44vh; min-height: 220px; }
-  .chat-sidebar  { min-height: 65vh; }
+  .video-area    { height: 100vh; height: 88dvh; min-height: 220px; }
+  .chat-sidebar  { min-height: 70vh; }
   .local-video-wrap { width: 88px; }
 }
 
