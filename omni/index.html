@@ -24,6 +24,7 @@
         <div class="wordmark-text">
           <span class="wordmark-title">Project A</span>
           <span class="wordmark-sub">Encrypted peer-to-peer</span>
+          <span class="wordmark-sub">by Vijesh Gowda</span>
         </div>
       </div>
 
@@ -41,6 +42,28 @@
           <span>Create Room</span>
         </button>
 
+        <div class="custom-toggle">
+          <button id="btn-custom-toggle" class="btn-link" type="button">
+            <span id="custom-toggle-icon">▸</span> Use a custom code
+          </button>
+        </div>
+
+        <div id="custom-code-wrap" class="custom-code-wrap" aria-hidden="true">
+          <div class="custom-code-inner">
+            <input
+              id="custom-code-input"
+              class="code-input custom-code-input"
+              type="text"
+              maxlength="10"
+              placeholder="YOURCODE"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+            />
+            <p class="input-hint">4-10 characters · letters &amp; numbers · your friends will use this to join</p>
+          </div>
+        </div>
+
         <div class="divider"><span>or join with a code</span></div>
 
         <div class="join-row">
@@ -48,7 +71,7 @@
             id="join-input"
             class="code-input"
             type="text"
-            maxlength="6"
+            maxlength="10"
             placeholder="XXXXXX"
             autocomplete="off"
             autocapitalize="characters"
@@ -66,9 +89,6 @@
           <span class="trust-badge">⚡ WebRTC P2P</span>
           <span class="trust-badge">👁 Zero server data</span>
         </div>
-        <a href="https://github.com/yourusername/project-a" target="_blank" rel="noopener">
-          Open Source ↗
-        </a>
       </footer>
 
     </div>

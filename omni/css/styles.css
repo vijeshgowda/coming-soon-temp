@@ -767,3 +767,75 @@ html, body {
 
   .local-video-wrap { width: 100px; }
 }
+
+/* ── Custom code toggle ─────────────────────────────── */
+.custom-toggle {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-link:hover { color: var(--accent); }
+
+#custom-toggle-icon {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+.custom-toggle-open #custom-toggle-icon {
+  transform: rotate(90deg);
+}
+
+.custom-code-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+  overflow: hidden;
+}
+.custom-code-wrap.open {
+  grid-template-rows: 1fr;
+}
+.custom-code-inner {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.custom-code-input {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+}
+
+.input-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Custom code — subtle accent in lobby to distinguish from generated codes */
+.lobby-code.custom-code {
+  color: var(--text);
+  letter-spacing: 0.15em;
+}
+.lobby-code.custom-code::after {
+  content: ' ✦';
+  font-size: 1rem;
+  color: var(--accent);
+  vertical-align: super;
+}

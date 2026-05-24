@@ -23,10 +23,6 @@
  *     → Warn if file >500MB
  *     → Full SHA-256 verification at the end
  *
- * The streaming SHA-256 uses a pure-JS incremental hash built on
- * Web Crypto's HMAC as a PRF — see streamingSha256() in crypto.js.
- * No external library required.
- *
  * Fix 3 integration:
  *   signaling.phase is updated at each state transition so SignalingClient
  *   knows whether a disconnect is critical (lobby) or harmless (call).
@@ -86,6 +82,10 @@ const ui = {
   encryptedBadge:  document.getElementById('encrypted-badge'),
   fileInput:       document.getElementById('file-input'),
   fileProgress:    document.getElementById('file-progress'),
+  // Custom code
+  btnCustomToggle: document.getElementById('btn-custom-toggle'),
+  customCodeWrap:  document.getElementById('custom-code-wrap'),
+  customCodeInput: document.getElementById('custom-code-input'),
 };
 
 // ─── Screen transitions ───────────────────────────────────────────────────────
@@ -156,6 +156,7 @@ async function startCall(asInitiator) {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     ui.localVideo.srcObject = localStream;
   } catch {
+    signaling?.disconnect();
     showHomeError('Camera/mic access denied. Please allow permissions and try again.');
     showScreen('home');
     return;
@@ -444,6 +445,7 @@ function hangup() {
 
 function resetToHome() {
   peer?.hangup();
+  signaling?.disconnect();
   localStream = null;
   peer        = null;
   signaling   = null;
@@ -496,24 +498,42 @@ function escapeHtml(str) {
 
 ui.btnCreate.addEventListener('click', async () => {
   ui.homeError.style.display = 'none';
+
+  // Read optional custom code (empty string = let server generate)
+  const customCode = ui.customCodeInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+
+  // Client-side validation before hitting the server
+  if (customCode.length > 0 && (customCode.length < 4 || customCode.length > 10)) {
+    showHomeError('Custom codes must be between 4 and 10 characters.');
+    ui.customCodeInput.focus();
+    return;
+  }
+
   try {
     await connectSignaling();
+
     signaling.addEventListener('created', ({ detail }) => {
       signaling.phase    = 'lobby';
       signaling.roomCode = detail.code;
       ui.lobbyCode.textContent   = detail.code;
-      ui.lobbyStatus.textContent = 'Waiting for peer to join…';
+      // Show different status text depending on whether code was custom
+      ui.lobbyStatus.textContent = detail.custom
+        ? `Your custom code is ready. Share it with your peer…`
+        : 'Waiting for peer to join…';
+      // Visual indicator if custom
+      ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
       showScreen('lobby');
     }, { once: true });
-    signaling.createRoom();
+
+    signaling.createRoom(customCode);
   } catch (e) {
     showHomeError('Could not connect to signaling server. Is it deployed?');
   }
 });
 
 ui.btnJoinSubmit.addEventListener('click', async () => {
-  const code = ui.joinInput.value.trim().toUpperCase();
-  if (code.length !== 6) { showHomeError('Enter a valid 6-character code.'); return; }
+  const code = ui.joinInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  if (code.length < 4 || code.length > 10) { showHomeError('Enter a valid code (4-10 characters).'); return; }
   ui.homeError.style.display = 'none';
   try {
     await connectSignaling();
@@ -563,6 +583,17 @@ ui.fileInput.addEventListener('change', async () => {
     appendSystemMessage(`✓ Sent "${file.name}".`);
   } catch (err) {
     appendSystemMessage(`❌ Send failed: ${err.message}`);
+  }
+});
+
+// ─── Custom code toggle ──────────────────────────────────────────────────────
+
+ui.btnCustomToggle.addEventListener('click', () => {
+  const isOpen = ui.customCodeWrap.classList.toggle('open');
+  ui.customCodeWrap.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  document.getElementById('custom-toggle-icon').textContent = isOpen ? '▾' : '▸';
+  if (!isOpen) {
+    ui.customCodeInput.value = '';
   }
 });
 

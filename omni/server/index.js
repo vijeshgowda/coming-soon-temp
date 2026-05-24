@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 8080;
 // roomCode -> { peers: [ws, ws?], createdAt: timestamp }
 const rooms = new Map();
 
-// ─── HTTP server (health check for Fly.io) ───────────────────────────────────
+// ─── HTTP server (health check for Render cron) ───────────────────────────────────
 const server = createServer((req, res) => {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -66,19 +66,39 @@ wss.on('connection', (ws) => {
 
     switch (msg.type) {
 
-      // Peer A: create a new room
+      // Peer A: create a new room (with optional custom code)
       case 'create': {
         let code;
-        let attempts = 0;
-        do {
-          code = generateCode();
-          attempts++;
-          if (attempts > 100) { send(ws, { type: 'error', message: 'Server busy' }); return; }
-        } while (rooms.has(code));
+
+        // Strip everything except alphanumeric, uppercase, cap at 20 chars
+        const requested = (msg.code || '')
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .slice(0, 10);
+
+        if (requested.length > 0) {
+          // ── Custom code path ──────────────────────────────────────────────
+          if (requested.length < 4) {
+            send(ws, { type: 'error', message: 'Custom codes must be at least 4 characters.' });
+            return;
+          }
+          if (rooms.has(requested)) {
+            send(ws, { type: 'error', message: 'That code is already in use. Try a different one.' });
+            return;
+          }
+          code = requested;
+        } else {
+          // ── Random code path ──────────────────────────────────────────────
+          let attempts = 0;
+          do {
+            code = generateCode();
+            if (++attempts > 100) { send(ws, { type: 'error', message: 'Server busy' }); return; }
+          } while (rooms.has(code));
+        }
 
         rooms.set(code, { peers: [ws], createdAt: Date.now() });
         ws.roomCode = code;
-        send(ws, { type: 'created', code });
+        send(ws, { type: 'created', code, custom: requested.length > 0 });
         break;
       }
 
