@@ -2,12 +2,14 @@ import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import crypto from 'crypto';
 
-const PORT = process.env.PORT || 8080;
+const PORT        = process.env.PORT || 8080;
+const GRACE_MS    = 90_000;    // 90s before a vacant lobby room is deleted
+const ROOM_TTL_MS = 3_600_000; // hard max room lifetime: 1 hour
 
-// roomCode -> { peers: [ws, ws?], createdAt: timestamp }
+// roomCode -> { peers, createdAt, custom, creatorVacated, graceTimer }
 const rooms = new Map();
 
-// ─── HTTP server (health check for Render cron) ───────────────────────────────────
+// ─── HTTP (health check for Render keep-alive cron) ───────────────────────────
 const server = createServer((req, res) => {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -21,42 +23,35 @@ const server = createServer((req, res) => {
 // ─── WebSocket server ─────────────────────────────────────────────────────────
 const wss = new WebSocketServer({ server });
 
-/**
- * Generate a human-readable 6-char room code.
- * Excludes ambiguous chars: 0/O, 1/I, L
- */
 function generateCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const bytes = crypto.randomBytes(6);
   return Array.from(bytes, b => chars[b % chars.length]).join('');
 }
 
-/** Send a JSON message to a WebSocket safely */
 function send(ws, msg) {
-  if (ws.readyState === 1) { // OPEN
-    ws.send(JSON.stringify(msg));
-  }
+  if (ws.readyState === 1) ws.send(JSON.stringify(msg));
 }
 
-/** Get the other peer in a room */
 function getOther(room, ws) {
   return room.peers.find(p => p !== ws);
 }
 
-// ─── Cleanup stale rooms every 5 minutes ─────────────────────────────────────
+// ─── Stale room cleanup (grace timers handle the fast path) ──────────────────
 setInterval(() => {
   const now = Date.now();
   for (const [code, room] of rooms.entries()) {
-    const stale = now - room.createdAt > 3_600_000; // 1 hour
-    const empty = room.peers.every(p => p.readyState !== 1);
-    if (stale || empty) rooms.delete(code);
+    if (now - room.createdAt > ROOM_TTL_MS) {
+      clearTimeout(room.graceTimer);
+      rooms.delete(code);
+    }
   }
 }, 300_000);
 
 // ─── Connection handler ───────────────────────────────────────────────────────
 wss.on('connection', (ws) => {
   ws.roomCode = null;
-  ws.isAlive = true;
+  ws.isAlive  = true;
 
   ws.on('pong', () => { ws.isAlive = true; });
 
@@ -66,18 +61,13 @@ wss.on('connection', (ws) => {
 
     switch (msg.type) {
 
-      // Peer A: create a new room (with optional custom code)
+      // ── Create room (random or custom code) ──────────────────────────────
       case 'create': {
         let code;
-
-        // Strip everything except alphanumeric, uppercase, cap at 20 chars
         const requested = (msg.code || '')
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, '')
-          .slice(0, 10);
+          .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
 
         if (requested.length > 0) {
-          // ── Custom code path ──────────────────────────────────────────────
           if (requested.length < 4) {
             send(ws, { type: 'error', message: 'Custom codes must be at least 4 characters.' });
             return;
@@ -88,7 +78,6 @@ wss.on('connection', (ws) => {
           }
           code = requested;
         } else {
-          // ── Random code path ──────────────────────────────────────────────
           let attempts = 0;
           do {
             code = generateCode();
@@ -96,13 +85,43 @@ wss.on('connection', (ws) => {
           } while (rooms.has(code));
         }
 
-        rooms.set(code, { peers: [ws], createdAt: Date.now() });
+        rooms.set(code, {
+          peers:          [ws],
+          createdAt:      Date.now(),
+          custom:         requested.length > 0,
+          creatorVacated: false,
+          graceTimer:     null,
+        });
         ws.roomCode = code;
         send(ws, { type: 'created', code, custom: requested.length > 0 });
         break;
       }
 
-      // Peer B: join an existing room
+      // ── Rejoin: creator reconnects during the 90s grace window ───────────
+      // Preserves the room code so the user doesn't have to share a new one
+      // after switching apps briefly.
+      case 'rejoin': {
+        const code = (msg.code || '').toUpperCase().trim();
+        const room = rooms.get(code);
+
+        if (!room || !room.creatorVacated) {
+          // Room gone or not in grace state — tell client to create fresh
+          send(ws, { type: 'rejoin-failed', code });
+          return;
+        }
+
+        // Cancel the deletion timer
+        clearTimeout(room.graceTimer);
+        room.graceTimer      = null;
+        room.creatorVacated  = false;
+        room.peers           = [ws];
+        ws.roomCode          = code;
+
+        send(ws, { type: 'rejoined', code, custom: room.custom });
+        break;
+      }
+
+      // ── Join room ─────────────────────────────────────────────────────────
       case 'join': {
         const code = (msg.code || '').toUpperCase().trim();
         const room = rooms.get(code);
@@ -111,7 +130,7 @@ wss.on('connection', (ws) => {
           send(ws, { type: 'error', message: 'Room not found. Check the code and try again.' });
           return;
         }
-        if (room.peers.length >= 2) {
+        if (room.peers.filter(p => p.readyState === 1).length >= 2) {
           send(ws, { type: 'error', message: 'Room is full.' });
           return;
         }
@@ -120,11 +139,12 @@ wss.on('connection', (ws) => {
         ws.roomCode = code;
 
         send(ws, { type: 'joined', code });
-        send(room.peers[0], { type: 'peer-joined' }); // notify creator
+        const creator = room.peers.find(p => p !== ws && p.readyState === 1);
+        if (creator) send(creator, { type: 'peer-joined' });
         break;
       }
 
-      // Relay SDP offer/answer and ICE candidates between peers
+      // ── Signal relay ──────────────────────────────────────────────────────
       case 'signal': {
         const room = rooms.get(ws.roomCode);
         if (!room) return;
@@ -133,8 +153,7 @@ wss.on('connection', (ws) => {
         break;
       }
 
-      default:
-        break;
+      default: break;
     }
   });
 
@@ -144,15 +163,27 @@ wss.on('connection', (ws) => {
     if (!room) return;
 
     const other = getOther(room, ws);
-    if (other) send(other, { type: 'peer-left' });
 
-    rooms.delete(ws.roomCode);
+    if (other && other.readyState === 1) {
+      // Both peers were connected — the other peer needs to know
+      send(other, { type: 'peer-left' });
+      rooms.delete(ws.roomCode);
+    } else {
+      // Creator left the lobby alone.
+      // Start a 90s grace window instead of deleting immediately.
+      // This covers: switching to WhatsApp to paste the code, brief network drops, etc.
+      room.peers          = room.peers.filter(p => p !== ws);
+      room.creatorVacated = true;
+      room.graceTimer     = setTimeout(() => {
+        rooms.delete(ws.roomCode);
+      }, GRACE_MS);
+    }
   });
 
   ws.on('error', () => ws.terminate());
 });
 
-// ─── Heartbeat: drop zombie connections ──────────────────────────────────────
+// ─── Heartbeat ────────────────────────────────────────────────────────────────
 const heartbeat = setInterval(() => {
   for (const ws of wss.clients) {
     if (!ws.isAlive) { ws.terminate(); continue; }
@@ -164,5 +195,5 @@ const heartbeat = setInterval(() => {
 wss.on('close', () => clearInterval(heartbeat));
 
 server.listen(PORT, () => {
-  console.log(`[project-a] Signaling server listening on :${PORT}`);
+  console.log(`[omni] Signaling server listening on :${PORT}`);
 });
