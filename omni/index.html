@@ -81,6 +81,12 @@
         </div>
 
         <p id="home-error" class="error-msg" style="display:none"></p>
+
+        <!-- Connecting progress — shown while WS handshake is in flight -->
+        <div id="connecting-state" class="connecting-state" style="display:none">
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <p class="connecting-text" id="connecting-text">Connecting to server…</p>
+        </div>
       </div>
 
       <footer class="home-footer">
