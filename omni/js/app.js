@@ -103,12 +103,14 @@ function showScreen(name) {
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 
 function showConnecting(text = 'Connecting to server…') {
+  // Reset animation so it starts fresh on every attempt
+  const fill = document.querySelector('.progress-fill');
+  fill.style.animation = 'none';
+  fill.offsetHeight; // force reflow — without this the reset won't take
+  fill.style.animation = '';
+
   ui.connectingText.textContent  = text;
   ui.connectingState.style.display = 'flex';
-  // Force animation restart so fadeUp replays on subsequent shows
-  ui.connectingState.style.animation = 'none';
-  void ui.connectingState.offsetHeight;
-  ui.connectingState.style.animation = '';
   ui.btnCreate.disabled          = true;
   ui.btnJoinSubmit.disabled      = true;
   ui.btnCreate.style.opacity     = '0.5';
@@ -674,7 +676,7 @@ ui.btnCreate.addEventListener('click', async () => {
     return;
   }
 
-  showConnecting('Connecting to server…');
+  showConnecting('Server cold start may take ~30s on first connect…');
 
   try {
     await connectSignaling();
