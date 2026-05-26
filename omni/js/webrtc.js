@@ -122,15 +122,18 @@ export class PeerConnection extends EventTarget {
     channel.binaryType = 'arraybuffer';
     // Set low watermark so bufferedamountlow fires at the right level
     channel.bufferedAmountLowThreshold = BUFFER_LOW;
+    let pubKeySent = false;
     const sendPubKey = async () => {
+      if (pubKeySent) return;
+      pubKeySent = true;
       const pubKey = await exportPublicKey(this.keyPair);
       channel.send(JSON.stringify({ type: 'pubkey', key: pubKey }));
     };
+    // Use addEventListener (not onopen) to avoid being overwritten
+    channel.addEventListener('open', sendPubKey);
     // Some browsers deliver ondatachannel with readyState already 'open'
     if (channel.readyState === 'open') {
       sendPubKey();
-    } else {
-      channel.onopen = sendPubKey;
     }
     channel.onmessage = async ({ data }) => {
       if (data instanceof ArrayBuffer) {

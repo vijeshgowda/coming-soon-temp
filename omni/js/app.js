@@ -249,6 +249,9 @@ async function startCall(asInitiator) {
   peer.addEventListener('ice-state', ({ detail }) => {
     if (detail.state === 'connected' || detail.state === 'completed') {
       updateConnectionBadge('connected');
+      // Fallback: start timer on ICE connected if secure-channel-ready hasn't fired yet
+      startCallTimer();
+      startStatsPolling();
     }
   });
 
@@ -554,6 +557,7 @@ async function flipCamera() {
 // ─── Call Timer ───────────────────────────────────────────────────────────────
 
 function startCallTimer() {
+  if (callTimerInterval) return; // already running
   callStartTime = Date.now();
   ui.callTimer.textContent = '00:00';
   callTimerInterval = setInterval(() => {
@@ -787,6 +791,7 @@ async function processFileQueue() {
 // ─── Connection Quality ───────────────────────────────────────────────────────
 
 function startStatsPolling() {
+  if (statsInterval) return; // already running
   prevBytesReceived = 0;
   prevTimestamp = 0;
   statsInterval = setInterval(async () => {
@@ -899,25 +904,31 @@ document.addEventListener('visibilitychange', () => {
 
   wrap.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
+    e.preventDefault();
     dragging = true;
     wrap.setPointerCapture(e.pointerId);
     const rect = wrap.getBoundingClientRect();
     const parent = wrap.parentElement.getBoundingClientRect();
+    // Convert current position to top/left regardless of how CSS positions it
     origLeft = rect.left - parent.left;
     origTop = rect.top - parent.top;
+    // Switch to top/left positioning immediately
+    wrap.style.top = `${origTop}px`;
+    wrap.style.left = `${origLeft}px`;
+    wrap.style.bottom = 'auto';
+    wrap.style.right = 'auto';
+    wrap.style.transition = 'none';
     startX = e.clientX;
     startY = e.clientY;
-    wrap.style.transition = 'none';
   });
 
   wrap.addEventListener('pointermove', (e) => {
     if (!dragging) return;
+    e.preventDefault();
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
     wrap.style.left = `${origLeft + dx}px`;
     wrap.style.top = `${origTop + dy}px`;
-    wrap.style.bottom = 'auto';
-    wrap.style.right = 'auto';
   });
 
   wrap.addEventListener('pointerup', (e) => {
@@ -932,14 +943,12 @@ document.addEventListener('visibilitychange', () => {
     const pad = 16;
     const snapLeft = cx < parent.width / 2;
     const snapTop = cy < parent.height / 2;
-    wrap.style.transition = 'left 0.25s ease, top 0.25s ease, bottom 0.25s ease';
+    wrap.style.transition = 'top 0.25s ease, left 0.25s ease';
     wrap.style.left = snapLeft ? `${pad}px` : `${parent.width - rect.width - pad}px`;
     wrap.style.top = snapTop ? `${pad}px` : `${parent.height - rect.height - pad}px`;
-    wrap.style.bottom = 'auto';
-    wrap.style.right = 'auto';
   });
 
-  // Prevent default drag behavior on video
+  wrap.addEventListener('pointercancel', () => { dragging = false; });
   wrap.addEventListener('dragstart', e => e.preventDefault());
 })();
 
