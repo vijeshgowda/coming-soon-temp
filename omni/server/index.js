@@ -3,13 +3,12 @@ import { createServer } from 'http';
 import crypto from 'crypto';
 
 const PORT        = process.env.PORT || 8080;
-const GRACE_MS    = 90_000;    // 90s before a vacant lobby room is deleted
-const ROOM_TTL_MS = 3_600_000; // hard max room lifetime: 1 hour
+const GRACE_MS    = 90_000;     // room survives 90s after creator disconnects
+const ROOM_TTL_MS = 3_600_000;  // rooms die after 1 hour regardless
 
-// roomCode -> { peers, createdAt, custom, creatorVacated, graceTimer }
 const rooms = new Map();
 
-// ─── HTTP (health check for Render keep-alive cron) ───────────────────────────
+// ─── HTTP server (health check for Render cron) ───────────────────────────────
 const server = createServer((req, res) => {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -23,6 +22,10 @@ const server = createServer((req, res) => {
 // ─── WebSocket server ─────────────────────────────────────────────────────────
 const wss = new WebSocketServer({ server });
 
+/**
+ * Generate a human-readable 6-char room code.
+ * Excludes ambiguous chars: 0/O, 1/I, L
+ */
 function generateCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const bytes = crypto.randomBytes(6);
@@ -37,11 +40,15 @@ function getOther(room, ws) {
   return room.peers.find(p => p !== ws);
 }
 
-// ─── Stale room cleanup (grace timers handle the fast path) ──────────────────
+// ─── Cleanup stale rooms every 5 minutes ─────────────────────────────────────
 setInterval(() => {
   const now = Date.now();
   for (const [code, room] of rooms.entries()) {
-    if (now - room.createdAt > ROOM_TTL_MS) {
+    const expired = now - room.createdAt > ROOM_TTL_MS;
+    // Only auto-clean rooms NOT in an active grace period
+    const deadAndNotGrace = !room.creatorVacated &&
+      room.peers.every(p => p.readyState !== 1);
+    if (expired || deadAndNotGrace) {
       clearTimeout(room.graceTimer);
       rooms.delete(code);
     }
@@ -65,7 +72,9 @@ wss.on('connection', (ws) => {
       case 'create': {
         let code;
         const requested = (msg.code || '')
-          .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .slice(0, 10);
 
         if (requested.length > 0) {
           if (requested.length < 4) {
@@ -89,7 +98,7 @@ wss.on('connection', (ws) => {
           peers:          [ws],
           createdAt:      Date.now(),
           custom:         requested.length > 0,
-          creatorVacated: false,
+          creatorVacated: false,  // true during grace period
           graceTimer:     null,
         });
         ws.roomCode = code;
@@ -97,20 +106,20 @@ wss.on('connection', (ws) => {
         break;
       }
 
-      // ── Rejoin: creator reconnects during the 90s grace window ───────────
-      // Preserves the room code so the user doesn't have to share a new one
-      // after switching apps briefly.
+      // ── Rejoin: creator reconnects within grace window ────────────────────
+      // Sent by signaling.js on reconnect instead of 'create'.
+      // Preserves the room code so the peer they shared it with can still join.
       case 'rejoin': {
         const code = (msg.code || '').toUpperCase().trim();
         const room = rooms.get(code);
 
         if (!room || !room.creatorVacated) {
-          // Room gone or not in grace state — tell client to create fresh
+          // Grace window expired or room never existed — fall back to new room
           send(ws, { type: 'rejoin-failed', code });
           return;
         }
 
-        // Cancel the deletion timer
+        // Cancel the scheduled deletion
         clearTimeout(room.graceTimer);
         room.graceTimer      = null;
         room.creatorVacated  = false;
@@ -130,7 +139,9 @@ wss.on('connection', (ws) => {
           send(ws, { type: 'error', message: 'Room not found. Check the code and try again.' });
           return;
         }
-        if (room.peers.filter(p => p.readyState === 1).length >= 2) {
+        // Allow join even during creator's grace window — they may reconnect
+        const activePeers = room.peers.filter(p => p.readyState === 1);
+        if (activePeers.length >= 2) {
           send(ws, { type: 'error', message: 'Room is full.' });
           return;
         }
@@ -165,17 +176,17 @@ wss.on('connection', (ws) => {
     const other = getOther(room, ws);
 
     if (other && other.readyState === 1) {
-      // Both peers were connected — the other peer needs to know
+      // Active call — other peer must be notified
       send(other, { type: 'peer-left' });
       rooms.delete(ws.roomCode);
     } else {
-      // Creator left the lobby alone.
-      // Start a 90s grace window instead of deleting immediately.
-      // This covers: switching to WhatsApp to paste the code, brief network drops, etc.
+      // Creator left the lobby alone — grace period instead of instant delete.
+      // Covers the "switch to WhatsApp to paste code then come back" case.
       room.peers          = room.peers.filter(p => p !== ws);
       room.creatorVacated = true;
+      const codeSnapshot  = ws.roomCode; // capture before async delay
       room.graceTimer     = setTimeout(() => {
-        rooms.delete(ws.roomCode);
+        rooms.delete(codeSnapshot);
       }, GRACE_MS);
     }
   });
@@ -183,7 +194,7 @@ wss.on('connection', (ws) => {
   ws.on('error', () => ws.terminate());
 });
 
-// ─── Heartbeat ────────────────────────────────────────────────────────────────
+// ─── Heartbeat: drop zombie connections ──────────────────────────────────────
 const heartbeat = setInterval(() => {
   for (const ws of wss.clients) {
     if (!ws.isAlive) { ws.terminate(); continue; }
