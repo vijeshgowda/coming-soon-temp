@@ -1,15 +1,5 @@
 /**
  * Omni — Main Application
- *
- * Orchestrates the UI state machine:
- *   home → lobby → call
- *
- * Features:
- *   - Progress bar while connecting to signaling server
- *   - Picture in Picture when user switches apps during a call
- *   - Room rejoin within 90s grace window (survives app-switching in lobby)
- *   - Streaming file receive via File System Access API (Chrome/Edge)
- *   - AES-GCM encrypted chat and file transfer
  */
 
 import { CONFIG } from './config.js';
@@ -23,14 +13,13 @@ let signaling   = null;
 let peer        = null;
 let localStream = null;
 
-// Streaming file receive state
 const fileReceive = {
   meta:       null,
-  chunks:     [],       // fallback: in-memory
-  useStream:  false,    // true = File System Access API path
+  chunks:     [],
+  useStream:  false,
   fileHandle: null,
   writable:   null,
-  hashBuffer: [],       // parallel hash accumulation on streaming path
+  hashBuffer: [],
   received:   0,
 };
 
@@ -80,6 +69,25 @@ function showScreen(name) {
   });
 }
 
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+
+function showConnecting(text = 'Connecting to server…') {
+  ui.connectingText.textContent  = text;
+  ui.connectingState.style.display = 'flex';
+  ui.btnCreate.disabled          = true;
+  ui.btnJoinSubmit.disabled      = true;
+  ui.btnCreate.style.opacity     = '0.5';
+  ui.btnJoinSubmit.style.opacity = '0.5';
+}
+
+function hideConnecting() {
+  ui.connectingState.style.display = 'none';
+  ui.btnCreate.disabled            = false;
+  ui.btnJoinSubmit.disabled        = false;
+  ui.btnCreate.style.opacity       = '';
+  ui.btnJoinSubmit.style.opacity   = '';
+}
+
 // ─── Connection setup ─────────────────────────────────────────────────────────
 
 async function connectSignaling() {
@@ -100,13 +108,11 @@ async function connectSignaling() {
     setTimeout(resetToHome, 3000);
   });
 
-  // Reconnecting during lobby — show status
   signaling.addEventListener('reconnecting', ({ detail }) => {
     if (signaling.phase === 'lobby') {
       ui.lobbyStatus.textContent =
         `Connection lost. Reconnecting… (attempt ${detail.attempt}/${detail.max})`;
     }
-    // phase === 'call': silent — call continues via WebRTC P2P
   });
 
   signaling.addEventListener('reconnect-failed', () => {
@@ -116,17 +122,20 @@ async function connectSignaling() {
     }
   });
 
-  // Persistent 'created' listener — fires on reconnect fallback (rejoin-failed path)
+  // Persistent 'created' listener — handles two cases:
+  //   1. rejoin-failed fallback: we called createRoom() and got a new code
+  //   2. (legacy) reconnect created a fresh room
   signaling.addEventListener('created', ({ detail }) => {
     if (signaling.phase === 'lobby') {
       signaling.roomCode = detail.code;
       ui.lobbyCode.textContent   = detail.code;
-      ui.lobbyStatus.textContent = 'Reconnected. Waiting for peer…';
+      ui.lobbyStatus.textContent = 'New room created. Share the updated code…';
       ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
+      hideConnecting();
     }
   });
 
-  // Rejoin succeeded — same code restored, no UX disruption
+  // Rejoin succeeded — same code, no disruption
   signaling.addEventListener('rejoined', ({ detail }) => {
     signaling.phase    = 'lobby';
     signaling.roomCode = detail.code;
@@ -137,14 +146,15 @@ async function connectSignaling() {
     showScreen('lobby');
   });
 
-  // Rejoin failed (grace window expired) — create a fresh room transparently
+  // Rejoin failed (grace window expired) — transparently create a fresh room
   signaling.addEventListener('rejoin-failed', () => {
-    ui.lobbyStatus?.textContent && (ui.lobbyStatus.textContent = 'Session expired. Creating new room…');
+    ui.lobbyStatus && (ui.lobbyStatus.textContent = 'Session expired. Creating new room…');
     signaling.createRoom(signaling._customCode || '');
   });
 
   signaling.addEventListener('error', ({ detail }) => {
     showHomeError(detail.message);
+    hideConnecting();
     if (signaling.phase !== 'call') showScreen('home');
   });
 
@@ -209,7 +219,7 @@ async function startCall(asInitiator) {
   showScreen('call');
 }
 
-// ─── Streaming file receive ───────────────────────────────────────────────────
+// ─── File receive ─────────────────────────────────────────────────────────────
 
 async function initFileReceive(meta) {
   fileReceive.meta       = meta;
@@ -229,14 +239,19 @@ async function initFileReceive(meta) {
       appendSystemMessage(`📎 Receiving "${meta.name}" (${formatBytes(meta.size)}) — streaming to disk…`);
       return;
     } catch (e) {
-      if (e.name === 'AbortError') appendSystemMessage('⚠️ Save cancelled — receiving into memory instead.');
+      if (e.name === 'AbortError') {
+        appendSystemMessage('⚠️ Save cancelled — receiving into memory instead.');
+      }
     }
   }
 
   fileReceive.useStream = false;
   fileReceive.chunks    = new Array(meta.chunks);
   if (meta.size > 500 * 1024 * 1024) {
-    appendSystemMessage(`⚠️ File is ${formatBytes(meta.size)}. Use Chrome for large files to avoid memory issues.`);
+    appendSystemMessage(
+      `⚠️ File is ${formatBytes(meta.size)}. ` +
+      `Use Chrome or Edge for large files to avoid running out of memory.`
+    );
   } else {
     appendSystemMessage(`📎 Receiving "${meta.name}" (${formatBytes(meta.size)})…`);
   }
@@ -248,9 +263,8 @@ async function handleFileChunk(buffer) {
   const view       = new DataView(buffer);
   const chunkIndex = view.getUint32(0, true);
   const encrypted  = buffer.slice(4);
-
-  const plainBuf = await decrypt(peer.sharedKey, new Uint8Array(encrypted));
-  const bytes    = new Uint8Array(plainBuf);
+  const plainBuf   = await decrypt(peer.sharedKey, new Uint8Array(encrypted));
+  const bytes      = new Uint8Array(plainBuf);
 
   fileReceive.received++;
 
@@ -275,10 +289,11 @@ async function finalizeFile() {
     await fileReceive.writable.close();
     const merged       = mergeChunks(fileReceive.hashBuffer, size);
     const receivedHash = await sha256(merged);
-    appendSystemMessage(receivedHash === hash
-      ? `✓ "${name}" saved to disk. SHA-256 verified.`
-      : `❌ Integrity check FAILED for "${name}". File saved but may be corrupted — delete it.`
-    );
+    if (receivedHash !== hash) {
+      appendSystemMessage(`❌ Integrity check FAILED for "${name}". File saved but may be corrupted.`);
+    } else {
+      appendSystemMessage(`✓ "${name}" saved to disk. SHA-256 verified.`);
+    }
   } else {
     const merged       = mergeChunks(fileReceive.chunks, size);
     const receivedHash = await sha256(merged);
@@ -288,7 +303,8 @@ async function finalizeFile() {
       return;
     }
     const blob = new Blob([merged], { type: mimeType });
-    appendFileDownload(name, URL.createObjectURL(blob), size);
+    const url  = URL.createObjectURL(blob);
+    appendFileDownload(name, url, size);
   }
 
   resetFileReceiveState();
@@ -393,17 +409,17 @@ function hangup() {
 function resetToHome() {
   peer?.hangup();
   signaling?.disconnect();
-  localStream  = null;
-  peer         = null;
-  signaling    = null;
+  localStream = null;
+  peer        = null;
+  signaling   = null;
   audioEnabled = true;
   videoEnabled = true;
   ui.localVideo.srcObject  = null;
   ui.remoteVideo.srcObject = null;
   ui.chatMessages.innerHTML = '';
   ui.encryptedBadge.classList.remove('active');
-  resetFileReceiveState();
   hideConnecting();
+  resetFileReceiveState();
   showScreen('home');
 }
 
@@ -421,38 +437,19 @@ function updateConnectionBadge(state) {
   badge.textContent = labels[state] ?? state;
 }
 
-// ─── Progress bar ─────────────────────────────────────────────────────────────
-
-function showConnecting(text = 'Connecting to server…') {
-  ui.connectingText.textContent   = text;
-  ui.connectingState.style.display = 'flex';
-  ui.btnCreate.disabled            = true;
-  ui.btnJoinSubmit.disabled        = true;
-  ui.btnCreate.style.opacity       = '0.5';
-  ui.btnJoinSubmit.style.opacity   = '0.5';
-}
-
-function hideConnecting() {
-  ui.connectingState.style.display = 'none';
-  ui.btnCreate.disabled            = false;
-  ui.btnJoinSubmit.disabled        = false;
-  ui.btnCreate.style.opacity       = '';
-  ui.btnJoinSubmit.style.opacity   = '';
-}
-
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function showHomeError(msg) {
-  ui.homeError.textContent     = msg;
-  ui.homeError.style.display   = 'block';
+  ui.homeError.textContent    = msg;
+  ui.homeError.style.display  = 'block';
   hideConnecting();
   setTimeout(() => { ui.homeError.style.display = 'none'; }, 6000);
 }
 
 function formatBytes(bytes) {
-  if (bytes < 1024)      return `${bytes} B`;
-  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes < 1024)       return `${bytes} B`;
+  if (bytes < 1024 ** 2)  return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3)  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 }
 
@@ -484,7 +481,7 @@ ui.btnCreate.addEventListener('click', async () => {
       signaling.roomCode = detail.code;
       ui.lobbyCode.textContent   = detail.code;
       ui.lobbyStatus.textContent = detail.custom
-        ? 'Your custom code is ready. Share it with your peer…'
+        ? `Your custom code is ready. Share it with your peer…`
         : 'Waiting for peer to join…';
       ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
       hideConnecting();
@@ -559,33 +556,14 @@ ui.fileInput.addEventListener('change', async () => {
 
 // ─── Custom code toggle ───────────────────────────────────────────────────────
 
-let customToggleOpen = false;
-
 ui.btnCustomToggle.addEventListener('click', () => {
-  customToggleOpen = !customToggleOpen;
-  ui.customCodeWrap.classList.toggle('open', customToggleOpen);
-  ui.customCodeWrap.setAttribute('aria-hidden', String(!customToggleOpen));
-  ui.btnCustomToggle.classList.toggle('custom-toggle-open', customToggleOpen);
-  document.getElementById('custom-toggle-icon').textContent = customToggleOpen ? '▾' : '▸';
-  if (customToggleOpen) {
-    setTimeout(() => ui.customCodeInput.focus(), 220);
-  } else {
-    ui.customCodeInput.value = '';
-  }
-});
-
-ui.customCodeInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') ui.btnCreate.click();
-});
-
-ui.customCodeInput.addEventListener('input', () => {
-  const clean = ui.customCodeInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  if (ui.customCodeInput.value !== clean) ui.customCodeInput.value = clean;
+  const isOpen = ui.customCodeWrap.classList.toggle('open');
+  ui.customCodeWrap.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  document.getElementById('custom-toggle-icon').textContent = isOpen ? '▾' : '▸';
+  if (!isOpen) ui.customCodeInput.value = '';
 });
 
 // ─── Picture in Picture ───────────────────────────────────────────────────────
-// Auto-triggers when user switches apps during a call.
-// Handles both the standard W3C API and the webkit-prefixed iOS Safari API.
 
 async function enterPiP() {
   const video = ui.remoteVideo;
@@ -596,7 +574,7 @@ async function enterPiP() {
     } else if (video.webkitSupportsPresentationMode?.('picture-in-picture')) {
       video.webkitSetPresentationMode('picture-in-picture');
     }
-  } catch { /* denied or unsupported — silent */ }
+  } catch { /* PiP denied or not supported — silent */ }
 }
 
 async function exitPiP() {
