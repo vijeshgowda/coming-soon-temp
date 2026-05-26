@@ -123,10 +123,18 @@ wss.on('connection', (ws) => {
         clearTimeout(room.graceTimer);
         room.graceTimer      = null;
         room.creatorVacated  = false;
-        room.peers           = [ws];
+
+        // Preserve any joiner who connected during grace period
+        const existingPeers = room.peers.filter(p => p.readyState === 1);
+        room.peers           = [ws, ...existingPeers];
         ws.roomCode          = code;
 
         send(ws, { type: 'rejoined', code, custom: room.custom });
+
+        // If a joiner arrived during grace window, notify creator immediately
+        if (existingPeers.length > 0) {
+          send(ws, { type: 'peer-joined' });
+        }
         break;
       }
 

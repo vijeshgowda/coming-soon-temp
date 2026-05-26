@@ -64,6 +64,11 @@
           </div>
         </div>
 
+        <label class="audio-only-toggle">
+          <input id="audio-only-checkbox" type="checkbox" />
+          <span>Audio only (no camera)</span>
+        </label>
+
         <div class="divider"><span>or join with a code</span></div>
 
         <div class="join-row">
@@ -148,6 +153,7 @@
 
         <!-- Status badges -->
         <div class="video-badges">
+          <span id="call-timer" class="badge timer-badge">00:00</span>
           <span id="connection-badge" class="badge connection-badge connecting">○ Connecting…</span>
           <span id="encrypted-badge" class="badge encrypted-badge" title="Encryption status">
             🔒 E2E
@@ -165,6 +171,11 @@
         <button id="btn-camera" class="ctrl-btn" title="Toggle camera">
           <span class="icon">📷</span>
           <span class="ctrl-label">Camera</span>
+        </button>
+
+        <button id="btn-screen" class="ctrl-btn" title="Share screen">
+          <span class="icon">🖥️</span>
+          <span class="ctrl-label">Screen</span>
         </button>
 
         <button id="btn-hangup" class="ctrl-btn danger" title="End call">
@@ -190,6 +201,11 @@
 
         <div id="chat-messages" class="chat-messages">
           <div class="message system">Connection establishing… chat will be available once encrypted channel is ready.</div>
+        </div>
+
+        <div id="typing-indicator" class="typing-indicator" style="display:none">
+          <span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>
+          <span>Peer is typing</span>
         </div>
 
         <div class="chat-input-row">

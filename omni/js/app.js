@@ -13,6 +13,18 @@ let signaling   = null;
 let peer        = null;
 let localStream = null;
 
+// Call timer state
+let callTimerInterval = null;
+let callStartTime     = null;
+
+// Screen sharing state
+let screenStream  = null;
+let screenSharing = false;
+
+// Typing indicator state
+let typingTimeout    = null;
+let typingSendTimer  = null;
+
 const fileReceive = {
   meta:       null,
   chunks:     [],
@@ -56,6 +68,10 @@ const ui = {
   btnCustomToggle:  document.getElementById('btn-custom-toggle'),
   customCodeWrap:   document.getElementById('custom-code-wrap'),
   customCodeInput:  document.getElementById('custom-code-input'),
+  btnScreen:        document.getElementById('btn-screen'),
+  callTimer:        document.getElementById('call-timer'),
+  audioOnlyCheckbox: document.getElementById('audio-only-checkbox'),
+  typingIndicator:  document.getElementById('typing-indicator'),
   // Progress bar
   connectingState:  document.getElementById('connecting-state'),
   connectingText:   document.getElementById('connecting-text'),
@@ -74,6 +90,10 @@ function showScreen(name) {
 function showConnecting(text = 'Connecting to server…') {
   ui.connectingText.textContent  = text;
   ui.connectingState.style.display = 'flex';
+  // Force animation restart so fadeUp replays on subsequent shows
+  ui.connectingState.style.animation = 'none';
+  void ui.connectingState.offsetHeight;
+  ui.connectingState.style.animation = '';
   ui.btnCreate.disabled          = true;
   ui.btnJoinSubmit.disabled      = true;
   ui.btnCreate.style.opacity     = '0.5';
@@ -158,17 +178,33 @@ async function connectSignaling() {
     if (signaling.phase !== 'call') showScreen('home');
   });
 
+  signaling.addEventListener('disconnected', () => {
+    hideConnecting();
+  });
+
   await signaling.connect();
 }
 
 async function startCall(asInitiator) {
+  const audioOnly = ui.audioOnlyCheckbox.checked;
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localStream = await navigator.mediaDevices.getUserMedia({ video: !audioOnly, audio: true });
     ui.localVideo.srcObject = localStream;
+    if (audioOnly) {
+      ui.localVideo.style.opacity = '0.3';
+      videoEnabled = false;
+    }
   } catch {
     signaling?.disconnect();
     showHomeError('Camera/mic access denied. Please allow permissions and try again.');
     showScreen('home');
+    return;
+  }
+
+  // Guard: signaling may have been torn down while getUserMedia dialog was open
+  if (!signaling) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
     return;
   }
 
@@ -182,9 +218,11 @@ async function startCall(asInitiator) {
     ui.remoteVideo.style.display  = 'block';
   });
 
+
   peer.addEventListener('secure-channel-ready', () => {
     ui.encryptedBadge.classList.add('active');
     appendSystemMessage('🔒 Encrypted channel established.');
+    startCallTimer();
   });
 
   peer.addEventListener('connection-state', ({ detail }) => {
@@ -215,7 +253,17 @@ async function startCall(asInitiator) {
     appendSystemMessage(`⚠️ ${detail.message}`);
   });
 
-  await peer.initialize(localStream);
+  try {
+    await peer.initialize(localStream);
+  } catch (e) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+    peer = null;
+    signaling?.disconnect();
+    showHomeError('Failed to establish connection. Please try again.');
+    showScreen('home');
+    return;
+  }
   showScreen('call');
 }
 
@@ -333,6 +381,7 @@ function handleIncomingData(msg) {
   switch (msg.type) {
     case 'chat':      appendChatMessage('Peer', msg.text, 'remote'); break;
     case 'file-meta': initFileReceive(msg); break;
+    case 'typing':    showTypingIndicator(); break;
   }
 }
 
@@ -400,6 +449,77 @@ function toggleCamera() {
   ui.localVideo.style.opacity = videoEnabled ? '1' : '0.3';
 }
 
+async function toggleScreenShare() {
+  if (screenSharing) {
+    stopScreenShare();
+    return;
+  }
+  try {
+    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    const screenTrack = screenStream.getVideoTracks()[0];
+    await peer.replaceVideoTrack(screenTrack);
+    ui.localVideo.srcObject = screenStream;
+    screenSharing = true;
+    ui.btnScreen.classList.add('active');
+    ui.btnScreen.querySelector('.ctrl-label').textContent = 'Stop';
+    screenTrack.onended = () => stopScreenShare();
+  } catch {
+    // User cancelled the picker — do nothing
+  }
+}
+
+function stopScreenShare() {
+  if (!screenSharing) return;
+  screenStream?.getTracks().forEach(t => t.stop());
+  screenStream = null;
+  screenSharing = false;
+  const camTrack = localStream?.getVideoTracks()[0];
+  if (camTrack) peer?.replaceVideoTrack(camTrack);
+  ui.localVideo.srcObject = localStream;
+  ui.btnScreen.classList.remove('active');
+  ui.btnScreen.querySelector('.ctrl-label').textContent = 'Screen';
+}
+
+// ─── Call Timer ───────────────────────────────────────────────────────────────
+
+function startCallTimer() {
+  callStartTime = Date.now();
+  ui.callTimer.textContent = '00:00';
+  callTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+    const h = Math.floor(elapsed / 3600);
+    const m = Math.floor((elapsed % 3600) / 60);
+    const s = elapsed % 60;
+    ui.callTimer.textContent = h > 0
+      ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+      : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }, 1000);
+}
+
+function stopCallTimer() {
+  clearInterval(callTimerInterval);
+  callTimerInterval = null;
+  callStartTime = null;
+  ui.callTimer.textContent = '00:00';
+}
+
+// ─── Typing Indicator ─────────────────────────────────────────────────────────
+
+function sendTypingIndicator() {
+  if (!peer || !peer.sharedKey) return;
+  if (typingSendTimer) return; // already sent recently — debounce
+  peer.send({ type: 'typing' }).catch(() => {});
+  typingSendTimer = setTimeout(() => { typingSendTimer = null; }, 2000);
+}
+
+function showTypingIndicator() {
+  ui.typingIndicator.style.display = 'flex';
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    ui.typingIndicator.style.display = 'none';
+  }, 3000);
+}
+
 function hangup() {
   peer?.hangup();
   signaling?.disconnect();
@@ -409,6 +529,8 @@ function hangup() {
 function resetToHome() {
   peer?.hangup();
   signaling?.disconnect();
+  stopScreenShare();
+  stopCallTimer();
   localStream = null;
   peer        = null;
   signaling   = null;
@@ -418,6 +540,7 @@ function resetToHome() {
   ui.remoteVideo.srcObject = null;
   ui.chatMessages.innerHTML = '';
   ui.encryptedBadge.classList.remove('active');
+  ui.typingIndicator.style.display = 'none';
   hideConnecting();
   resetFileReceiveState();
   showScreen('home');
@@ -529,16 +652,22 @@ ui.btnCopyCode.addEventListener('click', () => {
 
 ui.btnLobbyCancel.addEventListener('click', () => {
   signaling?.disconnect();
+  signaling = null;
   showScreen('home');
 });
 
 ui.btnMute.addEventListener('click', toggleMute);
 ui.btnCamera.addEventListener('click', toggleCamera);
+ui.btnScreen.addEventListener('click', toggleScreenShare);
 ui.btnHangup.addEventListener('click', hangup);
 ui.btnSend.addEventListener('click', sendChat);
 
 ui.chatInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+ui.chatInput.addEventListener('input', () => {
+  if (ui.chatInput.value.trim()) sendTypingIndicator();
 });
 
 ui.fileInput.addEventListener('change', async () => {
