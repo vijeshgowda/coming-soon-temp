@@ -43,14 +43,7 @@ export class SignalingClient extends EventTarget {
   connect() {
     return new Promise((resolve, reject) => {
       this._intentionalClose = false;
-      const timeout = setTimeout(() => {
-        this.ws?.close();
-        reject(new Error('Connection timed out'));
-      }, 15_000);
-      this._openSocket(
-        () => { clearTimeout(timeout); resolve(); },
-        (err) => { clearTimeout(timeout); reject(err); }
-      );
+      this._openSocket(resolve, reject);
     });
   }
 

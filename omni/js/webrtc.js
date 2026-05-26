@@ -254,10 +254,6 @@ export class PeerConnection extends EventTarget {
   toggleVideo(enabled) {
     this.localStream?.getVideoTracks().forEach(t => { t.enabled = enabled; });
   }
-  async replaceVideoTrack(newTrack) {
-    const sender = this.pc?.getSenders().find(s => s.track?.kind === 'video');
-    if (sender) await sender.replaceTrack(newTrack);
-  }
   // ─── Cleanup ─────────────────────────────────────────────────────────────────
   hangup() {
     this.localStream?.getTracks().forEach(t => t.stop());
