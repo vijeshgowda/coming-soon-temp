@@ -531,8 +531,8 @@ html, body {
 /* Local PiP */
 .local-video-wrap {
   position: absolute;
-  top: auto;
-  bottom: 16px;
+  top: 16px;
+  bottom: auto;
   left: 16px;
   right: auto;
   width: 160px;
