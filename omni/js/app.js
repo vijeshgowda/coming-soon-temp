@@ -72,6 +72,7 @@ const ui = {
   customCodeWrap:   document.getElementById('custom-code-wrap'),
   customCodeInput:  document.getElementById('custom-code-input'),
   btnScreen:        document.getElementById('btn-screen'),
+  btnFlip:          document.getElementById('btn-flip'),
   callTimer:        document.getElementById('call-timer'),
   typingIndicator:  document.getElementById('typing-indicator'),
   // Progress bar
@@ -462,6 +463,10 @@ async function toggleScreenShare() {
     stopScreenShare();
     return;
   }
+  if (!navigator.mediaDevices?.getDisplayMedia) {
+    appendSystemMessage('⚠️ Screen sharing is not supported on this device.');
+    return;
+  }
   try {
     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
     const screenTrack = screenStream.getVideoTracks()[0];
@@ -486,6 +491,37 @@ function stopScreenShare() {
   ui.localVideo.srcObject = localStream;
   ui.btnScreen.classList.remove('active');
   ui.btnScreen.querySelector('.ctrl-label').textContent = 'Screen';
+}
+
+// ─── Flip Camera ──────────────────────────────────────────────────────────────
+
+let facingMode = 'user';
+
+async function flipCamera() {
+  if (screenSharing) return; // don't flip while screen sharing
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode },
+      audio: false,
+    });
+    const newTrack = newStream.getVideoTracks()[0];
+    // Stop old video track
+    const oldTrack = localStream.getVideoTracks()[0];
+    if (oldTrack) oldTrack.stop();
+    // Replace in localStream
+    localStream.removeTrack(oldTrack);
+    localStream.addTrack(newTrack);
+    // Replace in peer connection
+    await peer?.replaceVideoTrack(newTrack);
+    // Update local preview
+    ui.localVideo.srcObject = localStream;
+    // Mirror only front camera
+    ui.localVideo.classList.toggle('no-mirror', facingMode === 'environment');
+  } catch {
+    // Camera not available — revert
+    facingMode = facingMode === 'user' ? 'environment' : 'user';
+  }
 }
 
 // ─── Call Timer ───────────────────────────────────────────────────────────────
@@ -668,6 +704,7 @@ ui.btnLobbyCancel.addEventListener('click', () => {
 ui.btnMute.addEventListener('click', toggleMute);
 ui.btnCamera.addEventListener('click', toggleCamera);
 ui.btnScreen.addEventListener('click', toggleScreenShare);
+ui.btnFlip.addEventListener('click', flipCamera);
 ui.btnHangup.addEventListener('click', hangup);
 ui.btnSend.addEventListener('click', sendChat);
 
@@ -706,6 +743,8 @@ ui.btnCustomToggle.addEventListener('click', () => {
 async function enterPiP() {
   const video = ui.remoteVideo;
   if (!video.srcObject || !peer) return;
+  // Wait for at least one frame before requesting PiP
+  if (video.readyState < 2) return;
   try {
     if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
       await video.requestPictureInPicture();
