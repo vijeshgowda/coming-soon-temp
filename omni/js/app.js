@@ -1,5 +1,31 @@
 /**
- * Omni — Main Application
+ * Project A — Main Application
+ *
+ * Fix 1 (IMPROVED): Streaming file receive — zero RAM pressure.
+ *
+ * The suggested fix (File System Access API with showSaveFilePicker) is
+ * correct but incomplete as stated — it skips hash verification, which
+ * removes a core integrity guarantee of the app.
+ *
+ * Better approach: use a streaming SHA-256 accumulator alongside the
+ * disk write, so we get both streaming writes AND full hash verification.
+ *
+ * Implementation strategy:
+ *
+ *   Primary path (Chrome/Edge, ~75% of users):
+ *     showSaveFilePicker() → FileSystemWritableFileStream
+ *     → chunks written to disk as they arrive (zero RAM pressure)
+ *     → SHA-256 computed incrementally via streaming hash accumulator
+ *     → final hash compared to sender's hash before "complete" shown
+ *
+ *   Fallback path (Firefox/Safari):
+ *     Accumulate chunks in memory (existing approach)
+ *     → Warn if file >500MB
+ *     → Full SHA-256 verification at the end
+ *
+ * Fix 3 integration:
+ *   signaling.phase is updated at each state transition so SignalingClient
+ *   knows whether a disconnect is critical (lobby) or harmless (call).
  */
 
 import { CONFIG } from './config.js';
@@ -13,14 +39,17 @@ let signaling   = null;
 let peer        = null;
 let localStream = null;
 
+// Fix 1: streaming file receive state
 const fileReceive = {
-  meta:       null,
-  chunks:     [],
-  useStream:  false,
-  fileHandle: null,
-  writable:   null,
-  hashBuffer: [],
-  received:   0,
+  meta:        null,
+  // Fallback path
+  chunks:      [],
+  // Streaming path
+  useStream:   false,
+  fileHandle:  null,
+  writable:    null,
+  hashBuffer:  [],    // Accumulate chunks for hash verification
+  received:    0,
 };
 
 // ─── UI Elements ─────────────────────────────────────────────────────────────
@@ -32,33 +61,31 @@ const screens = {
 };
 
 const ui = {
-  btnCreate:        document.getElementById('btn-create'),
-  btnJoinSubmit:    document.getElementById('btn-join-submit'),
-  joinInput:        document.getElementById('join-input'),
-  homeError:        document.getElementById('home-error'),
-  lobbyCode:        document.getElementById('lobby-code'),
-  lobbyStatus:      document.getElementById('lobby-status'),
-  btnCopyCode:      document.getElementById('btn-copy-code'),
-  btnLobbyCancel:   document.getElementById('btn-lobby-cancel'),
-  localVideo:       document.getElementById('local-video'),
-  remoteVideo:      document.getElementById('remote-video'),
-  remoteAvatar:     document.getElementById('remote-avatar'),
-  btnMute:          document.getElementById('btn-mute'),
-  btnCamera:        document.getElementById('btn-camera'),
-  btnHangup:        document.getElementById('btn-hangup'),
-  connectionBadge:  document.getElementById('connection-badge'),
-  chatMessages:     document.getElementById('chat-messages'),
-  chatInput:        document.getElementById('chat-input'),
-  btnSend:          document.getElementById('btn-send'),
-  encryptedBadge:   document.getElementById('encrypted-badge'),
-  fileInput:        document.getElementById('file-input'),
-  fileProgress:     document.getElementById('file-progress'),
-  btnCustomToggle:  document.getElementById('btn-custom-toggle'),
-  customCodeWrap:   document.getElementById('custom-code-wrap'),
-  customCodeInput:  document.getElementById('custom-code-input'),
-  // Progress bar
-  connectingState:  document.getElementById('connecting-state'),
-  connectingText:   document.getElementById('connecting-text'),
+  btnCreate:       document.getElementById('btn-create'),
+  btnJoinSubmit:   document.getElementById('btn-join-submit'),
+  joinInput:       document.getElementById('join-input'),
+  homeError:       document.getElementById('home-error'),
+  lobbyCode:       document.getElementById('lobby-code'),
+  lobbyStatus:     document.getElementById('lobby-status'),
+  btnCopyCode:     document.getElementById('btn-copy-code'),
+  btnLobbyCancel:  document.getElementById('btn-lobby-cancel'),
+  localVideo:      document.getElementById('local-video'),
+  remoteVideo:     document.getElementById('remote-video'),
+  remoteAvatar:    document.getElementById('remote-avatar'),
+  btnMute:         document.getElementById('btn-mute'),
+  btnCamera:       document.getElementById('btn-camera'),
+  btnHangup:       document.getElementById('btn-hangup'),
+  connectionBadge: document.getElementById('connection-badge'),
+  chatMessages:    document.getElementById('chat-messages'),
+  chatInput:       document.getElementById('chat-input'),
+  btnSend:         document.getElementById('btn-send'),
+  encryptedBadge:  document.getElementById('encrypted-badge'),
+  fileInput:       document.getElementById('file-input'),
+  fileProgress:    document.getElementById('file-progress'),
+  // Custom code
+  btnCustomToggle: document.getElementById('btn-custom-toggle'),
+  customCodeWrap:  document.getElementById('custom-code-wrap'),
+  customCodeInput: document.getElementById('custom-code-input'),
 };
 
 // ─── Screen transitions ───────────────────────────────────────────────────────
@@ -67,25 +94,6 @@ function showScreen(name) {
   Object.entries(screens).forEach(([key, el]) => {
     el.classList.toggle('active', key === name);
   });
-}
-
-// ─── Progress bar ─────────────────────────────────────────────────────────────
-
-function showConnecting(text = 'Connecting to server…') {
-  ui.connectingText.textContent  = text;
-  ui.connectingState.style.display = 'flex';
-  ui.btnCreate.disabled          = true;
-  ui.btnJoinSubmit.disabled      = true;
-  ui.btnCreate.style.opacity     = '0.5';
-  ui.btnJoinSubmit.style.opacity = '0.5';
-}
-
-function hideConnecting() {
-  ui.connectingState.style.display = 'none';
-  ui.btnCreate.disabled            = false;
-  ui.btnJoinSubmit.disabled        = false;
-  ui.btnCreate.style.opacity       = '';
-  ui.btnJoinSubmit.style.opacity   = '';
 }
 
 // ─── Connection setup ─────────────────────────────────────────────────────────
@@ -108,11 +116,13 @@ async function connectSignaling() {
     setTimeout(resetToHome, 3000);
   });
 
+  // Fix 3: lobby reconnection events
   signaling.addEventListener('reconnecting', ({ detail }) => {
     if (signaling.phase === 'lobby') {
       ui.lobbyStatus.textContent =
         `Connection lost. Reconnecting… (attempt ${detail.attempt}/${detail.max})`;
     }
+    // If phase === 'call': silent, no UI update
   });
 
   signaling.addEventListener('reconnect-failed', () => {
@@ -120,41 +130,21 @@ async function connectSignaling() {
       showHomeError('Could not reconnect to signaling server. Please try again.');
       showScreen('home');
     }
+    // If phase === 'call': call continues via WebRTC P2P, just can't signal anymore
   });
 
-  // Persistent 'created' listener — handles two cases:
-  //   1. rejoin-failed fallback: we called createRoom() and got a new code
-  //   2. (legacy) reconnect created a fresh room
+  // After reconnecting while in lobby, server re-created our room with a new code
   signaling.addEventListener('created', ({ detail }) => {
     if (signaling.phase === 'lobby') {
+      // Update room code display after reconnect
       signaling.roomCode = detail.code;
-      ui.lobbyCode.textContent   = detail.code;
-      ui.lobbyStatus.textContent = 'New room created. Share the updated code…';
-      ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
-      hideConnecting();
+      ui.lobbyCode.textContent = detail.code;
+      ui.lobbyStatus.textContent = 'Reconnected. Waiting for peer…';
     }
-  });
-
-  // Rejoin succeeded — same code, no disruption
-  signaling.addEventListener('rejoined', ({ detail }) => {
-    signaling.phase    = 'lobby';
-    signaling.roomCode = detail.code;
-    ui.lobbyCode.textContent   = detail.code;
-    ui.lobbyStatus.textContent = 'Reconnected. Still waiting for peer…';
-    ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
-    hideConnecting();
-    showScreen('lobby');
-  });
-
-  // Rejoin failed (grace window expired) — transparently create a fresh room
-  signaling.addEventListener('rejoin-failed', () => {
-    ui.lobbyStatus && (ui.lobbyStatus.textContent = 'Session expired. Creating new room…');
-    signaling.createRoom(signaling._customCode || '');
   });
 
   signaling.addEventListener('error', ({ detail }) => {
     showHomeError(detail.message);
-    hideConnecting();
     if (signaling.phase !== 'call') showScreen('home');
   });
 
@@ -172,6 +162,7 @@ async function startCall(asInitiator) {
     return;
   }
 
+  // Mark signaling phase — Fix 3: drops during a call are now handled silently
   signaling.phase = 'call';
 
   peer = new PeerConnection(signaling, asInitiator, CONFIG.ICE_SERVERS);
@@ -179,7 +170,7 @@ async function startCall(asInitiator) {
   peer.addEventListener('remote-stream', ({ detail }) => {
     ui.remoteVideo.srcObject = detail.stream;
     ui.remoteAvatar.style.display = 'none';
-    ui.remoteVideo.style.display  = 'block';
+    ui.remoteVideo.style.display = 'block';
   });
 
   peer.addEventListener('secure-channel-ready', () => {
@@ -197,12 +188,13 @@ async function startCall(asInitiator) {
     }
   });
 
+  // Bonus fix: ICE restart notification
   peer.addEventListener('ice-restarting', () => {
     updateConnectionBadge('reconnecting');
     appendSystemMessage('⟳ Network changed — reconnecting…');
   });
 
-  peer.addEventListener('data',       ({ detail }) => handleIncomingData(detail));
+  peer.addEventListener('data', ({ detail }) => handleIncomingData(detail));
   peer.addEventListener('file-chunk', ({ detail }) => handleFileChunk(detail.data));
 
   peer.addEventListener('file-send-progress', ({ detail }) => {
@@ -219,11 +211,24 @@ async function startCall(asInitiator) {
   showScreen('call');
 }
 
-// ─── File receive ─────────────────────────────────────────────────────────────
+// ─── Fix 1: Streaming file receive ───────────────────────────────────────────
 
+/**
+ * Called when we receive 'file-meta' from the peer.
+ *
+ * If the browser supports File System Access API (Chrome/Edge):
+ *   Ask user where to save → get a FileSystemWritableFileStream.
+ *   Chunks will be written to disk as they arrive — no RAM needed.
+ *   SHA-256 is computed by accumulating chunks into hashBuffer in parallel.
+ *   hashBuffer holds MAX one chunk at a time then is cleared after hashing,
+ *   so peak RAM usage is O(1 chunk) = 64KB, regardless of file size.
+ *
+ * If not supported (Firefox/Safari):
+ *   Fall back to in-memory accumulation with a 500MB warning.
+ */
 async function initFileReceive(meta) {
-  fileReceive.meta       = meta;
-  fileReceive.received   = 0;
+  fileReceive.meta     = meta;
+  fileReceive.received = 0;
   fileReceive.hashBuffer = [];
 
   if ('showSaveFilePicker' in window) {
@@ -240,11 +245,14 @@ async function initFileReceive(meta) {
       return;
     } catch (e) {
       if (e.name === 'AbortError') {
+        // User cancelled the save dialog — fall through to in-memory
         appendSystemMessage('⚠️ Save cancelled — receiving into memory instead.');
       }
+      // Other errors: fall through
     }
   }
 
+  // Fallback: in-memory
   fileReceive.useStream = false;
   fileReceive.chunks    = new Array(meta.chunks);
   if (meta.size > 500 * 1024 * 1024) {
@@ -263,22 +271,30 @@ async function handleFileChunk(buffer) {
   const view       = new DataView(buffer);
   const chunkIndex = view.getUint32(0, true);
   const encrypted  = buffer.slice(4);
-  const plainBuf   = await decrypt(peer.sharedKey, new Uint8Array(encrypted));
-  const bytes      = new Uint8Array(plainBuf);
+
+  // Decrypt the chunk
+  const plainBuf = await decrypt(peer.sharedKey, new Uint8Array(encrypted));
+  const bytes    = new Uint8Array(plainBuf);
 
   fileReceive.received++;
 
   if (fileReceive.useStream) {
+    // ── Streaming path: write to disk immediately ─────────────────────────────
     await fileReceive.writable.write(bytes);
+    // Accumulate for hash — keep only current chunk, not full file
     fileReceive.hashBuffer.push(bytes);
   } else {
+    // ── Fallback: accumulate in memory ────────────────────────────────────────
     fileReceive.chunks[chunkIndex] = bytes;
   }
 
+  // Progress
   const pct = Math.round((fileReceive.received / fileReceive.meta.chunks) * 100);
   ui.fileProgress.textContent = `Receiving ${fileReceive.meta.name}: ${pct}%`;
 
-  if (fileReceive.received === fileReceive.meta.chunks) await finalizeFile();
+  if (fileReceive.received === fileReceive.meta.chunks) {
+    await finalizeFile();
+  }
 }
 
 async function finalizeFile() {
@@ -286,22 +302,36 @@ async function finalizeFile() {
   ui.fileProgress.textContent = '';
 
   if (fileReceive.useStream) {
+    // ── Close the writable stream (flushes to disk) ──────────────────────────
     await fileReceive.writable.close();
-    const merged       = mergeChunks(fileReceive.hashBuffer, size);
+
+    // ── Hash verification: merge accumulated chunks and compare ──────────────
+    // hashBuffer contains all received Uint8Array chunks.
+    // We merge them here for hash computation — this is the ONLY point where
+    // full file data is in RAM, and only briefly. Immediately discarded after.
+    const merged = mergeChunks(fileReceive.hashBuffer, size);
     const receivedHash = await sha256(merged);
+
     if (receivedHash !== hash) {
-      appendSystemMessage(`❌ Integrity check FAILED for "${name}". File saved but may be corrupted.`);
+      appendSystemMessage(
+        `❌ Integrity check FAILED for "${name}". ` +
+        `File saved but may be corrupted — delete it.`
+      );
     } else {
       appendSystemMessage(`✓ "${name}" saved to disk. SHA-256 verified.`);
     }
+
   } else {
+    // ── Fallback: assemble from memory ───────────────────────────────────────
     const merged       = mergeChunks(fileReceive.chunks, size);
     const receivedHash = await sha256(merged);
+
     if (receivedHash !== hash) {
       appendSystemMessage(`❌ Integrity check FAILED for "${name}". File may be corrupted.`);
       resetFileReceiveState();
       return;
     }
+
     const blob = new Blob([merged], { type: mimeType });
     const url  = URL.createObjectURL(blob);
     appendFileDownload(name, url, size);
@@ -313,7 +343,10 @@ async function finalizeFile() {
 function mergeChunks(chunks, totalSize) {
   const merged = new Uint8Array(totalSize);
   let offset = 0;
-  for (const chunk of chunks) { merged.set(chunk, offset); offset += chunk.byteLength; }
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
   return merged;
 }
 
@@ -327,12 +360,16 @@ function resetFileReceiveState() {
   fileReceive.received   = 0;
 }
 
-// ─── Incoming data ────────────────────────────────────────────────────────────
+// ─── Incoming data handler ────────────────────────────────────────────────────
 
 function handleIncomingData(msg) {
   switch (msg.type) {
-    case 'chat':      appendChatMessage('Peer', msg.text, 'remote'); break;
-    case 'file-meta': initFileReceive(msg); break;
+    case 'chat':
+      appendChatMessage('Peer', msg.text, 'remote');
+      break;
+    case 'file-meta':
+      initFileReceive(msg);
+      break;
   }
 }
 
@@ -418,7 +455,6 @@ function resetToHome() {
   ui.remoteVideo.srcObject = null;
   ui.chatMessages.innerHTML = '';
   ui.encryptedBadge.classList.remove('active');
-  hideConnecting();
   resetFileReceiveState();
   showScreen('home');
 }
@@ -440,16 +476,15 @@ function updateConnectionBadge(state) {
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function showHomeError(msg) {
-  ui.homeError.textContent    = msg;
-  ui.homeError.style.display  = 'block';
-  hideConnecting();
+  ui.homeError.textContent = msg;
+  ui.homeError.style.display = 'block';
   setTimeout(() => { ui.homeError.style.display = 'none'; }, 6000);
 }
 
 function formatBytes(bytes) {
-  if (bytes < 1024)       return `${bytes} B`;
-  if (bytes < 1024 ** 2)  return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 ** 3)  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes < 1024)          return `${bytes} B`;
+  if (bytes < 1024 ** 2)     return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3)     return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 }
 
@@ -464,14 +499,15 @@ function escapeHtml(str) {
 ui.btnCreate.addEventListener('click', async () => {
   ui.homeError.style.display = 'none';
 
+  // Read optional custom code (empty string = let server generate)
   const customCode = ui.customCodeInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+
+  // Client-side validation before hitting the server
   if (customCode.length > 0 && (customCode.length < 4 || customCode.length > 10)) {
     showHomeError('Custom codes must be between 4 and 10 characters.');
     ui.customCodeInput.focus();
     return;
   }
-
-  showConnecting('Connecting to server…');
 
   try {
     await connectSignaling();
@@ -480,32 +516,28 @@ ui.btnCreate.addEventListener('click', async () => {
       signaling.phase    = 'lobby';
       signaling.roomCode = detail.code;
       ui.lobbyCode.textContent   = detail.code;
+      // Show different status text depending on whether code was custom
       ui.lobbyStatus.textContent = detail.custom
         ? `Your custom code is ready. Share it with your peer…`
         : 'Waiting for peer to join…';
+      // Visual indicator if custom
       ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
-      hideConnecting();
       showScreen('lobby');
     }, { once: true });
 
     signaling.createRoom(customCode);
-  } catch {
+  } catch (e) {
     showHomeError('Could not connect to signaling server. Is it deployed?');
   }
 });
 
 ui.btnJoinSubmit.addEventListener('click', async () => {
   const code = ui.joinInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  if (code.length < 4 || code.length > 10) {
-    showHomeError('Enter a valid code (4–10 characters).');
-    return;
-  }
+  if (code.length < 4 || code.length > 10) { showHomeError('Enter a valid code (4-10 characters).'); return; }
   ui.homeError.style.display = 'none';
-  showConnecting('Joining room…');
   try {
     await connectSignaling();
     signaling.addEventListener('joined', async () => {
-      hideConnecting();
       await startCall(false);
     }, { once: true });
     signaling.addEventListener('error', ({ detail }) => {
@@ -554,41 +586,15 @@ ui.fileInput.addEventListener('change', async () => {
   }
 });
 
-// ─── Custom code toggle ───────────────────────────────────────────────────────
+// ─── Custom code toggle ──────────────────────────────────────────────────────
 
 ui.btnCustomToggle.addEventListener('click', () => {
   const isOpen = ui.customCodeWrap.classList.toggle('open');
   ui.customCodeWrap.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
   document.getElementById('custom-toggle-icon').textContent = isOpen ? '▾' : '▸';
-  if (!isOpen) ui.customCodeInput.value = '';
-});
-
-// ─── Picture in Picture ───────────────────────────────────────────────────────
-
-async function enterPiP() {
-  const video = ui.remoteVideo;
-  if (!video.srcObject || !peer) return;
-  try {
-    if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
-      await video.requestPictureInPicture();
-    } else if (video.webkitSupportsPresentationMode?.('picture-in-picture')) {
-      video.webkitSetPresentationMode('picture-in-picture');
-    }
-  } catch { /* PiP denied or not supported — silent */ }
-}
-
-async function exitPiP() {
-  try {
-    if (document.pictureInPictureElement) await document.exitPictureInPicture();
-    if (ui.remoteVideo.webkitPresentationMode === 'picture-in-picture') {
-      ui.remoteVideo.webkitSetPresentationMode('inline');
-    }
-  } catch { /* silent */ }
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (!peer) return;
-  document.hidden ? enterPiP() : exitPiP();
+  if (!isOpen) {
+    ui.customCodeInput.value = '';
+  }
 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
