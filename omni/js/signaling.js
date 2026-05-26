@@ -1,16 +1,22 @@
 /**
- * Omni — Signaling Client
+ * Project A — Signaling Client
  *
- * Context-aware reconnection with exponential backoff.
+ * Fix 3 (IMPROVED): Context-aware reconnection with exponential backoff.
+ *
+ * Two distinct failure modes:
  *
  *   Mode A — Drop during LOBBY:
- *     First tries 'rejoin' with the stored room code (90s grace window).
- *     If the grace window expired, server sends 'rejoin-failed' and
- *     app.js falls back to creating a fresh room.
+ *     → Try to REJOIN the existing room first (preserves code).
+ *     → If grace window expired, server sends 'rejoin-failed' and
+ *       app.js falls back to creating a fresh room.
+ *     → UI shows subtle reconnecting state.
  *
- *   Mode B — Drop during CALL:
- *     Silent background reconnect. Call continues via WebRTC P2P.
- *     UI is never disrupted.
+ *   Mode B — Drop during CALL (WebRTC already connected):
+ *     → Silent background reconnect.
+ *     → UI not disrupted — call continues over WebRTC P2P.
+ *
+ * ICE restart (webrtc.js) handles the actual P2P connection drop
+ * independently of this signaling reconnect.
  */
 export class SignalingClient extends EventTarget {
   /** @param {string} serverUrl - wss://your-app.onrender.com */
@@ -25,11 +31,11 @@ export class SignalingClient extends EventTarget {
     this._maxAttempts      = 6;
     this._reconnecting     = false;
 
-    // Context state — set by app.js so reconnection knows what to do
+    // Context state — set by app.js
     this.phase       = 'idle';  // 'idle' | 'lobby' | 'call'
     this.roomCode    = null;
     this.role        = null;    // 'creator' | 'joiner'
-    this._customCode = '';      // Stored to re-use if rejoin fails
+    this._customCode = '';      // stored to re-use if rejoin fails and we create fresh
   }
 
   // ─── Public API ─────────────────────────────────────────────────────────────
@@ -41,7 +47,9 @@ export class SignalingClient extends EventTarget {
     });
   }
 
-  /** @param {string} [customCode] - Empty string = server generates one */
+  /**
+   * @param {string} [customCode] - Optional. Empty = server generates one.
+   */
   createRoom(customCode = '') {
     this.role        = 'creator';
     this._customCode = customCode;
@@ -57,7 +65,6 @@ export class SignalingClient extends EventTarget {
     this._send({ type: 'signal', payload });
   }
 
-  /** Intentional close — suppresses all reconnection logic */
   disconnect() {
     this._intentionalClose = true;
     this.phase = 'idle';
@@ -75,15 +82,14 @@ export class SignalingClient extends EventTarget {
     }
 
     this.ws.onopen = () => {
-      this._attempts    = 0;
+      this._attempts     = 0;
       this._reconnecting = false;
       onOpen?.();
 
-      // After reconnect, restore lobby state
+      // After reconnect, try to reclaim the existing room within its grace window.
+      // The server responds with 'rejoined' (success) or 'rejoin-failed' (expired).
+      // app.js handles both — on 'rejoin-failed' it calls createRoom() as fallback.
       if (this.phase === 'lobby' && this.role === 'creator' && this.roomCode) {
-        // Try to reclaim the existing room within its 90s grace window.
-        // Server responds with 'rejoined' (success) or 'rejoin-failed' (expired).
-        // app.js handles both cases.
         this._send({ type: 'rejoin', code: this.roomCode });
       }
     };
@@ -113,14 +119,13 @@ export class SignalingClient extends EventTarget {
 
   _scheduleReconnect({ silent }) {
     if (this._reconnecting) return;
+
     if (this._attempts >= this._maxAttempts) {
       if (!silent) this.dispatchEvent(new CustomEvent('reconnect-failed'));
       return;
     }
 
     this._reconnecting = true;
-
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (capped)
     const delay = Math.min(1000 * Math.pow(2, this._attempts), 30_000);
     this._attempts++;
 
@@ -135,8 +140,6 @@ export class SignalingClient extends EventTarget {
       this._openSocket();
     }, delay);
   }
-
-  // ─── Internal ───────────────────────────────────────────────────────────────
 
   _send(msg) {
     if (this.ws?.readyState === WebSocket.OPEN) {
