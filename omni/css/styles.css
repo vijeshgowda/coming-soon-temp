@@ -913,15 +913,16 @@ html, body {
 
 .progress-fill {
   height: 100%;
-  width: 40%;
+  width: 0%;
   background: var(--accent);
   border-radius: 100px;
-  animation: progress-slide 1.4s ease-in-out infinite;
+  animation: progress-fill 30s linear forwards;
 }
 
-@keyframes progress-slide {
-  0%   { transform: translateX(-120%); }
-  100% { transform: translateX(360%); }
+@keyframes progress-fill {
+  0%   { width: 0%; }
+  85%  { width: 90%; }   
+  100% { width: 95%; }
 }
 
 .connecting-text {
