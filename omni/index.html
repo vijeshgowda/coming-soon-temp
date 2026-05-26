@@ -149,6 +149,7 @@
         <!-- Status badges -->
         <div class="video-badges">
           <span id="call-timer" class="badge timer-badge">00:00</span>
+          <span id="quality-badge" class="badge quality-badge" title="Connection quality">●</span>
           <span id="connection-badge" class="badge connection-badge connecting">○ Connecting…</span>
           <span id="encrypted-badge" class="badge encrypted-badge" title="Encryption status">
             🔒 E2E
@@ -178,15 +179,20 @@
           <span class="ctrl-label">Flip</span>
         </button>
 
+        <button id="btn-pip" class="ctrl-btn" title="Picture in Picture">
+          <span class="icon">⧉</span>
+          <span class="ctrl-label">PiP</span>
+        </button>
+
         <button id="btn-hangup" class="ctrl-btn danger" title="End call">
           <span class="icon">📵</span>
           <span class="ctrl-label">End</span>
         </button>
 
-        <label class="ctrl-btn" title="Send a file">
+        <label class="ctrl-btn" title="Send files">
           <span class="icon">📎</span>
           <span class="ctrl-label">File</span>
-          <input id="file-input" type="file" style="display:none" />
+          <input id="file-input" type="file" multiple style="display:none" />
         </label>
         <button id="btn-file" style="display:none"></button>
 

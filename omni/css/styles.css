@@ -905,6 +905,44 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   CONNECTION QUALITY BADGE
+═══════════════════════════════════════════════════════════ */
+
+.quality-badge {
+  font-size: 10px;
+  cursor: default;
+}
+.quality-good { color: var(--success); }
+.quality-fair { color: #fbbf24; }
+.quality-poor { color: var(--danger); }
+
+/* ═══════════════════════════════════════════════════════════
+   CHAT MEDIA PREVIEW
+═══════════════════════════════════════════════════════════ */
+
+.chat-preview {
+  display: block;
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: var(--radius);
+  margin: 6px 0;
+  object-fit: contain;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAGGABLE LOCAL VIDEO
+═══════════════════════════════════════════════════════════ */
+
+.local-video-wrap {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.local-video-wrap:active {
+  cursor: grabbing;
+}
+
+/* ═══════════════════════════════════════════════════════════
    TYPING INDICATOR
 ═══════════════════════════════════════════════════════════ */
 

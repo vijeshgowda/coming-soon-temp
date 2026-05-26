@@ -9,7 +9,7 @@
 ## How it works
 
 ```
-GitHub Pages          Fly.io (free)         Google STUN       Metered.ca TURN
+GitHub Pages          Render (free)         Google STUN       Metered.ca TURN
 ────────────          ─────────────         ───────────       ───────────────
 HTML/CSS/JS     →     Signaling only    →   NAT discovery →   Relay fallback
 (static files)        (room codes,          (finds public     (for strict NAT,
@@ -44,19 +44,9 @@ git clone https://github.com/yourusername/project-a
 cd project-a
 ```
 
-### 2. Deploy the signaling server to Fly.io
+### 2. Deploy the signaling server to Render
 
-```bash
-# Install Fly CLI
-curl -L https://fly.io/install.sh | sh
-
-# Deploy
-cd server
-fly launch          # First time — creates app, prompts for name/region
-fly deploy          # Subsequent deploys
-```
-
-Note your app URL: `wss://your-app-name.fly.dev`
+Note your app URL: `wss://your-app-name.onrender.com`
 
 ### 3. Get free TURN credentials
 
@@ -69,7 +59,7 @@ Edit `client/js/config.js`:
 
 ```js
 export const CONFIG = {
-  SIGNALING_URL: 'wss://your-app-name.fly.dev',  // ← your Fly.io URL
+  SIGNALING_URL: `wss://your-app-name.onrender.com`,  // ← your Render URL
   ICE_SERVERS: [
     { urls: 'stun:stun.l.google.com:19302' },
     {
@@ -121,7 +111,7 @@ project-a/
 │   ├── index.js              # WebSocket signaling server (~100 lines)
 │   ├── package.json
 │   ├── Dockerfile
-│   └── fly.toml              # Fly.io deployment config
+│   └── render.yaml             # Render deployment config
 ├── client/
 │   ├── index.html            # Full app UI (3 screens: home, lobby, call)
 │   ├── css/
@@ -155,7 +145,7 @@ project-a/
 - **WebRTC** — browser-native P2P audio/video/data
 - **Web Crypto API** — browser-native ECDH + AES-GCM, no crypto libraries
 - **WebSockets** — signaling only, via `ws` npm package
-- **Fly.io** — signaling server (free tier, always-on, global)
+- **Render** — signaling server (free tier, always-on, global)
 - **GitHub Pages** — frontend (free, deploys on push)
 - **Metered.ca** — TURN relay fallback (free tier)
 

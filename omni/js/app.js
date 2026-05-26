@@ -6,6 +6,7 @@ import { CONFIG } from './config.js';
 import { SignalingClient } from './signaling.js';
 import { PeerConnection } from './webrtc.js';
 import { sha256, decrypt } from './crypto.js';
+import { ensureAudioContext, playJoinTone, playMessageTone, playHangupTone, getQualityLevel } from './sounds.js';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,15 @@ let typingSendTimer  = null;
 
 // Signal buffer — queues offers/answers/ICE that arrive before peer is ready
 let pendingSignals = [];
+
+// Connection quality stats
+let statsInterval = null;
+let prevBytesReceived = 0;
+let prevTimestamp = 0;
+
+// File send queue
+let fileQueue = [];
+let fileSending = false;
 
 const fileReceive = {
   meta:       null,
@@ -73,7 +83,9 @@ const ui = {
   customCodeInput:  document.getElementById('custom-code-input'),
   btnScreen:        document.getElementById('btn-screen'),
   btnFlip:          document.getElementById('btn-flip'),
+  btnPiP:           document.getElementById('btn-pip'),
   callTimer:        document.getElementById('call-timer'),
+  qualityBadge:     document.getElementById('quality-badge'),
   typingIndicator:  document.getElementById('typing-indicator'),
   // Progress bar
   connectingState:  document.getElementById('connecting-state'),
@@ -127,11 +139,13 @@ async function connectSignaling() {
 
   signaling.addEventListener('peer-joined', async () => {
     ui.lobbyStatus.textContent = 'Peer found. Establishing encrypted connection…';
+    playJoinTone();
     await startCall(true);
   });
 
   signaling.addEventListener('peer-left', () => {
     appendSystemMessage('Peer disconnected.');
+    playHangupTone();
     setTimeout(resetToHome, 3000);
   });
 
@@ -225,6 +239,7 @@ async function startCall(asInitiator) {
     ui.encryptedBadge.classList.add('active');
     appendSystemMessage('🔒 Encrypted channel established.');
     startCallTimer();
+    startStatsPolling();
   });
 
   peer.addEventListener('connection-state', ({ detail }) => {
@@ -361,7 +376,7 @@ async function finalizeFile() {
     }
     const blob = new Blob([merged], { type: mimeType });
     const url  = URL.createObjectURL(blob);
-    appendFileDownload(name, url, size);
+    appendFileDownload(name, url, size, mimeType);
   }
 
   resetFileReceiveState();
@@ -388,7 +403,10 @@ function resetFileReceiveState() {
 
 function handleIncomingData(msg) {
   switch (msg.type) {
-    case 'chat':      appendChatMessage('Peer', msg.text, 'remote'); break;
+    case 'chat':
+      appendChatMessage('Peer', msg.text, 'remote');
+      playMessageTone();
+      break;
     case 'file-meta': initFileReceive(msg); break;
     case 'typing':    showTypingIndicator(); break;
   }
@@ -412,11 +430,20 @@ function appendSystemMessage(text) {
   ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
 }
 
-function appendFileDownload(name, url, size) {
+function appendFileDownload(name, url, size, mimeType) {
   const div = document.createElement('div');
   div.className = 'message remote';
+
+  let previewHtml = '';
+  if (mimeType && mimeType.startsWith('image/')) {
+    previewHtml = `<img class="chat-preview" src="${url}" alt="${escapeHtml(name)}" />`;
+  } else if (mimeType && mimeType.startsWith('video/')) {
+    previewHtml = `<video class="chat-preview" src="${url}" controls playsinline></video>`;
+  }
+
   div.innerHTML = `
     <span class="sender">File received ✓</span>
+    ${previewHtml}
     <a class="file-download" href="${url}" download="${escapeHtml(name)}">
       <span class="file-icon">📄</span>
       <span>${escapeHtml(name)}</span>
@@ -565,6 +592,7 @@ function showTypingIndicator() {
 }
 
 function hangup() {
+  playHangupTone();
   peer?.hangup();
   signaling?.disconnect();
   resetToHome();
@@ -575,7 +603,10 @@ function resetToHome() {
   signaling?.disconnect();
   stopScreenShare();
   stopCallTimer();
+  stopStatsPolling();
   pendingSignals = [];
+  fileQueue = [];
+  fileSending = false;
   localStream = null;
   peer        = null;
   signaling   = null;
@@ -716,17 +747,12 @@ ui.chatInput.addEventListener('input', () => {
   if (ui.chatInput.value.trim()) sendTypingIndicator();
 });
 
-ui.fileInput.addEventListener('change', async () => {
-  const file = ui.fileInput.files[0];
-  if (!file || !peer) return;
+ui.fileInput.addEventListener('change', () => {
+  const files = Array.from(ui.fileInput.files);
+  if (!files.length || !peer) return;
   ui.fileInput.value = '';
-  appendSystemMessage(`📤 Sending "${file.name}" (${formatBytes(file.size)})…`);
-  try {
-    await peer.sendFile(file);
-    appendSystemMessage(`✓ Sent "${file.name}".`);
-  } catch (err) {
-    appendSystemMessage(`❌ Send failed: ${err.message}`);
-  }
+  for (const file of files) fileQueue.push(file);
+  processFileQueue();
 });
 
 // ─── Custom code toggle ───────────────────────────────────────────────────────
@@ -738,20 +764,107 @@ ui.btnCustomToggle.addEventListener('click', () => {
   if (!isOpen) ui.customCodeInput.value = '';
 });
 
+// ─── File Queue ───────────────────────────────────────────────────────────────
+
+async function processFileQueue() {
+  if (fileSending || !fileQueue.length) return;
+  fileSending = true;
+  while (fileQueue.length > 0) {
+    const file = fileQueue.shift();
+    const remaining = fileQueue.length;
+    const prefix = remaining > 0 ? `[${remaining} queued] ` : '';
+    appendSystemMessage(`📤 ${prefix}Sending "${file.name}" (${formatBytes(file.size)})…`);
+    try {
+      await peer.sendFile(file);
+      appendSystemMessage(`✓ Sent "${file.name}".`);
+    } catch (err) {
+      appendSystemMessage(`❌ Send failed: ${err.message}`);
+    }
+  }
+  fileSending = false;
+}
+
+// ─── Connection Quality ───────────────────────────────────────────────────────
+
+function startStatsPolling() {
+  prevBytesReceived = 0;
+  prevTimestamp = 0;
+  statsInterval = setInterval(async () => {
+    if (!peer?.pc) return;
+    try {
+      const stats = await peer.pc.getStats();
+      let bytesReceived = 0;
+      let packetsLost = 0;
+      let packetsReceived = 0;
+      let rtt = 0;
+      let rttFound = false;
+
+      stats.forEach(report => {
+        if (report.type === 'inbound-rtp' && report.kind === 'video') {
+          bytesReceived = report.bytesReceived || 0;
+          packetsLost = report.packetsLost || 0;
+          packetsReceived = report.packetsReceived || 0;
+        }
+        if (report.type === 'remote-inbound-rtp' && report.kind === 'video') {
+          if (report.roundTripTime != null) {
+            rtt = report.roundTripTime;
+            rttFound = true;
+          }
+        }
+        // Fallback: candidate-pair for RTT
+        if (!rttFound && report.type === 'candidate-pair' && report.state === 'succeeded') {
+          rtt = (report.currentRoundTripTime || 0);
+        }
+      });
+
+      const now = performance.now();
+      let bitrate = 0;
+      if (prevTimestamp > 0) {
+        const elapsed = (now - prevTimestamp) / 1000;
+        bitrate = ((bytesReceived - prevBytesReceived) * 8) / elapsed;
+      }
+      prevBytesReceived = bytesReceived;
+      prevTimestamp = now;
+
+      const packetLoss = packetsReceived > 0
+        ? (packetsLost / (packetsReceived + packetsLost)) * 100
+        : 0;
+
+      const { level, label } = getQualityLevel({ bitrate, packetLoss, rtt });
+      ui.qualityBadge.className = `badge quality-badge quality-${level}`;
+      ui.qualityBadge.textContent = level === 'good' ? '●' : level === 'fair' ? '◐' : '○';
+      ui.qualityBadge.title = label;
+    } catch { /* stats unavailable */ }
+  }, 2000);
+}
+
+function stopStatsPolling() {
+  clearInterval(statsInterval);
+  statsInterval = null;
+  prevBytesReceived = 0;
+  prevTimestamp = 0;
+  ui.qualityBadge.className = 'badge quality-badge';
+  ui.qualityBadge.textContent = '●';
+  ui.qualityBadge.title = '';
+}
+
 // ─── Picture in Picture ───────────────────────────────────────────────────────
 
 async function enterPiP() {
   const video = ui.remoteVideo;
   if (!video.srcObject || !peer) return;
-  // Wait for at least one frame before requesting PiP
   if (video.readyState < 2) return;
   try {
     if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
       await video.requestPictureInPicture();
     } else if (video.webkitSupportsPresentationMode?.('picture-in-picture')) {
       video.webkitSetPresentationMode('picture-in-picture');
+    } else {
+      appendSystemMessage('⚠️ Picture-in-Picture is not supported on this device.');
     }
-  } catch { /* PiP denied or not supported — silent */ }
+  } catch {
+    appendSystemMessage('⚠️ Could not enter Picture-in-Picture. Tap the PiP button during the call.');
+  }
 }
 
 async function exitPiP() {
@@ -763,10 +876,77 @@ async function exitPiP() {
   } catch { /* silent */ }
 }
 
+ui.btnPiP.addEventListener('click', () => {
+  if (document.pictureInPictureElement) {
+    exitPiP();
+  } else {
+    enterPiP();
+  }
+});
+
 document.addEventListener('visibilitychange', () => {
   if (!peer) return;
   document.hidden ? enterPiP() : exitPiP();
 });
+
+// ─── Draggable Local Video ────────────────────────────────────────────────────
+
+(function initDraggableVideo() {
+  const wrap = document.querySelector('.local-video-wrap');
+  if (!wrap) return;
+  let dragging = false;
+  let startX, startY, origLeft, origTop;
+
+  wrap.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    dragging = true;
+    wrap.setPointerCapture(e.pointerId);
+    const rect = wrap.getBoundingClientRect();
+    const parent = wrap.parentElement.getBoundingClientRect();
+    origLeft = rect.left - parent.left;
+    origTop = rect.top - parent.top;
+    startX = e.clientX;
+    startY = e.clientY;
+    wrap.style.transition = 'none';
+  });
+
+  wrap.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    wrap.style.left = `${origLeft + dx}px`;
+    wrap.style.top = `${origTop + dy}px`;
+    wrap.style.bottom = 'auto';
+    wrap.style.right = 'auto';
+  });
+
+  wrap.addEventListener('pointerup', (e) => {
+    if (!dragging) return;
+    dragging = false;
+    wrap.releasePointerCapture(e.pointerId);
+    // Snap to nearest corner
+    const parent = wrap.parentElement.getBoundingClientRect();
+    const rect = wrap.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2 - parent.left;
+    const cy = rect.top + rect.height / 2 - parent.top;
+    const pad = 16;
+    const snapLeft = cx < parent.width / 2;
+    const snapTop = cy < parent.height / 2;
+    wrap.style.transition = 'left 0.25s ease, top 0.25s ease, bottom 0.25s ease';
+    wrap.style.left = snapLeft ? `${pad}px` : `${parent.width - rect.width - pad}px`;
+    wrap.style.top = snapTop ? `${pad}px` : `${parent.height - rect.height - pad}px`;
+    wrap.style.bottom = 'auto';
+    wrap.style.right = 'auto';
+  });
+
+  // Prevent default drag behavior on video
+  wrap.addEventListener('dragstart', e => e.preventDefault());
+})();
+
+// ─── Ensure AudioContext on first interaction ─────────────────────────────────
+
+document.addEventListener('click', ensureAudioContext, { once: true });
+document.addEventListener('touchstart', ensureAudioContext, { once: true });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
