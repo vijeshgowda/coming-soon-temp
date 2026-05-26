@@ -1,4 +1,4 @@
-# Project A — Developer Context
+# Omni — Developer Context
 
 Use this file as context when working in VS Code (or with any AI assistant).
 It covers architecture decisions, data flows, module contracts, known constraints,
@@ -8,10 +8,10 @@ and the reasoning behind non-obvious code choices.
 
 ## What This Project Is
 
-A 1-on-1 browser-based encrypted video/audio call app with P2P file transfer and
-chat. No user accounts. No data stored anywhere. Two people open the site, one
-creates a room, shares a 6-character code, the other joins, and a direct encrypted
-connection is established.
+A 1-on-1 browser-based encrypted video/audio call app with P2P file transfer,
+chat, screen sharing, and typing indicators. No user accounts. No data stored
+anywhere. Two people open the site, one creates a room, shares a 4–10 character
+code, the other joins, and a direct encrypted connection is established.
 
 **Core trust model:** The server is architecturally incapable of reading your data.
 It only ever sees room codes and opaque WebRTC handshake blobs (SDP/ICE).
@@ -23,7 +23,7 @@ It only ever sees room codes and opaque WebRTC handshake blobs (SDP/ICE).
 ```
 GitHub Pages                Render (free tier)           Internet
 ─────────────               ──────────────────           ───────
-client/                     server/                      Google STUN
+/                           server/                      Google STUN
   index.html                  index.js                   Metered.ca TURN
   css/styles.css            (WebSocket signaling only)
   js/*.js
@@ -46,25 +46,24 @@ client/                     server/                      Google STUN
 ## File Structure
 
 ```
-project-a/
+omni/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml          # GitHub Pages deploy on push to main
 ├── server/
-│   ├── index.js                # Entire signaling server (~120 lines)
+│   ├── index.js                # Entire signaling server (~210 lines)
 │   ├── package.json            # Only dependency: ws
 │   ├── Dockerfile
 │   └── render.yaml             # Render deployment blueprint
-├── client/
-│   ├── index.html              # Full app UI — 3 screens
-│   ├── css/
-│   │   └── styles.css
-│   └── js/
-│       ├── config.js           # ← EDIT THIS: Render URL + Metered credentials
-│       ├── app.js              # UI state machine — orchestrates everything
-│       ├── signaling.js        # WebSocket client with reconnection logic
-│       ├── webrtc.js           # RTCPeerConnection + DataChannel + ICE restart
-│       └── crypto.js           # ECDH + AES-GCM + SHA-256 (Web Crypto API only)
+├── index.html                  # Full app UI — 3 screens
+├── css/
+│   └── styles.css
+├── js/
+│   ├── config.js               # ← EDIT THIS: Render URL + Metered credentials
+│   ├── app.js                  # UI state machine — orchestrates everything
+│   ├── signaling.js            # WebSocket client with reconnection + timeout
+│   ├── webrtc.js               # RTCPeerConnection + DataChannel + ICE restart
+│   └── crypto.js               # ECDH + AES-GCM + SHA-256 (Web Crypto API only)
 ├── CONTEXT.md                  # This file
 └── README.md
 ```
@@ -116,24 +115,29 @@ signaling.role      // 'creator' | 'joiner'
 
 **Methods:**
 ```js
-await signaling.connect()       // Initial WS connection
+await signaling.connect()       // Initial WS connection (15s timeout)
 signaling.createRoom()          // Server responds with 'created' event
 signaling.joinRoom(code)        // Server responds with 'joined' or 'error' event
 signaling.sendSignal(payload)   // Relay SDP/ICE to other peer
 signaling.disconnect()          // Intentional close — suppresses reconnection
 ```
 
+**Connection timeout:** `connect()` rejects after 15 seconds if the WebSocket
+doesn't open. This handles Render cold starts gracefully.
+
 **Events emitted:**
 ```
-created          { code }                 Room created
+created          { code, custom }         Room created
 joined           { code }                 Successfully joined room
 peer-joined      {}                       Other peer joined our room
 peer-left        {}                       Other peer disconnected
 signal           { payload }              Incoming SDP/ICE from peer
 error            { message }              Server error
+rejoined         { code, custom }         Rejoined existing room after reconnect
+rejoin-failed    { code }                 Grace window expired, need new room
 reconnecting     { attempt, max, delay }  Mid-reconnect (lobby phase only)
 reconnect-failed {}                       Gave up after maxAttempts
-disconnected     {}                       Intentional close confirmed
+disconnected     {}                       Intentional close or idle-phase drop
 ```
 
 **Reconnection behaviour (context-aware):**
@@ -157,6 +161,16 @@ await peer.initialize(localStream)
 // Call this after receiving 'peer-joined' (creator) or 'joined' (joiner).
 ```
 
+**Additional methods:**
+```js
+await peer.replaceVideoTrack(newTrack)  // Screen sharing: swap video sender's track
+peer.toggleAudio(enabled)               // Mute/unmute mic
+peer.toggleVideo(enabled)               // Enable/disable camera
+await peer.send(data)                   // Encrypt and send JSON via DataChannel
+await peer.sendFile(file)               // Chunked encrypted file transfer
+peer.hangup()                           // Stop tracks, close PC + DC
+```
+
 **Events emitted:**
 ```
 remote-stream         { stream }          Remote MediaStream ready
@@ -178,6 +192,13 @@ encrypted  { data: base64 }        AES-GCM encrypted JSON wrapper
 binary frame                       [4B chunkIndex LE][AES-GCM encrypted chunk]
 ```
 
+**Encrypted application message types (inside `encrypted` wrapper):**
+```
+chat       { type:'chat', text }   Chat message
+file-meta  { type:'file-meta', name, size, mimeType, hash, chunks }  File metadata
+typing     { type:'typing' }       Typing indicator heartbeat
+```
+
 **Backpressure (Fix 2):**
 ```
 BUFFER_HIGH = 16MB  — pause sendFile loop, await bufferedamountlow
@@ -194,6 +215,18 @@ BUFFER_LOW  = 4MB   — resume (bufferedAmountLowThreshold is set to this)
 Orchestrates UI state machine and wires all events together.
 
 **Screens:** `home` → `lobby` → `call`
+
+**In-call features:**
+- Screen sharing (via `getDisplayMedia()` + `replaceTrack()`)
+- Call timer (starts on `secure-channel-ready`, formats as MM:SS or H:MM:SS)
+- Typing indicator (debounced `{ type:'typing' }` messages, 3s auto-hide)
+- Picture-in-Picture (auto-enters when tab hidden, exits when visible)
+
+**Progress bar (connecting state):**
+- Shown while WebSocket handshake or room creation is in flight
+- CSS animation forcibly restarted on each show (handles repeat attempts)
+- Disabled buttons prevent double-clicks during connection
+- Hidden by: success events, error events, disconnected event, or timeout
 
 **File receive state machine (Fix 1):**
 ```
@@ -324,11 +357,22 @@ or crash clears all rooms. Peers in an active WebRTC session are unaffected
 new room — the reconnection logic handles this by calling `createRoom()`
 again after reconnect, and the UI updates with the new code.
 
+### Server rejoin & grace period
+When the creator disconnects from the lobby, the server keeps the room alive
+for 90 seconds (`GRACE_MS`). During this window:
+- Creator can reconnect and send `{ type: 'rejoin', code }` to reclaim the room
+- A joiner can still join the room (they get `joined` but no `peer-joined` yet)
+- If a joiner arrived during grace, the `rejoin` response includes an immediate
+  `peer-joined` so the creator transitions straight into the call
+- If grace expires, server deletes the room; creator's reconnect gets
+  `rejoin-failed` and the client transparently creates a fresh room
+
 ### Render free tier cold starts
 The 14-min cron job prevents spin-down during active use. However, the very
-first request after deployment will have a ~30s cold start. The WebSocket
-connect in `signaling.js` has no explicit timeout — consider adding one
-(e.g., 10s) for better UX on cold starts.
+first request after deployment will have a ~30s cold start. The `connect()`
+method in `signaling.js` has a 15-second timeout — on cold starts the server
+usually wakes in 5–15s, which fits within the timeout. The progress bar on
+the home screen keeps the user informed during the wait.
 
 ### DataChannel ordered mode
 The DataChannel uses `{ ordered: true }`. This means file chunks always
@@ -348,10 +392,10 @@ for a 1-on-1 tool.
 
 ### Adding a new DataChannel message type
 1. Define the message shape in a comment in `webrtc.js`
-2. Add a `case` in `_setupDataChannel` → `channel.onmessage`
-3. Emit a typed event via `this._emit()`
-4. Handle the event in `app.js` → `handleIncomingData()`
-5. Encrypt it via `peer.send({ type: 'yourType', ...data })`
+2. Add a `case` in `_setupDataChannel` → `channel.onmessage` (if non-encrypted)
+3. Or just send via `peer.send({ type: 'yourType', ...data })` (encrypted path)
+4. Handle in `app.js` → `handleIncomingData()` switch statement
+5. Example: typing indicator uses this exact pattern (`{ type: 'typing' }`)
 
 ### Adding a new UI screen
 1. Add `<section id="screen-yourscreen" class="screen">` in `index.html`
@@ -362,7 +406,7 @@ for a 1-on-1 tool.
 ### Replacing Render with another host
 Only two things need to change:
 1. `server/render.yaml` → whatever deploy config the new host needs
-2. `client/js/config.js` → `SIGNALING_URL` to the new `wss://` URL
+2. `js/config.js` → `SIGNALING_URL` to the new `wss://` URL
 The signaling server itself (`server/index.js`) has zero platform-specific code.
 
 ### Upgrading to room-based multi-party calls
@@ -386,7 +430,7 @@ node --watch index.js
 # Option A: VS Code Live Server extension (set to HTTPS in settings)
 # Option B: local-ssl-proxy or mkcert
 npx local-ssl-proxy --source 3001 --target 3000
-npx serve client -l 3000
+npx serve . -l 3000
 
 # Update config.js for local dev:
 SIGNALING_URL: 'ws://localhost:8080'

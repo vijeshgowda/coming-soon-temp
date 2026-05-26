@@ -1,77 +1,85 @@
 /**
-* Project A — Signaling Client
-*
-* Fix 3 (IMPROVED): Context-aware reconnection with exponential backoff.
-*
-* The suggested fix — naive exponential backoff — has a subtle flaw:
-* the signaling server is only needed during connection bootstrapping.
-* Once WebRTC P2P is established, the signaling server dropping is
-* completely harmless. A blind reconnect in that case wastes resources
-* and can cause false "reconnecting…" UI noise.
-*
-* This implementation separates two distinct failure modes:
-*
-*   Mode A — Drop during LOBBY (waiting for peer):
-*     → Reconnect with backoff and re-announce the room.
-*     → The UI shows a subtle "reconnecting" state.
-*     → Room code persists through reconnection.
-*
-*   Mode B — Drop during CALL (WebRTC already connected):
-*     → Attempt silent reconnect in background.
-*     → UI is NOT disrupted. Call continues unaffected.
-*     → Only matters if peer drops and sends a 'peer-left' — which
-*        we'd miss. So we reconnect silently to receive it if it comes.
-*
-* The WebRTC peer connection itself handles temporary network drops
-* via ICE restart (see webrtc.js) — completely independent of this.
-*/
+ * Project A — Signaling Client
+ *
+ * Fix 3 (IMPROVED): Context-aware reconnection with exponential backoff.
+ *
+ * Two distinct failure modes:
+ *
+ *   Mode A — Drop during LOBBY:
+ *     → Try to REJOIN the existing room first (preserves code).
+ *     → If grace window expired, server sends 'rejoin-failed' and
+ *       app.js falls back to creating a fresh room.
+ *     → UI shows subtle reconnecting state.
+ *
+ *   Mode B — Drop during CALL (WebRTC already connected):
+ *     → Silent background reconnect.
+ *     → UI not disrupted — call continues over WebRTC P2P.
+ *
+ * ICE restart (webrtc.js) handles the actual P2P connection drop
+ * independently of this signaling reconnect.
+ */
 export class SignalingClient extends EventTarget {
   /** @param {string} serverUrl - wss://your-app.onrender.com */
   constructor(serverUrl) {
     super();
     this.serverUrl = serverUrl;
-    this.ws = null;
+    this.ws        = null;
+
     // Reconnection state
     this._intentionalClose = false;
-    this._attempts = 0;
-    this._maxAttempts = 6;
-    this._reconnecting = false;
-    // Context state — set by app.js so reconnection knows what to do
-    this.phase = 'idle';   // 'idle' | 'lobby' | 'call'
-    this.roomCode = null;
-    this.role = null;     // 'creator' | 'joiner'
-    this._customCode = '';       // Stored to re-use on lobby reconnect
+    this._attempts         = 0;
+    this._maxAttempts      = 6;
+    this._reconnecting     = false;
+
+    // Context state — set by app.js
+    this.phase       = 'idle';  // 'idle' | 'lobby' | 'call'
+    this.roomCode    = null;
+    this.role        = null;    // 'creator' | 'joiner'
+    this._customCode = '';      // stored to re-use if rejoin fails and we create fresh
   }
+
   // ─── Public API ─────────────────────────────────────────────────────────────
-  /** Initial connection. Returns promise that resolves on first open. */
+
   connect() {
     return new Promise((resolve, reject) => {
       this._intentionalClose = false;
-      this._openSocket(resolve, reject);
+      const timeout = setTimeout(() => {
+        this.ws?.close();
+        reject(new Error('Connection timed out'));
+      }, 15_000);
+      this._openSocket(
+        () => { clearTimeout(timeout); resolve(); },
+        (err) => { clearTimeout(timeout); reject(err); }
+      );
     });
   }
+
   /**
-   * @param {string} [customCode] - Optional custom code. Empty string = server generates one.
+   * @param {string} [customCode] - Optional. Empty = server generates one.
    */
   createRoom(customCode = '') {
-    this.role = 'creator';
-    this._customCode = customCode; // Store so reconnect can re-use it
+    this.role        = 'creator';
+    this._customCode = customCode;
     this._send({ type: 'create', code: customCode });
   }
+
   joinRoom(code) {
     this.role = 'joiner';
     this._send({ type: 'join', code: code.toUpperCase().trim() });
   }
+
   sendSignal(payload) {
     this._send({ type: 'signal', payload });
   }
-  /** Call this on intentional hangup/cancel to suppress reconnection. */
+
   disconnect() {
     this._intentionalClose = true;
     this.phase = 'idle';
     this.ws?.close();
   }
+
   // ─── Socket management ──────────────────────────────────────────────────────
+
   _openSocket(onOpen = null, onError = null) {
     try {
       this.ws = new WebSocket(this.serverUrl);
@@ -79,64 +87,67 @@ export class SignalingClient extends EventTarget {
       onError?.(new Error('Invalid signaling server URL'));
       return;
     }
+
     this.ws.onopen = () => {
-      this._attempts = 0;
+      this._attempts     = 0;
       this._reconnecting = false;
       onOpen?.();
-      // After a reconnect, restore state based on current phase
-      if (this.phase === 'lobby' && this.role === 'creator') {
-        // Re-create room. If the user had a custom code, try it again.
-        // If it's now taken (someone else grabbed it during the drop),
-        // the server returns an error and app.js shows a new code instead.
-        this._send({ type: 'create', code: this._customCode || '' });
+
+      // After reconnect, try to reclaim the existing room within its grace window.
+      // The server responds with 'rejoined' (success) or 'rejoin-failed' (expired).
+      // app.js handles both — on 'rejoin-failed' it calls createRoom() as fallback.
+      if (this.phase === 'lobby' && this.role === 'creator' && this.roomCode) {
+        this._send({ type: 'rejoin', code: this.roomCode });
       }
     };
-    this.ws.onerror = (e) => {
+
+    this.ws.onerror = () => {
       onError?.(new Error('Could not reach signaling server'));
     };
+
     this.ws.onmessage = ({ data }) => {
       let msg;
       try { msg = JSON.parse(data); } catch { return; }
       this.dispatchEvent(new CustomEvent(msg.type, { detail: msg }));
     };
-    this.ws.onclose = (event) => {
+
+    this.ws.onclose = () => {
       if (this._intentionalClose) return;
+
       if (this.phase === 'call') {
-        // During a call, signaling is not critical — reconnect silently
         this._scheduleReconnect({ silent: true });
       } else if (this.phase === 'lobby') {
-        // In lobby, reconnect is critical — user is waiting for peer
         this._scheduleReconnect({ silent: false });
       } else {
-        // idle or unknown — surface the disconnect
         this.dispatchEvent(new CustomEvent('disconnected'));
       }
     };
   }
+
   _scheduleReconnect({ silent }) {
     if (this._reconnecting) return;
+
     if (this._attempts >= this._maxAttempts) {
-      // Gave up — only disrupt UI if we're not in an active call
-      if (!silent) {
-        this.dispatchEvent(new CustomEvent('reconnect-failed'));
-      }
+      if (!silent) this.dispatchEvent(new CustomEvent('reconnect-failed'));
       return;
     }
+
     this._reconnecting = true;
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (capped)
     const delay = Math.min(1000 * Math.pow(2, this._attempts), 30_000);
     this._attempts++;
+
     if (!silent) {
       this.dispatchEvent(new CustomEvent('reconnecting', {
         detail: { attempt: this._attempts, max: this._maxAttempts, delay }
       }));
     }
+
     setTimeout(() => {
       this._reconnecting = false;
       this._openSocket();
     }, delay);
   }
-  // ─── Internal ───────────────────────────────────────────────────────────────
+
   _send(msg) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
