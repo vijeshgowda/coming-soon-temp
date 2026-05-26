@@ -2,9 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content, user-scalable=no" />
   <title>Omni — Encrypted P2P Calls</title>
   <meta name="description" content="Browser-to-browser encrypted video calls and file sharing. No server ever touches your data." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0c0a09" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Omni" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23f4956a'/><text x='90' y='125' font-size='90' font-weight='800' font-family='sans-serif' text-anchor='middle' fill='%230c0a09'>O</text></svg>" />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,6 +25,7 @@
 
   <!-- ── Home Screen ────────────────────────────────────────────────────── -->
   <section id="screen-home" class="screen active">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
     <div class="home-grid">
 
       <div class="wordmark">
@@ -155,9 +164,8 @@
             🔒 E2E
           </span>
         </div>
-      </div>
 
-      <!-- Controls bar -->
+      <!-- Controls bar (inside video-area for overlay positioning) -->
       <div class="controls-bar">
         <button id="btn-mute" class="ctrl-btn" title="Toggle microphone">
           <span class="icon">🎙️</span>
@@ -197,6 +205,7 @@
         <button id="btn-file" style="display:none"></button>
 
       </div>
+      </div> <!-- /video-area -->
 
       <!-- Chat sidebar -->
       <div class="chat-sidebar">
@@ -229,5 +238,38 @@
   </section>
 
   <script type="module" src="js/app.js"></script>
+
+  <!-- Theme toggle & Service Worker -->
+  <script>
+    // Theme toggle
+    (function() {
+      const saved = localStorage.getItem('omni-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.content = saved === 'light' ? '#f8faf8' : '#0c0a09';
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeToggle');
+        if (!btn) return;
+        btn.textContent = saved === 'light' ? '☀️' : '🌙';
+
+        btn.addEventListener('click', () => {
+          document.documentElement.classList.add('theme-transitioning');
+          const current = document.documentElement.getAttribute('data-theme');
+          const next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('omni-theme', next);
+          btn.textContent = next === 'light' ? '☀️' : '🌙';
+          if (meta) meta.content = next === 'light' ? '#f8faf8' : '#0c0a09';
+          setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 350);
+        });
+      });
+
+      // Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
+    })();
+  </script>
 </body>
 </html>

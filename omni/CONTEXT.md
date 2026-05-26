@@ -55,15 +55,25 @@ omni/
 │   ├── package.json            # Only dependency: ws
 │   ├── Dockerfile
 │   └── render.yaml             # Render deployment blueprint
-├── index.html                  # Full app UI — 3 screens
+├── tests/
+│   ├── package.json            # Test runner config (node:test)
+│   ├── crypto.test.js          # 18 tests — key gen, encrypt/decrypt, SHA-256
+│   ├── server.test.js          # 17 tests — room lifecycle, rejoin, sanitisation
+│   ├── integration.test.js     # 7 tests — full signaling flow (parallel peers)
+│   ├── quality.test.js         # 17 tests — getQualityLevel thresholds
+│   └── filequeue.test.js       # 7 tests — sequential queue processing
+├── index.html                  # Full app UI — 3 screens + PWA meta + theme toggle
+├── manifest.json               # PWA manifest (standalone, portrait)
+├── sw.js                       # Service worker (cache-first + network fallback)
 ├── css/
-│   └── styles.css
+│   └── styles.css              # Dual-theme (dark orange / light green), PWA-native
 ├── js/
 │   ├── config.js               # ← EDIT THIS: Render URL + Metered credentials
 │   ├── app.js                  # UI state machine — orchestrates everything
 │   ├── signaling.js            # WebSocket client with reconnection + timeout
 │   ├── webrtc.js               # RTCPeerConnection + DataChannel + ICE restart
-│   └── crypto.js               # ECDH + AES-GCM + SHA-256 (Web Crypto API only)
+│   ├── crypto.js               # ECDH + AES-GCM + SHA-256 (Web Crypto API only)
+│   └── sounds.js               # Web Audio API notification tones + quality calc
 ├── CONTEXT.md                  # This file
 └── README.md
 ```
@@ -218,9 +228,15 @@ Orchestrates UI state machine and wires all events together.
 
 **In-call features:**
 - Screen sharing (via `getDisplayMedia()` + `replaceTrack()`)
-- Call timer (starts on `secure-channel-ready`, formats as MM:SS or H:MM:SS)
+- Call timer (starts on `secure-channel-ready` or ICE connected, formats as MM:SS or H:MM:SS)
 - Typing indicator (debounced `{ type:'typing' }` messages, 3s auto-hide)
-- Picture-in-Picture (auto-enters when tab hidden, exits when visible)
+- Picture-in-Picture (auto-enters when tab hidden, exits when visible; manual button fallback)
+- Flip camera (front/back toggle via `facingMode`)
+- Connection quality badge (polls `getStats()` every 2s — good/fair/poor)
+- Draggable local video (pointer events + corner snapping)
+- Multi-file queue (sequential send with per-file progress)
+- Image/video preview in chat (inline thumbnails for received media)
+- Notification sounds (Web Audio tones on join, message, hangup)
 
 **Progress bar (connecting state):**
 - Shown while WebSocket handshake or room creation is in flight
@@ -409,6 +425,62 @@ Only two things need to change:
 2. `js/config.js` → `SIGNALING_URL` to the new `wss://` URL
 The signaling server itself (`server/index.js`) has zero platform-specific code.
 
+---
+
+## PWA & Theming
+
+### Progressive Web App
+- `manifest.json` declares the app as `standalone` with portrait orientation
+- `sw.js` uses cache-first strategy for static assets, network-first with cache fallback
+- Meta tags: `apple-mobile-web-app-capable`, `theme-color`, `viewport-fit=cover`
+- Body has `overscroll-behavior: none`, `-webkit-tap-highlight-color: transparent`
+- Safe-area insets respected via `env(safe-area-inset-top/bottom)`
+
+### Theme Toggle (Dark/Light)
+- Dark theme (default): warm orange accent (`#f4956a`) on near-black (`#0c0a09`)
+- Light theme: green accent (`#22a65a`) on soft white (`#f8faf8`)
+- Toggle button (🌙/☀️) in top-right of home screen
+- Persisted to `localStorage('omni-theme')`
+- `meta[name=theme-color]` updated dynamically for browser chrome
+- Smooth 300ms transition via `.theme-transitioning` class
+- All colors use CSS custom properties — no hardcoded values in component styles
+
+### `sounds.js`
+
+| Export | Purpose |
+|---|---|
+| `ensureAudioContext()` | Resume AudioContext on first user gesture |
+| `playJoinTone()` | Rising two-note tone when peer joins |
+| `playMessageTone()` | Short blip on incoming chat message |
+| `playHangupTone()` | Descending tone on call end |
+| `getQualityLevel({ bitrate, packetLoss, rtt })` | Returns `{ level, label }` — 'good'/'fair'/'poor' |
+
+**Quality thresholds:**
+- Poor: packetLoss > 8% OR bitrate < 50kbps OR rtt > 500ms
+- Fair: packetLoss > 3% OR bitrate < 200kbps OR rtt > 250ms
+- Good: everything else
+
+---
+
+## Testing
+
+```bash
+cd tests && npm install && npm test
+# or: node --test *.test.js
+```
+
+**66 tests across 5 suites:**
+
+| Suite | Tests | What it covers |
+|---|---|---|
+| `crypto.test.js` | 18 | Key generation, encrypt/decrypt roundtrip, SHA-256, base64 utils |
+| `server.test.js` | 17 | Room create/join, custom codes, rejoin grace period, sanitisation |
+| `integration.test.js` | 7 | Full signaling flow — two WebSocket clients, relay, peer-left |
+| `quality.test.js` | 17 | `getQualityLevel` boundary conditions, edge cases |
+| `filequeue.test.js` | 7 | Sequential queue processing, error handling |
+
+All tests use Node.js built-in `node:test` runner — no external test framework.
+
 ### Upgrading to room-based multi-party calls
 The current architecture is 1-on-1 (mesh). For multi-party you need an SFU
 (Selective Forwarding Unit). Recommended: LiveKit or mediasoup. This is a
@@ -457,6 +529,8 @@ devices on different networks, or use a tool like `clumsy` (Windows) /
 | Module system (server) | ESM (`"type": "module"` in package.json) |
 | Module system (client) | ES Modules (`type="module"` in script tag) |
 | Browser support | Chrome 86+, Edge 86+, Firefox 90+, Safari 15+ |
+| PWA support | Installable (Add to Home Screen) on all modern browsers |
+| Theme | Dark (orange) default, Light (green) toggle |
 | File System Access API | Chrome/Edge only (graceful fallback for others) |
 | Signaling server port | `process.env.PORT \|\| 8080` |
 | Render internal port | 10000 (set in render.yaml) |

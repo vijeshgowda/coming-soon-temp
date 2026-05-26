@@ -1,8 +1,29 @@
-# Project A
+# Omni
 
-> Browser-to-browser encrypted video calls and file sharing. The server never touches your data.
+> Browser-to-browser encrypted video calls, chat, and file sharing. The server never touches your data.
 
-**Live demo:** `https://yourusername.github.io/project-a`
+**Live demo:** `https://yourusername.github.io/omni`
+
+---
+
+## Features
+
+- **End-to-end encrypted** — ECDH P-256 key exchange + AES-GCM-256 on top of WebRTC DTLS
+- **P2P video/audio calls** — direct browser-to-browser, no media server
+- **Encrypted chat** — real-time messaging over DataChannel
+- **File transfer** — chunked, encrypted, SHA-256 verified, multi-file queue
+- **Screen sharing** — one-tap on desktop, auto-fallback message on mobile
+- **Flip camera** — front/back toggle
+- **Picture-in-Picture** — auto-enters when tab hidden, manual button too
+- **Connection quality** — live bitrate/loss/RTT monitoring with colored indicator
+- **Notification sounds** — Web Audio tones on join, message, hangup
+- **Typing indicator** — shows when peer is composing
+- **Draggable local video** — drag your PiP preview, snaps to corners
+- **Image/video previews** — inline thumbnails for received media files
+- **PWA installable** — Add to Home Screen, works offline (cached assets)
+- **Dark/Light theme** — toggle between warm orange (dark) and green (light)
+- **Zero dependencies** — vanilla JS, no build step, no npm packages in the client
+- **66 automated tests** — crypto, signaling server, integration, quality, file queue
 
 ---
 
@@ -40,8 +61,8 @@ The signaling server only sees room codes and opaque SDP blobs. It is architectu
 ### 1. Clone
 
 ```bash
-git clone https://github.com/yourusername/project-a
-cd project-a
+git clone https://github.com/yourusername/omni
+cd omni
 ```
 
 ### 2. Deploy the signaling server to Render
@@ -55,7 +76,7 @@ Note your app URL: `wss://your-app-name.onrender.com`
 
 ### 4. Configure the client
 
-Edit `client/js/config.js`:
+Edit `js/config.js`:
 
 ```js
 export const CONFIG = {
@@ -83,46 +104,75 @@ Or enable Pages manually: **Settings → Pages → Source: GitHub Actions**
 ## Development
 
 ```bash
-# Run signaling server locally
+# Terminal 1 — signaling server (local)
 cd server
 npm install
-npm run dev
+node --watch index.js
 # Listening on :8080
 
-# Serve client locally (needs HTTPS for camera access)
+# Terminal 2 — serve frontend (needs HTTPS for camera access)
 # Option A: VS Code Live Server extension
 # Option B:
-npx serve client
+npx serve .
 # Note: camera/mic requires HTTPS. Use ngrok for testing with real devices.
 ```
 
-For local dev, update `SIGNALING_URL` in `config.js` to `ws://localhost:8080`.
+For local dev, update `SIGNALING_URL` in `js/config.js` to `ws://localhost:8080`.
+
+### Running Tests
+
+```bash
+cd tests
+npm install
+npm test
+# 66 tests, 5 suites, 0 failures
+```
+
+Tests use Node.js built-in `node:test` — no external test framework needed.
+
+---
+
+## PWA & Themes
+
+The app is installable as a PWA — "Add to Home Screen" on mobile for a native-app experience with no browser chrome.
+
+- **Dark mode** (default): warm orange accent on near-black background
+- **Light mode**: green accent on soft white background
+- Toggle via the 🌙/☀️ button on the home screen. Persists across sessions.
 
 ---
 
 ## Project Structure
 
 ```
-project-a/
+omni/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml        # Auto-deploy client to GitHub Pages
+│       └── deploy.yml        # Auto-deploy to GitHub Pages
 ├── server/
-│   ├── index.js              # WebSocket signaling server (~100 lines)
+│   ├── index.js              # WebSocket signaling server (~210 lines)
 │   ├── package.json
 │   ├── Dockerfile
-│   └── render.yaml             # Render deployment config
-├── client/
-│   ├── index.html            # Full app UI (3 screens: home, lobby, call)
-│   ├── css/
-│   │   └── styles.css
-│   └── js/
-│       ├── config.js         # ← Edit this with your URLs/credentials
-│       ├── app.js            # UI state machine + event wiring
-│       ├── signaling.js      # WebSocket client
-│       ├── webrtc.js         # RTCPeerConnection + DataChannel
-│       └── crypto.js         # ECDH + AES-GCM + SHA-256 (Web Crypto API)
-└── README.md
+│   └── render.yaml           # Render deployment config
+├── tests/
+│   ├── package.json          # node:test runner, ws dependency
+│   ├── crypto.test.js        # 18 tests
+│   ├── server.test.js        # 17 tests
+│   ├── integration.test.js   # 7 tests
+│   ├── quality.test.js       # 17 tests
+│   └── filequeue.test.js     # 7 tests
+├── index.html                # Full app UI (3 screens) + PWA meta
+├── manifest.json             # PWA manifest (standalone, portrait)
+├── sw.js                     # Service worker (cache-first)
+├── css/
+│   └── styles.css            # Dual-theme (dark/light), mobile-first
+└── js/
+    ├── config.js             # ← Edit this with your URLs/credentials
+    ├── app.js                # UI state machine + all feature orchestration
+    ├── signaling.js          # WebSocket client with reconnection
+    ├── webrtc.js             # RTCPeerConnection + DataChannel + file transfer
+    ├── crypto.js             # ECDH + AES-GCM + SHA-256 (Web Crypto API)
+    └── sounds.js             # Web Audio notification tones + quality calc
 ```
 
 ---
@@ -144,8 +194,10 @@ project-a/
 - **No frameworks, no bundler** — vanilla JS with ES modules, runs directly in browser
 - **WebRTC** — browser-native P2P audio/video/data
 - **Web Crypto API** — browser-native ECDH + AES-GCM, no crypto libraries
+- **Web Audio API** — notification tones, no audio files
 - **WebSockets** — signaling only, via `ws` npm package
-- **Render** — signaling server (free tier, always-on, global)
+- **Service Worker** — offline caching for PWA
+- **Render** — signaling server (free tier, always-on via cron)
 - **GitHub Pages** — frontend (free, deploys on push)
 - **Metered.ca** — TURN relay fallback (free tier)
 
