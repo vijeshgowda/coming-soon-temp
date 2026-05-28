@@ -2,7 +2,7 @@
   "name": "Omni",
   "short_name": "Omni",
   "description": "Encrypted peer-to-peer video calls and file sharing",
-  "start_url": "/",
+  "start_url": "/omni",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0c0a09",
