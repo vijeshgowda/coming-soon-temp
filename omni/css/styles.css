@@ -489,16 +489,75 @@ html, body {
   overflow: hidden;
 }
 
-.remote-video-wrap {
-  width: 100%;
-  height: 100%;
+/* ── Video wraps (stage + PiP roles, swappable) ──────── */
+.remote-video-wrap,
+.local-video-wrap {
+  position: absolute;
+  overflow: hidden;
 }
 
-.remote-video-wrap video {
-  display: block;
+/* STAGE role — whichever wrap is large / full-bleed */
+.video-area:not(.swapped) .remote-video-wrap,
+.video-area.swapped .local-video-wrap {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #000;
+  cursor: default;
+}
+
+/* PIP role — whichever wrap is the small floating window */
+.video-area:not(.swapped) .local-video-wrap,
+.video-area.swapped .remote-video-wrap {
+  top: 16px;
+  left: 16px;
+  right: auto;
+  bottom: auto;
+  width: 168px;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  z-index: 15;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
+  background: #000;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.video-area:not(.swapped) .local-video-wrap:active,
+.video-area.swapped .remote-video-wrap:active {
+  cursor: grabbing;
+}
+@media (hover: hover) {
+  .video-area:not(.swapped) .local-video-wrap:hover,
+  .video-area.swapped .remote-video-wrap:hover {
+    border-color: var(--accent);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.62);
+  }
+}
+
+.remote-video-wrap video,
+.local-video-wrap video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+.local-video-wrap video {
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+.local-video-wrap video.no-mirror {
+  transform: scaleX(1);
 }
 
 .remote-avatar {
@@ -524,38 +583,42 @@ html, body {
   font-weight: 700;
   font-size: 36px;
   color: var(--text-2);
+  transition: width 0.2s ease, height 0.2s ease, font-size 0.2s ease;
 }
 
 .remote-avatar p { font-size: 13px; color: var(--text-3); }
 
-/* Local PiP */
-.local-video-wrap {
-  position: absolute;
-  top: 16px;
-  bottom: auto;
-  left: 16px;
-  right: auto;
-  width: 160px;
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 2px solid var(--border-hi);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
-  aspect-ratio: 4/3;
+/* Remote shrinks gracefully when demoted to the PiP */
+.video-area.swapped .remote-video-wrap .remote-avatar { gap: 0; }
+.video-area.swapped .remote-video-wrap .remote-avatar span {
+  width: 52px; height: 52px; font-size: 22px;
 }
+.video-area.swapped .remote-video-wrap .remote-avatar p { display: none; }
+/* Mic meter only belongs on the small local PiP */
+.video-area.swapped .local-video-wrap .mic-meter { display: none; }
 
-.local-video-wrap video {
+/* Swap hint glyph — only on whichever wrap is the current PiP */
+.pip-hint {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
   pointer-events: none;
+  opacity: 0.85;
 }
-
-.local-video-wrap video.no-mirror {
-  transform: scaleX(1);
+.pip-hint svg { width: 16px; height: 16px; }
+.video-area:not(.swapped) .local-video-wrap .pip-hint,
+.video-area.swapped .remote-video-wrap .pip-hint {
+  display: flex;
 }
 
 /* ── Badges ──────────────────────────────────────────── */
@@ -564,7 +627,11 @@ html, body {
   top: 14px;
   right: 14px;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 62%;
   gap: 8px;
+  z-index: 6;
 }
 
 .badge {
@@ -603,54 +670,170 @@ html, body {
   left: 0;
   right: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 12px calc(12px + var(--safe-bottom));
-  background: linear-gradient(transparent, rgba(0,0,0,0.7) 30%);
+  gap: 16px;
+  padding: 22px 16px calc(18px + var(--safe-bottom));
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.5) 55%, rgba(0, 0, 0, 0.72));
   z-index: 10;
+}
+.controls-bar.menu-open { z-index: 25; }
+
+/* Auto-hide: the bar slides out after inactivity, taps reveal it again */
+.controls-bar {
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.video-area.controls-hidden .controls-bar {
+  opacity: 0;
+  transform: translateY(130%);
+  pointer-events: none;
+}
+.video-area.controls-hidden { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) {
+  .controls-bar { transition: opacity 0.2s ease; }
+  .video-area.controls-hidden .controls-bar { transform: none; }
 }
 
 .ctrl-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 0;
   border: none;
-  border-radius: var(--radius);
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: none;
   color: #fff;
   cursor: pointer;
-  transition: all 0.15s;
   font-family: var(--font-body);
-  min-width: 48px;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.ctrl-btn:hover {
-  background: rgba(255,255,255,0.2);
+.ctrl-btn .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  transition: transform 0.14s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.ctrl-btn .icon svg { width: 24px; height: 24px; display: block; }
+.ctrl-btn:hover .icon { background: rgba(255, 255, 255, 0.24); }
+.ctrl-btn:active .icon { transform: scale(0.92); }
+
+.ctrl-btn .ctrl-label {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.ctrl-btn.active {
-  background: rgba(255,255,255,0.25);
+/* Icon-swap for toggle buttons (mute / camera) */
+.ctrl-btn .icon svg.i-alt { display: none; }
+.ctrl-btn.active .icon svg.i-default { display: none; }
+.ctrl-btn.active .icon svg.i-alt { display: block; }
+
+/* "Off" state for mute & camera — soft pastel red */
+#btn-mute.active .icon,
+#btn-camera.active .icon {
+  background: rgba(244, 99, 122, 0.92);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 6px 20px rgba(244, 63, 94, 0.35);
+}
+
+/* More button while its menu is open */
+#btn-more[aria-expanded="true"] .icon {
+  background: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Hangup — rotated handset */
+.ctrl-btn.danger .icon {
+  background: var(--danger);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: rotate(135deg);
+}
+.ctrl-btn.danger:hover .icon { background: #ff5470; }
+.ctrl-btn.danger:active .icon { transform: rotate(135deg) scale(0.92); }
+.ctrl-btn.danger .ctrl-label { color: #ffd2da; }
+
+/* ── More dropdown menu ──────────────────────────────── */
+.ctrl-more { position: relative; display: inline-flex; }
+
+.more-menu {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%) translateY(8px) scale(0.96);
+  transform-origin: bottom center;
+  min-width: 212px;
+  padding: 8px;
+  background: rgba(22, 19, 16, 0.92);
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.more-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #f2ece6;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.menu-item:hover { background: rgba(255, 255, 255, 0.08); }
+.menu-item:active { background: rgba(255, 255, 255, 0.14); }
+.menu-item .mi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.08);
   color: var(--accent);
+  transition: background 0.14s ease, color 0.14s ease;
 }
-
-.ctrl-btn.danger {
-  background: rgba(244, 63, 94, 0.3);
+.menu-item .mi-icon svg { width: 21px; height: 21px; display: block; }
+.menu-item .ctrl-label {
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
 }
-.ctrl-btn.danger:hover {
-  background: rgba(244, 63, 94, 0.5);
-  color: #fff;
+.menu-item.active { color: #fff; }
+.menu-item.active .mi-icon {
+  background: var(--accent);
+  color: var(--bg);
 }
-
-.ctrl-btn .icon      { font-size: 18px; line-height: 1; }
-.ctrl-btn .ctrl-label { font-size: 9px; letter-spacing: 0.04em; text-transform: uppercase; }
 
 /* ── Chat sidebar ────────────────────────────────────── */
 .chat-sidebar {
@@ -822,7 +1005,10 @@ html, body {
 @media (max-width: 480px) {
   .video-area    { height: 100dvh; min-height: 220px; }
   .chat-sidebar  { min-height: 60vh; }
-  .local-video-wrap { width: 100px; }
+  .video-area:not(.swapped) .local-video-wrap,
+  .video-area.swapped .remote-video-wrap { width: 126px; }
+  .controls-bar { gap: 9px; padding-left: 8px; padding-right: 8px; }
+  .ctrl-btn .icon { width: 50px; height: 50px; }
   .home-grid { gap: 28px; padding: 24px 20px; }
   .home-hero h1 { font-size: 1.75rem; }
 }
@@ -967,18 +1153,9 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   DRAGGABLE LOCAL VIDEO
+   DRAGGABLE / SWAPPABLE VIDEO
+   (cursor + touch-action handled by the stage/PiP role rules above)
 ═══════════════════════════════════════════════════════════ */
-
-.local-video-wrap {
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.local-video-wrap:active {
-  cursor: grabbing;
-}
 
 /* ═══════════════════════════════════════════════════════════
    TYPING INDICATOR
@@ -1018,7 +1195,7 @@ html, body {
 
 .theme-toggle {
   position: absolute;
-  top: 20px;
+  top: 30px;
   right: 20px;
   width: 40px;
   height: 40px;
@@ -1050,4 +1227,228 @@ html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ADDED FEATURES — password, SAS, recording, mic meter,
+   muted nudge, drop overlay, lobby share + QR
+═══════════════════════════════════════════════════════════ */
+
+/* Room password (home) */
+.password-row {
+  margin-top: 14px;
+}
+.password-input {
+  width: 100%;
+  text-align: left;
+  letter-spacing: normal;
+  font-family: var(--font-sans, 'IBM Plex Sans'), sans-serif;
+  text-transform: none;
+}
+
+/* Lobby share + QR */
+.lobby-share {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.lobby-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-2);
+  word-break: break-all;
+  text-align: center;
+  max-width: 320px;
+}
+.qr-container {
+  width: 180px;
+  height: 180px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+.qr-container svg { width: 100%; height: 100%; display: block; }
+
+/* Safety number (SAS) panel */
+.sas-panel {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-12px);
+  width: min(440px, calc(100% - 32px));
+  background: var(--bg-2);
+  border: 1px solid var(--border-hi);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.sas-panel.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.sas-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+.sas-hint { font-size: 0.78rem; color: var(--text-2); margin-bottom: 10px; }
+.sas-emoji {
+  font-size: 1.8rem;
+  letter-spacing: 0.18em;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.sas-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-align: center;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.sas-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* Mic level meter (inside local PiP) */
+.mic-meter {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  height: 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  pointer-events: none;
+}
+.mic-meter-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), #6ee7a8);
+  transition: width 0.08s linear;
+}
+
+/* "You're muted" nudge */
+.muted-nudge {
+  position: absolute;
+  bottom: 132px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  z-index: 45;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.muted-nudge.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Drag-and-drop overlay */
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 10, 9, 0.72);
+  backdrop-filter: blur(2px);
+  border: 3px dashed var(--accent);
+  border-radius: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.drop-overlay.visible { opacity: 1; }
+.drop-inner {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-2);
+  padding: 18px 28px;
+  border-radius: 14px;
+  border: 1px solid var(--border-hi);
+}
+
+/* Record menu-item active state */
+#btn-record.active .mi-icon {
+  background: var(--danger);
+  color: #fff;
+  animation: rec-pulse 1.2s infinite;
+}
+@keyframes rec-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* Clear-chat button */
+.btn-clear-chat {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn-clear-chat:hover { color: var(--text); border-color: var(--border-hi); }
+
+/* ═══════════════════════════════════════════════════════════
+   I18N + ACCESSIBILITY
+═══════════════════════════════════════════════════════════ */
+
+/* Language selector (home screen, left of the theme toggle) */
+.lang-select {
+  position: absolute;
+  top: 30px;
+  right: 70px;
+  height: 40px;
+  z-index: 100;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-3);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 0 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  touch-action: manipulation;
+}
+.lang-select:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Visually-hidden, still read by screen readers */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Visible keyboard focus everywhere (mouse clicks stay clean via :focus-visible) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

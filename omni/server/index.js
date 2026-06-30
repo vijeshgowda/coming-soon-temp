@@ -20,7 +20,24 @@ const server = createServer((req, res) => {
 });
 
 // ─── WebSocket server ─────────────────────────────────────────────────────────
-const wss = new WebSocketServer({ server });
+// ALLOWED_ORIGINS: comma-separated list of permitted page origins (e.g.
+// "https://you.github.io,https://app.example.com"). If unset, all origins are
+// allowed — convenient for local dev, but set it in production to prevent
+// cross-site WebSocket hijacking. maxPayload caps SDP/ICE blob size (anti-DoS).
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+const wss = new WebSocketServer({
+  server,
+  maxPayload: 256 * 1024, // 256KB — SDP/ICE payloads are far smaller
+  verifyClient: ({ origin }, done) => {
+    if (ALLOWED_ORIGINS.length === 0) return done(true);
+    if (origin && ALLOWED_ORIGINS.includes(origin)) return done(true);
+    return done(false, 403, 'Forbidden origin');
+  },
+});
 
 /**
  * Generate a human-readable 6-char room code.

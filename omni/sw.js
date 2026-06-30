@@ -1,14 +1,21 @@
-const CACHE_NAME = 'omni-v1';
+const CACHE_NAME = 'omni-v5';
+// Relative paths resolve against the service worker's location (/omni/sw.js),
+// so this app stays self-contained under /omni/ alongside sibling apps at root.
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/app.js',
-  '/js/config.js',
-  '/js/crypto.js',
-  '/js/signaling.js',
-  '/js/webrtc.js',
-  '/js/sounds.js',
+  './',
+  './index.html',
+  './manifest.json',
+  './css/styles.css',
+  './js/app.js',
+  './js/boot.js',
+  './js/config.js',
+  './js/crypto.js',
+  './js/signaling.js',
+  './js/webrtc.js',
+  './js/sounds.js',
+  './js/recorder.js',
+  './js/qrcode.js',
+  './js/i18n.js',
 ];
 
 self.addEventListener('install', (e) => {
@@ -28,8 +35,13 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Network-first for API/signaling, cache-first for static assets
-  if (e.request.url.includes('ws') || e.request.method !== 'GET') return;
+  // Only handle same-origin GET requests. Cross-origin traffic (signaling
+  // WebSocket, STUN/TURN, Google Fonts) is left untouched by the cache.
+  if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Network-first, cache fallback for static assets.
   e.respondWith(
     fetch(e.request)
       .then(res => {

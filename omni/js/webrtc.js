@@ -23,6 +23,7 @@ import {
   encrypt,
   decrypt,
   sha256,
+  safetyString,
   uint8ToBase64,
   base64ToUint8,
 } from './crypto.js';
@@ -35,21 +36,30 @@ export class PeerConnection extends EventTarget {
    * @param {import('./signaling.js').SignalingClient} signalingClient
    * @param {boolean} isInitiator
    * @param {RTCIceServer[]} iceServers
+   * @param {string} [passphrase] optional room password folded into key derivation
    */
-  constructor(signalingClient, isInitiator, iceServers) {
+  constructor(signalingClient, isInitiator, iceServers, passphrase = '') {
     super();
     this.signaling = signalingClient;
     this.isInitiator = isInitiator;
     this.iceServers = iceServers;
+    this.passphrase = passphrase;
     this.pc = null;
     this.dataChannel = null;
     this.localStream = null;
     this.keyPair = null;
     this.sharedKey = null;
+    this._localPub = null;
+    this._peerPub = null;
     this.pendingIce = [];
     this.remoteSet = false;
     // ICE restart state — prevent concurrent restarts
     this._iceRestartInProgress = false;
+    // Perfect negotiation state
+    this._polite = !isInitiator;          // joiner yields on glare, initiator wins
+    this._makingOffer = false;
+    this._ignoreOffer = false;
+    this._isSettingRemoteAnswerPending = false;
   }
   // ─── Initialization ─────────────────────────────────────────────────────────
   async initialize(localStream) {
@@ -87,13 +97,26 @@ export class PeerConnection extends EventTarget {
     this.pc.onconnectionstatechange = () => {
       this._emit('connection-state', { state: this.pc.connectionState });
     };
-    // DataChannel
+    // Perfect negotiation: a single handler drives every (re)negotiation,
+    // including the initial offer and ICE restarts. Glare is resolved by the
+    // polite/impolite roles in handleSignal().
+    this.pc.onnegotiationneeded = async () => {
+      if (!this.pc || this.pc.signalingState === 'closed') return;
+      try {
+        this._makingOffer = true;
+        await this.pc.setLocalDescription();
+        this.signaling.sendSignal({ type: 'description', sdp: this.pc.localDescription });
+      } catch (e) {
+        console.warn('[omni] negotiation failed:', e.message);
+      } finally {
+        this._makingOffer = false;
+      }
+    };
+    // DataChannel — only the initiator creates it (this triggers the first
+    // negotiationneeded). The joiner receives it via ondatachannel.
     if (this.isInitiator) {
       this.dataChannel = this.pc.createDataChannel('project-a', { ordered: true });
       this._setupDataChannel(this.dataChannel);
-      const offer = await this.pc.createOffer();
-      await this.pc.setLocalDescription(offer);
-      this.signaling.sendSignal({ type: 'offer', sdp: offer });
     } else {
       this.pc.ondatachannel = ({ channel }) => {
         this.dataChannel = channel;
@@ -102,18 +125,17 @@ export class PeerConnection extends EventTarget {
     }
   }
   // ─── ICE restart (bonus fix) ─────────────────────────────────────────────────
-  async _attemptIceRestart() {
-    // Only initiator drives ICE restart to avoid both peers restarting simultaneously
+  _attemptIceRestart() {
+    // Only initiator drives ICE restart to avoid both peers restarting simultaneously.
+    // restartIce() triggers onnegotiationneeded, which sends the new offer.
     if (!this.isInitiator || this._iceRestartInProgress) return;
     if (!this.pc || this.pc.signalingState === 'closed') return;
     this._iceRestartInProgress = true;
     this._emit('ice-restarting');
     try {
-      const offer = await this.pc.createOffer({ iceRestart: true });
-      await this.pc.setLocalDescription(offer);
-      this.signaling.sendSignal({ type: 'offer', sdp: offer });
+      this.pc.restartIce();
     } catch (e) {
-      console.warn('[project-a] ICE restart failed to initiate:', e.message);
+      console.warn('[omni] ICE restart failed to initiate:', e.message);
       this._iceRestartInProgress = false;
     }
   }
@@ -127,6 +149,7 @@ export class PeerConnection extends EventTarget {
       if (pubKeySent) return;
       pubKeySent = true;
       const pubKey = await exportPublicKey(this.keyPair);
+      this._localPub = pubKey;
       channel.send(JSON.stringify({ type: 'pubkey', key: pubKey }));
     };
     // Use addEventListener (not onopen) to avoid being overwritten
@@ -144,9 +167,12 @@ export class PeerConnection extends EventTarget {
       try { msg = JSON.parse(data); } catch { return; }
       switch (msg.type) {
         case 'pubkey': {
+          this._peerPub = msg.key;
           const peerPubKey = await importPublicKey(msg.key);
-          this.sharedKey = await deriveSharedKey(this.keyPair.privateKey, peerPubKey);
-          this._emit('secure-channel-ready');
+          this.sharedKey = await deriveSharedKey(this.keyPair.privateKey, peerPubKey, this.passphrase);
+          const localPub = this._localPub || await exportPublicKey(this.keyPair);
+          const safety = await safetyString(localPub, this._peerPub);
+          this._emit('secure-channel-ready', { safety });
           break;
         }
         case 'encrypted': {
@@ -165,37 +191,53 @@ export class PeerConnection extends EventTarget {
     channel.onclose = () => this._emit('channel-closed');
     channel.onerror = (e) => this._emit('error', { message: String(e) });
   }
-  // ─── Signaling handler ──────────────────────────────────────────────────────
+  // ─── Signaling handler (perfect negotiation) ─────────────────────────────────
   async handleSignal(payload) {
-    switch (payload.type) {
-      case 'offer': {
-        await this.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+    if (!this.pc) return;
+    try {
+      if (payload.type === 'description') {
+        const description = payload.sdp;
+        const readyForOffer =
+          !this._makingOffer &&
+          (this.pc.signalingState === 'stable' || this._isSettingRemoteAnswerPending);
+        const offerCollision = description.type === 'offer' && !readyForOffer;
+
+        // Impolite peer ignores the colliding offer; polite peer rolls back.
+        this._ignoreOffer = !this._polite && offerCollision;
+        if (this._ignoreOffer) return;
+
+        this._isSettingRemoteAnswerPending = description.type === 'answer';
+        await this.pc.setRemoteDescription(description);
+        this._isSettingRemoteAnswerPending = false;
         this.remoteSet = true;
         await this._flushPendingIce();
-        const answer = await this.pc.createAnswer();
-        await this.pc.setLocalDescription(answer);
-        this.signaling.sendSignal({ type: 'answer', sdp: answer });
-        break;
-      }
-      case 'answer': {
-        await this.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-        this.remoteSet = true;
-        await this._flushPendingIce();
-        break;
-      }
-      case 'ice-candidate': {
-        if (this.remoteSet) {
-          await this.pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
-        } else {
-          this.pendingIce.push(payload.candidate);
+
+        if (description.type === 'offer') {
+          await this.pc.setLocalDescription();
+          this.signaling.sendSignal({ type: 'description', sdp: this.pc.localDescription });
         }
-        break;
+      } else if (payload.type === 'ice-candidate') {
+        if (!this.remoteSet) {
+          this.pendingIce.push(payload.candidate);
+          return;
+        }
+        try {
+          await this.pc.addIceCandidate(payload.candidate);
+        } catch (e) {
+          if (!this._ignoreOffer) throw e;
+        }
       }
+    } catch (e) {
+      console.warn('[omni] signaling error:', e.message);
     }
   }
   async _flushPendingIce() {
     for (const c of this.pendingIce) {
-      await this.pc.addIceCandidate(new RTCIceCandidate(c));
+      try {
+        await this.pc.addIceCandidate(c);
+      } catch (e) {
+        if (!this._ignoreOffer) console.warn('[omni] addIceCandidate failed:', e.message);
+      }
     }
     this.pendingIce = [];
   }
@@ -217,23 +259,25 @@ export class PeerConnection extends EventTarget {
    * This prevents the buffer from bloating and the browser from killing
    * the connection when upload speed << encryption speed.
    */
-  async sendFile(file) {
+  async sendFile(file, { fileId = (Math.random() * 0xffffffff) >>> 0, startIndex = 0 } = {}) {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    // Compute SHA-256 of the full file upfront.
-    // NOTE: file.arrayBuffer() loads the entire file into RAM here.
-    // This is acceptable on the sender side (they picked the file deliberately).
-    // The receiver-side RAM issue is what Fix 1 addresses.
-    const hash = await sha256(await file.arrayBuffer());
-    await this.send({
-      type: 'file-meta',
-      name: file.name,
-      size: file.size,
-      mimeType: file.type,
-      hash,
-      chunks: totalChunks,
-    });
-    let offset = 0;
-    let chunkIndex = 0;
+    // file-meta carries the SHA-256 of the whole file plus a fileId so multiple
+    // transfers can be multiplexed over the one ordered DataChannel. The meta is
+    // only (re)sent at the start of a transfer, not when resuming.
+    if (startIndex === 0) {
+      const hash = await sha256(await file.arrayBuffer());
+      await this.send({
+        type: 'file-meta',
+        fileId,
+        name: file.name,
+        size: file.size,
+        mimeType: file.type,
+        hash,
+        chunks: totalChunks,
+      });
+    }
+    let chunkIndex = startIndex;
+    let offset = startIndex * CHUNK_SIZE;
     while (offset < file.size) {
       // ── Backpressure check ──────────────────────────────────────────────────
       if (this.dataChannel.bufferedAmount > BUFFER_HIGH) {
@@ -246,14 +290,16 @@ export class PeerConnection extends EventTarget {
       const slice = file.slice(offset, offset + CHUNK_SIZE);
       const buffer = await slice.arrayBuffer();
       const encrypted = await encrypt(this.sharedKey, new Uint8Array(buffer));
-      // Binary frame layout: [4 bytes: chunk index (LE uint32)][encrypted chunk]
-      const frame = new Uint8Array(4 + encrypted.byteLength);
-      new DataView(frame.buffer).setUint32(0, chunkIndex, true);
-      frame.set(encrypted, 4);
+      // Binary frame layout: [4B fileId LE][4B chunkIndex LE][encrypted chunk]
+      const frame = new Uint8Array(8 + encrypted.byteLength);
+      const dv = new DataView(frame.buffer);
+      dv.setUint32(0, fileId, true);
+      dv.setUint32(4, chunkIndex, true);
+      frame.set(encrypted, 8);
       this.dataChannel.send(frame.buffer);
       offset += CHUNK_SIZE;
       chunkIndex += 1;
-      this._emit('file-send-progress', { name: file.name, sent: chunkIndex, total: totalChunks });
+      this._emit('file-send-progress', { fileId, name: file.name, sent: chunkIndex, total: totalChunks });
     }
   }
   // ─── Media controls ─────────────────────────────────────────────────────────
@@ -266,6 +312,26 @@ export class PeerConnection extends EventTarget {
   async replaceVideoTrack(newTrack) {
     const sender = this.pc?.getSenders().find(s => s.track?.kind === 'video');
     if (sender) await sender.replaceTrack(newTrack);
+  }
+  /**
+   * Adapt outgoing video encoding to the measured connection quality.
+   * level: 'good' | 'fair' | 'poor'. Lower levels cap bitrate and scale the
+   * resolution down so the call stays fluid on weak links.
+   */
+  async setSendQuality(level) {
+    const sender = this.pc?.getSenders().find(s => s.track?.kind === 'video');
+    if (!sender) return;
+    const params = sender.getParameters();
+    if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+    const map = {
+      good: { maxBitrate: undefined, scaleResolutionDownBy: 1 },
+      fair: { maxBitrate: 600_000,  scaleResolutionDownBy: 1.5 },
+      poor: { maxBitrate: 200_000,  scaleResolutionDownBy: 3 },
+    };
+    const cfg = map[level] || map.good;
+    params.encodings[0].maxBitrate = cfg.maxBitrate;
+    params.encodings[0].scaleResolutionDownBy = cfg.scaleResolutionDownBy;
+    try { await sender.setParameters(params); } catch { /* unsupported — ignore */ }
   }
   // ─── Cleanup ─────────────────────────────────────────────────────────────────
   hangup() {

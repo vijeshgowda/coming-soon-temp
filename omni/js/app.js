@@ -5,14 +5,39 @@
 import { CONFIG } from './config.js';
 import { SignalingClient } from './signaling.js';
 import { PeerConnection } from './webrtc.js';
-import { sha256, decrypt } from './crypto.js';
+import { sha256, decrypt, IncrementalSHA256 } from './crypto.js';
 import { ensureAudioContext, playJoinTone, playMessageTone, playHangupTone, getQualityLevel } from './sounds.js';
+import { CallRecorder } from './recorder.js';
+import { makeQrSvg } from './qrcode.js';
+import { t, applyTranslations, setLanguage, getLanguage, LANGUAGES } from './i18n.js';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
 let signaling   = null;
 let peer        = null;
 let localStream = null;
+let remoteStream = null;
+
+// Room password — folded into key derivation so both peers must share it
+let roomPassword = '';
+// __verify handshake: ensures both sides derived the same key (matching password)
+let verifyTimeout = null;
+let channelVerified = false;
+
+// Local recording
+let recorder = null;
+
+// Adaptive bitrate — remember last applied level (hysteresis)
+let lastQualityLevel = 'good';
+
+// Mic level meter / muted-while-talking nudge
+let micAudioCtx   = null;
+let micAnalyser   = null;
+let micRafId      = null;
+let mutedNudgeShownAt = 0;
+
+// Focus to restore when the safety-number dialog closes (a11y)
+let sasPrevFocus = null;
 
 // Call timer state
 let callTimerInterval = null;
@@ -38,15 +63,21 @@ let prevTimestamp = 0;
 let fileQueue = [];
 let fileSending = false;
 
-const fileReceive = {
-  meta:       null,
-  chunks:     [],
-  useStream:  false,
-  fileHandle: null,
-  writable:   null,
-  hashBuffer: [],
-  received:   0,
-};
+// Incoming file transfers, keyed by fileId so several can be multiplexed over
+// the single ordered DataChannel at once.
+const fileReceives = new Map();
+
+function newFileReceiveState() {
+  return {
+    meta:       null,
+    chunks:     [],
+    useStream:  false,
+    fileHandle: null,
+    writable:   null,
+    hasher:     null,
+    received:   0,
+  };
+}
 
 // ─── UI Elements ─────────────────────────────────────────────────────────────
 
@@ -90,6 +121,28 @@ const ui = {
   // Progress bar
   connectingState:  document.getElementById('connecting-state'),
   connectingText:   document.getElementById('connecting-text'),
+  // Password
+  roomPassword:     document.getElementById('room-password'),
+  // Safety number (SAS) panel
+  sasPanel:         document.getElementById('sas-panel'),
+  sasEmoji:         document.getElementById('sas-emoji'),
+  sasCode:          document.getElementById('sas-code'),
+  btnSasOk:         document.getElementById('btn-sas-ok'),
+  btnSasBad:        document.getElementById('btn-sas-bad'),
+  // Recording
+  btnRecord:        document.getElementById('btn-record'),
+  // Clear chat
+  btnClearChat:     document.getElementById('btn-clear-chat'),
+  // Mic meter + muted nudge
+  micMeter:         document.getElementById('mic-meter'),
+  micMeterFill:     document.getElementById('mic-meter-fill'),
+  mutedNudge:       document.getElementById('muted-nudge'),
+  // Drop overlay
+  dropOverlay:      document.getElementById('drop-overlay'),
+  // Lobby share
+  lobbyLink:        document.getElementById('lobby-link'),
+  btnShareLink:     document.getElementById('btn-share-link'),
+  qrContainer:      document.getElementById('qr-container'),
 };
 
 // ─── Screen transitions ───────────────────────────────────────────────────────
@@ -98,6 +151,15 @@ function showScreen(name) {
   Object.entries(screens).forEach(([key, el]) => {
     el.classList.toggle('active', key === name);
   });
+}
+
+// Screen-reader announcement for events without their own visible live region.
+function announce(msg) {
+  const el = document.getElementById('sr-announcer');
+  if (!el) return;
+  el.textContent = '';
+  // Reset then set on the next frame so identical consecutive messages re-announce.
+  requestAnimationFrame(() => { el.textContent = msg; });
 }
 
 // ─── Progress bar ─────────────────────────────────────────────────────────────
@@ -140,13 +202,13 @@ async function connectSignaling() {
   });
 
   signaling.addEventListener('peer-joined', async () => {
-    ui.lobbyStatus.textContent = 'Peer found. Establishing encrypted connection…';
+    ui.lobbyStatus.textContent = t('lobby.peer_found');
     playJoinTone();
     await startCall(true);
   });
 
   signaling.addEventListener('peer-left', () => {
-    appendSystemMessage('Peer disconnected.');
+    appendSystemMessage(t('sys.peer_disconnected'));
     playHangupTone();
     setTimeout(resetToHome, 3000);
   });
@@ -154,28 +216,36 @@ async function connectSignaling() {
   signaling.addEventListener('reconnecting', ({ detail }) => {
     if (signaling.phase === 'lobby') {
       ui.lobbyStatus.textContent =
-        `Connection lost. Reconnecting… (attempt ${detail.attempt}/${detail.max})`;
+        t('lobby.reconnecting', { attempt: detail.attempt, max: detail.max });
     }
   });
 
   signaling.addEventListener('reconnect-failed', () => {
     if (signaling.phase === 'lobby') {
-      showHomeError('Could not reconnect to signaling server. Please try again.');
+      showHomeError(t('err.reconnect_failed'));
       showScreen('home');
     }
   });
 
-  // Persistent 'created' listener — handles two cases:
-  //   1. rejoin-failed fallback: we called createRoom() and got a new code
-  //   2. (legacy) reconnect created a fresh room
+  // Persistent 'created' listener — handles every room creation:
+  //   1. Initial create (phase 'idle' → 'lobby', show lobby screen)
+  //   2. rejoin-failed fallback: createRoom() produced a fresh code while in lobby
   signaling.addEventListener('created', ({ detail }) => {
-    if (signaling.phase === 'lobby') {
-      signaling.roomCode = detail.code;
-      ui.lobbyCode.textContent   = detail.code;
-      ui.lobbyStatus.textContent = 'New room created. Share the updated code…';
-      ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
-      hideConnecting();
+    const wasInLobby = signaling.phase === 'lobby';
+    signaling.phase    = 'lobby';
+    signaling.roomCode = detail.code;
+    ui.lobbyCode.textContent = detail.code;
+    ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
+    updateLobbyShare(detail.code);
+    if (wasInLobby) {
+      ui.lobbyStatus.textContent = t('lobby.new_room');
+    } else {
+      ui.lobbyStatus.textContent = detail.custom
+        ? t('lobby.custom_ready')
+        : t('lobby.waiting');
     }
+    hideConnecting();
+    showScreen('lobby');
   });
 
   // Rejoin succeeded — same code, no disruption
@@ -183,15 +253,16 @@ async function connectSignaling() {
     signaling.phase    = 'lobby';
     signaling.roomCode = detail.code;
     ui.lobbyCode.textContent   = detail.code;
-    ui.lobbyStatus.textContent = 'Reconnected. Still waiting for peer…';
+    ui.lobbyStatus.textContent = t('lobby.reconnected');
     ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
+    updateLobbyShare(detail.code);
     hideConnecting();
     showScreen('lobby');
   });
 
   // Rejoin failed (grace window expired) — transparently create a fresh room
   signaling.addEventListener('rejoin-failed', () => {
-    ui.lobbyStatus && (ui.lobbyStatus.textContent = 'Session expired. Creating new room…');
+    ui.lobbyStatus && (ui.lobbyStatus.textContent = t('lobby.session_expired'));
     signaling.createRoom(signaling._customCode || '');
   });
 
@@ -208,16 +279,26 @@ async function connectSignaling() {
   await signaling.connect();
 }
 
+// Reveals the call controls and re-arms the auto-hide timer. Assigned by the
+// controls auto-hide module below; a no-op until then.
+let revealControls = () => {};
+
 async function startCall(asInitiator) {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    ui.localVideo.srcObject = localStream;
   } catch {
-    signaling?.disconnect();
-    showHomeError('Camera/mic access denied. Please allow permissions and try again.');
-    showScreen('home');
-    return;
+    // Fall back to audio-only (no camera, or camera busy) before giving up.
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+      appendSystemMessage(t('sys.audio_only'));
+    } catch {
+      signaling?.disconnect();
+      showHomeError(t('err.permissions'));
+      showScreen('home');
+      return;
+    }
   }
+  ui.localVideo.srcObject = localStream;
 
   // Guard: signaling may have been torn down while getUserMedia dialog was open
   if (!signaling) {
@@ -228,20 +309,24 @@ async function startCall(asInitiator) {
 
   signaling.phase = 'call';
 
-  peer = new PeerConnection(signaling, asInitiator, CONFIG.ICE_SERVERS);
+  peer = new PeerConnection(signaling, asInitiator, CONFIG.ICE_SERVERS, roomPassword);
 
   peer.addEventListener('remote-stream', ({ detail }) => {
+    remoteStream = detail.stream;
     ui.remoteVideo.srcObject = detail.stream;
     ui.remoteAvatar.style.display = 'none';
     ui.remoteVideo.style.display  = 'block';
   });
 
 
-  peer.addEventListener('secure-channel-ready', () => {
+  peer.addEventListener('secure-channel-ready', ({ detail }) => {
     ui.encryptedBadge.classList.add('active');
-    appendSystemMessage('🔒 Encrypted channel established.');
+    appendSystemMessage(t('sys.channel_ready'));
+    showSafetyNumber(detail?.safety);
+    startVerifyHandshake();
     startCallTimer();
     startStatsPolling();
+    startMicMeter();
   });
 
   peer.addEventListener('connection-state', ({ detail }) => {
@@ -259,7 +344,7 @@ async function startCall(asInitiator) {
 
   peer.addEventListener('ice-restarting', () => {
     updateConnectionBadge('reconnecting');
-    appendSystemMessage('⟳ Network changed — reconnecting…');
+    appendSystemMessage(t('sys.network_changed'));
   });
 
   peer.addEventListener('data',       ({ detail }) => handleIncomingData(detail));
@@ -267,7 +352,7 @@ async function startCall(asInitiator) {
 
   peer.addEventListener('file-send-progress', ({ detail }) => {
     const pct = Math.round((detail.sent / detail.total) * 100);
-    ui.fileProgress.textContent = `Sending ${detail.name}: ${pct}%`;
+    ui.fileProgress.textContent = t('file.sending', { name: detail.name, pct });
     if (pct === 100) setTimeout(() => { ui.fileProgress.textContent = ''; }, 2000);
   });
 
@@ -282,7 +367,7 @@ async function startCall(asInitiator) {
     localStream = null;
     peer = null;
     signaling?.disconnect();
-    showHomeError('Failed to establish connection. Please try again.');
+    showHomeError(t('err.connect_failed'));
     showScreen('home');
     return;
   }
@@ -294,89 +379,93 @@ async function startCall(asInitiator) {
   pendingSignals = [];
 
   showScreen('call');
+  revealControls();
 }
 
 // ─── File receive ─────────────────────────────────────────────────────────────
 
 async function initFileReceive(meta) {
-  fileReceive.meta       = meta;
-  fileReceive.received   = 0;
-  fileReceive.hashBuffer = [];
+  const fileId = meta.fileId ?? 0;
+  const rx = newFileReceiveState();
+  rx.meta = meta;
+  fileReceives.set(fileId, rx);
 
   if ('showSaveFilePicker' in window) {
     try {
       const ext = meta.name.includes('.') ? meta.name.split('.').pop() : undefined;
-      fileReceive.fileHandle = await window.showSaveFilePicker({
+      rx.fileHandle = await window.showSaveFilePicker({
         suggestedName: meta.name,
         types: ext ? [{ accept: { [meta.mimeType || 'application/octet-stream']: [`.${ext}`] } }] : undefined,
       });
-      fileReceive.writable  = await fileReceive.fileHandle.createWritable();
-      fileReceive.useStream = true;
-      fileReceive.chunks    = [];
-      appendSystemMessage(`📎 Receiving "${meta.name}" (${formatBytes(meta.size)}) — streaming to disk…`);
+      rx.writable  = await rx.fileHandle.createWritable();
+      rx.useStream = true;
+      rx.chunks    = [];
+      rx.hasher    = new IncrementalSHA256();
+      appendSystemMessage(t('sys.rx_streaming', { name: meta.name, size: formatBytes(meta.size) }));
       return;
     } catch (e) {
       if (e.name === 'AbortError') {
-        appendSystemMessage('⚠️ Save cancelled — receiving into memory instead.');
+        appendSystemMessage(t('sys.save_cancelled'));
       }
     }
   }
 
-  fileReceive.useStream = false;
-  fileReceive.chunks    = new Array(meta.chunks);
+  rx.useStream = false;
+  rx.chunks    = new Array(meta.chunks);
   if (meta.size > 500 * 1024 * 1024) {
-    appendSystemMessage(
-      `⚠️ File is ${formatBytes(meta.size)}. ` +
-      `Use Chrome or Edge for large files to avoid running out of memory.`
-    );
+    appendSystemMessage(t('sys.rx_large_warn', { size: formatBytes(meta.size) }));
   } else {
-    appendSystemMessage(`📎 Receiving "${meta.name}" (${formatBytes(meta.size)})…`);
+    appendSystemMessage(t('sys.rx_receiving', { name: meta.name, size: formatBytes(meta.size) }));
   }
 }
 
 async function handleFileChunk(buffer) {
-  if (!fileReceive.meta) return;
-
+  // Frame layout: [4B fileId LE][4B chunkIndex LE][encrypted chunk]
   const view       = new DataView(buffer);
-  const chunkIndex = view.getUint32(0, true);
-  const encrypted  = buffer.slice(4);
+  const fileId     = view.getUint32(0, true);
+  const chunkIndex = view.getUint32(4, true);
+  const rx         = fileReceives.get(fileId);
+  if (!rx || !rx.meta) return; // chunk for an unknown/finished transfer
+
+  const encrypted  = buffer.slice(8);
   const plainBuf   = await decrypt(peer.sharedKey, new Uint8Array(encrypted));
   const bytes      = new Uint8Array(plainBuf);
 
-  fileReceive.received++;
+  rx.received++;
 
-  if (fileReceive.useStream) {
-    await fileReceive.writable.write(bytes);
-    fileReceive.hashBuffer.push(bytes);
+  if (rx.useStream) {
+    await rx.writable.write(bytes);
+    rx.hasher.update(bytes);
   } else {
-    fileReceive.chunks[chunkIndex] = bytes;
+    rx.chunks[chunkIndex] = bytes;
   }
 
-  const pct = Math.round((fileReceive.received / fileReceive.meta.chunks) * 100);
-  ui.fileProgress.textContent = `Receiving ${fileReceive.meta.name}: ${pct}%`;
+  const pct = Math.round((rx.received / rx.meta.chunks) * 100);
+  ui.fileProgress.textContent = t('file.receiving', { name: rx.meta.name, pct });
 
-  if (fileReceive.received === fileReceive.meta.chunks) await finalizeFile();
+  if (rx.received === rx.meta.chunks) await finalizeFile(fileId);
 }
 
-async function finalizeFile() {
-  const { name, size, mimeType, hash } = fileReceive.meta;
+async function finalizeFile(fileId) {
+  const rx = fileReceives.get(fileId);
+  if (!rx) return;
+  const { name, size, mimeType, hash } = rx.meta;
   ui.fileProgress.textContent = '';
 
-  if (fileReceive.useStream) {
-    await fileReceive.writable.close();
-    const merged       = mergeChunks(fileReceive.hashBuffer, size);
-    const receivedHash = await sha256(merged);
+  if (rx.useStream) {
+    await rx.writable.close();
+    const receivedHash = rx.hasher.digest();
     if (receivedHash !== hash) {
-      appendSystemMessage(`❌ Integrity check FAILED for "${name}". File saved but may be corrupted.`);
+      appendSystemMessage(t('sys.integrity_fail_saved', { name }));
     } else {
-      appendSystemMessage(`✓ "${name}" saved to disk. SHA-256 verified.`);
+      appendSystemMessage(t('sys.saved_verified', { name }));
     }
   } else {
-    const merged       = mergeChunks(fileReceive.chunks, size);
+    const merged       = mergeChunks(rx.chunks, size);
     const receivedHash = await sha256(merged);
     if (receivedHash !== hash) {
-      appendSystemMessage(`❌ Integrity check FAILED for "${name}". File may be corrupted.`);
-      resetFileReceiveState();
+      appendSystemMessage(t('sys.integrity_fail', { name }));
+      fileReceives.delete(fileId);
       return;
     }
     const blob = new Blob([merged], { type: mimeType });
@@ -384,7 +473,7 @@ async function finalizeFile() {
     appendFileDownload(name, url, size, mimeType);
   }
 
-  resetFileReceiveState();
+  fileReceives.delete(fileId);
 }
 
 function mergeChunks(chunks, totalSize) {
@@ -394,14 +483,11 @@ function mergeChunks(chunks, totalSize) {
   return merged;
 }
 
-function resetFileReceiveState() {
-  fileReceive.meta       = null;
-  fileReceive.chunks     = [];
-  fileReceive.hashBuffer = [];
-  fileReceive.useStream  = false;
-  fileReceive.fileHandle = null;
-  fileReceive.writable   = null;
-  fileReceive.received   = 0;
+async function resetFileReceiveState() {
+  for (const rx of fileReceives.values()) {
+    if (rx.writable) { try { await rx.writable.abort(); } catch { /* ignore */ } }
+  }
+  fileReceives.clear();
 }
 
 // ─── Incoming data ────────────────────────────────────────────────────────────
@@ -409,12 +495,63 @@ function resetFileReceiveState() {
 function handleIncomingData(msg) {
   switch (msg.type) {
     case 'chat':
-      appendChatMessage('Peer', msg.text, 'remote');
+      appendChatMessage(t('chat.peer'), String(msg.text ?? '').slice(0, 4000), 'remote');
       playMessageTone();
       break;
     case 'file-meta': initFileReceive(msg); break;
     case 'typing':    showTypingIndicator(); break;
+    // Password verification handshake — see startVerifyHandshake().
+    case '__verify':   peer?.send({ type: '__verified' }).catch(() => {}); break;
+    case '__verified': markChannelVerified(); break;
   }
+}
+
+// ─── Password verification handshake ───────────────────────────────────────────
+//
+// Both peers exchange ECDH public keys regardless of password, so the secure
+// channel "establishes" even when passwords differ — only the AES layer silently
+// fails. To surface a wrong password quickly, each side sends an encrypted
+// {__verify} ping; if the keys match, the peer can decrypt it and replies
+// {__verified}. No reply within the timeout ⇒ password mismatch.
+
+function startVerifyHandshake() {
+  if (!roomPassword) { channelVerified = true; return; } // nothing to verify
+  channelVerified = false;
+  clearTimeout(verifyTimeout);
+  peer?.send({ type: '__verify' }).catch(() => {});
+  verifyTimeout = setTimeout(() => {
+    if (!channelVerified) {
+      appendSystemMessage(t('sys.wrong_password'));
+      setTimeout(resetToHome, 2500);
+    }
+  }, 7000);
+}
+
+function markChannelVerified() {
+  if (channelVerified) return;
+  channelVerified = true;
+  clearTimeout(verifyTimeout);
+  verifyTimeout = null;
+}
+
+// ─── Safety number (SAS) ───────────────────────────────────────────────────────
+
+function showSafetyNumber(safety) {
+  if (!safety || !ui.sasPanel) return;
+  ui.sasEmoji.textContent = safety.emoji;
+  ui.sasCode.textContent  = safety.code;
+  ui.sasPanel.classList.add('visible');
+  // a11y: remember where focus was, move it into the dialog.
+  sasPrevFocus = document.activeElement;
+  ui.btnSasOk?.focus();
+}
+
+function hideSafetyNumber() {
+  ui.sasPanel?.classList.remove('visible');
+  if (sasPrevFocus && typeof sasPrevFocus.focus === 'function') {
+    try { sasPrevFocus.focus(); } catch { /* element gone */ }
+  }
+  sasPrevFocus = null;
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
@@ -463,10 +600,10 @@ async function sendChat() {
   if (!text || !peer) return;
   try {
     await peer.send({ type: 'chat', text });
-    appendChatMessage('You', text, 'local');
+    appendChatMessage(t('chat.you'), text, 'local');
     ui.chatInput.value = '';
   } catch {
-    appendSystemMessage('⚠️ Send failed — channel not ready yet.');
+    appendSystemMessage(t('sys.send_failed_notready'));
   }
 }
 
@@ -479,14 +616,64 @@ function toggleMute() {
   audioEnabled = !audioEnabled;
   peer?.toggleAudio(audioEnabled);
   ui.btnMute.classList.toggle('active', !audioEnabled);
-  ui.btnMute.querySelector('.icon').textContent = audioEnabled ? '🎙️' : '🔇';
+  if (audioEnabled) hideMutedNudge();
+}
+
+// ─── Mic level meter + "you're muted" nudge ──────────────────────────────────────
+
+function startMicMeter() {
+  const track = localStream?.getAudioTracks?.()[0];
+  if (!track || micAnalyser) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    micAudioCtx = new AudioCtx();
+    const source = micAudioCtx.createMediaStreamSource(new MediaStream([track]));
+    micAnalyser = micAudioCtx.createAnalyser();
+    micAnalyser.fftSize = 512;
+    source.connect(micAnalyser);
+    const buf = new Uint8Array(micAnalyser.fftSize);
+    const tick = () => {
+      micAnalyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+      const rms = Math.sqrt(sum / buf.length);     // 0..~1
+      const level = Math.min(1, rms * 3);          // visual gain
+      if (ui.micMeterFill) ui.micMeterFill.style.width = `${Math.round(level * 100)}%`;
+      // Speaking while muted? Nudge (throttled to once per ~4s).
+      if (!audioEnabled && rms > 0.06) {
+        if (Date.now() - mutedNudgeShownAt > 4000) showMutedNudge();
+      }
+      micRafId = requestAnimationFrame(tick);
+    };
+    tick();
+  } catch { /* meter unavailable — non-fatal */ }
+}
+
+function stopMicMeter() {
+  if (micRafId) cancelAnimationFrame(micRafId);
+  micRafId = null;
+  try { micAudioCtx?.close(); } catch { /* ignore */ }
+  micAudioCtx = null;
+  micAnalyser = null;
+  if (ui.micMeterFill) ui.micMeterFill.style.width = '0%';
+}
+
+function showMutedNudge() {
+  mutedNudgeShownAt = Date.now();
+  if (!ui.mutedNudge) return;
+  ui.mutedNudge.classList.add('visible');
+  clearTimeout(showMutedNudge._t);
+  showMutedNudge._t = setTimeout(hideMutedNudge, 3000);
+}
+
+function hideMutedNudge() {
+  ui.mutedNudge?.classList.remove('visible');
 }
 
 function toggleCamera() {
   videoEnabled = !videoEnabled;
   peer?.toggleVideo(videoEnabled);
   ui.btnCamera.classList.toggle('active', !videoEnabled);
-  ui.btnCamera.querySelector('.icon').textContent = videoEnabled ? '📷' : '🚫';
   ui.localVideo.style.opacity = videoEnabled ? '1' : '0.3';
 }
 
@@ -496,7 +683,7 @@ async function toggleScreenShare() {
     return;
   }
   if (!navigator.mediaDevices?.getDisplayMedia) {
-    appendSystemMessage('⚠️ Screen sharing is not supported on this device.');
+    appendSystemMessage(t('sys.screen_unsupported'));
     return;
   }
   try {
@@ -506,7 +693,7 @@ async function toggleScreenShare() {
     ui.localVideo.srcObject = screenStream;
     screenSharing = true;
     ui.btnScreen.classList.add('active');
-    ui.btnScreen.querySelector('.ctrl-label').textContent = 'Stop';
+    ui.btnScreen.querySelector('.ctrl-label').textContent = t('ctrl.stop');
     screenTrack.onended = () => stopScreenShare();
   } catch {
     // User cancelled the picker — do nothing
@@ -522,7 +709,7 @@ function stopScreenShare() {
   if (camTrack) peer?.replaceVideoTrack(camTrack);
   ui.localVideo.srcObject = localStream;
   ui.btnScreen.classList.remove('active');
-  ui.btnScreen.querySelector('.ctrl-label').textContent = 'Screen';
+  ui.btnScreen.querySelector('.ctrl-label').textContent = t('ctrl.screen');
 }
 
 // ─── Flip Camera ──────────────────────────────────────────────────────────────
@@ -608,21 +795,30 @@ function resetToHome() {
   peer?.hangup();
   signaling?.disconnect();
   stopScreenShare();
+  stopRecordingIfActive();
   stopCallTimer();
   stopStatsPolling();
+  stopMicMeter();
+  clearTimeout(verifyTimeout);
+  verifyTimeout = null;
+  channelVerified = false;
   pendingSignals = [];
   fileQueue = [];
   fileSending = false;
   localStream = null;
+  remoteStream = null;
   peer        = null;
   signaling   = null;
   audioEnabled = true;
   videoEnabled = true;
+  lastQualityLevel = 'good';
   ui.localVideo.srcObject  = null;
   ui.remoteVideo.srcObject = null;
   ui.chatMessages.innerHTML = '';
   ui.encryptedBadge.classList.remove('active');
   ui.typingIndicator.style.display = 'none';
+  ui.sasPanel?.classList.remove('visible');
+  hideMutedNudge();
   hideConnecting();
   resetFileReceiveState();
   showScreen('home');
@@ -631,15 +827,17 @@ function resetToHome() {
 function updateConnectionBadge(state) {
   const badge = ui.connectionBadge;
   badge.className = `badge connection-badge ${state}`;
-  const labels = {
-    connected:    '● Connected',
-    reconnecting: '◌ Reconnecting…',
-    connecting:   '○ Connecting…',
-    disconnected: '○ Disconnected',
-    failed:       '✕ Failed',
-    new:          '○ Setting up…',
+  const symbols = {
+    connected:    '●',
+    reconnecting: '◌',
+    connecting:   '○',
+    disconnected: '○',
+    failed:       '✕',
+    new:          '○',
   };
-  badge.textContent = labels[state] ?? state;
+  badge.textContent = symbols[state]
+    ? `${symbols[state]} ${t('conn.' + state)}`
+    : state;
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -659,9 +857,112 @@ function formatBytes(bytes) {
 }
 
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, c =>
+  return String(str).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
   );
+}
+
+// ─── Local recording ──────────────────────────────────────────────────────────
+
+async function toggleRecording() {
+  if (recorder?.recording) {
+    await stopRecordingIfActive();
+    return;
+  }
+  if (!CallRecorder.isSupported()) {
+    appendSystemMessage(t('sys.record_unsupported'));
+    return;
+  }
+  try {
+    recorder = new CallRecorder();
+    recorder.start({
+      remoteVideo: ui.remoteVideo,
+      localVideo:  ui.localVideo,
+      remoteStream,
+      localStream,
+    });
+    ui.btnRecord.classList.add('active');
+    ui.btnRecord.querySelector('.ctrl-label').textContent = t('ctrl.stop');
+    appendSystemMessage(t('sys.record_started'));
+  } catch (e) {
+    appendSystemMessage(t('sys.record_error', { error: e.message }));
+    recorder = null;
+  }
+}
+
+async function stopRecordingIfActive() {
+  if (!recorder?.recording) return;
+  const blob = await recorder.stop();
+  recorder = null;
+  ui.btnRecord.classList.remove('active');
+  const label = ui.btnRecord.querySelector('.ctrl-label');
+  if (label) label.textContent = t('ctrl.record');
+  if (!blob) { appendSystemMessage(t('sys.record_nodata')); return; }
+  const name = `omni-call-${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
+  await saveBlob(blob, name);
+  appendSystemMessage(t('sys.record_saved', { size: formatBytes(blob.size) }));
+}
+
+async function saveBlob(blob, suggestedName) {
+  if ('showSaveFilePicker' in window) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [{ accept: { 'video/webm': ['.webm'] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return; // user cancelled
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+// ─── Chat housekeeping ─────────────────────────────────────────────────────────
+
+function clearChat() {
+  ui.chatMessages.innerHTML = '';
+  appendSystemMessage(t('sys.chat_cleared'));
+}
+
+// ─── Share link + QR ───────────────────────────────────────────────────────────
+
+function buildShareUrl(code) {
+  return `${location.origin}${location.pathname}#${encodeURIComponent(code)}`;
+}
+
+function updateLobbyShare(code) {
+  if (!code || code === '——————') return;
+  const url = buildShareUrl(code);
+  if (ui.lobbyLink) ui.lobbyLink.textContent = url;
+  if (ui.qrContainer) {
+    try { ui.qrContainer.innerHTML = makeQrSvg(url, { ecc: 'MEDIUM', border: 2 }); }
+    catch { ui.qrContainer.innerHTML = ''; }
+  }
+}
+
+async function shareLink() {
+  const code = ui.lobbyCode.textContent;
+  const url = buildShareUrl(code);
+  if (navigator.share) {
+    try { await navigator.share({ title: t('lobby.share_title'), text: t('lobby.share_text'), url }); return; }
+    catch { /* user cancelled or unsupported — fall through to copy */ }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    ui.btnShareLink.textContent = t('lobby.link_copied');
+    setTimeout(() => { ui.btnShareLink.textContent = t('lobby.share_link'); }, 2000);
+  } catch { /* clipboard blocked */ }
 }
 
 // ─── Event listeners ──────────────────────────────────────────────────────────
@@ -671,54 +972,41 @@ ui.btnCreate.addEventListener('click', async () => {
 
   const customCode = ui.customCodeInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
   if (customCode.length > 0 && (customCode.length < 4 || customCode.length > 10)) {
-    showHomeError('Custom codes must be between 4 and 10 characters.');
+    showHomeError(t('err.custom_length'));
     ui.customCodeInput.focus();
     return;
   }
 
-  showConnecting('Server cold start may take ~30s on first connect…');
+  roomPassword = ui.roomPassword?.value || '';
+
+  showConnecting(t('home.connecting_cold'));
 
   try {
     await connectSignaling();
-
-    signaling.addEventListener('created', ({ detail }) => {
-      signaling.phase    = 'lobby';
-      signaling.roomCode = detail.code;
-      ui.lobbyCode.textContent   = detail.code;
-      ui.lobbyStatus.textContent = detail.custom
-        ? `Your custom code is ready. Share it with your peer…`
-        : 'Waiting for peer to join…';
-      ui.lobbyCode.classList.toggle('custom-code', !!detail.custom);
-      hideConnecting();
-      showScreen('lobby');
-    }, { once: true });
-
     signaling.createRoom(customCode);
   } catch {
-    showHomeError('Could not connect to signaling server. Is it deployed?');
+    showHomeError(t('err.no_server'));
   }
 });
 
 ui.btnJoinSubmit.addEventListener('click', async () => {
   const code = ui.joinInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
   if (code.length < 4 || code.length > 10) {
-    showHomeError('Enter a valid code (4–10 characters).');
+    showHomeError(t('err.invalid_code'));
     return;
   }
   ui.homeError.style.display = 'none';
-  showConnecting('Joining room…');
+  roomPassword = ui.roomPassword?.value || '';
+  showConnecting(t('home.connecting_join'));
   try {
     await connectSignaling();
     signaling.addEventListener('joined', async () => {
       hideConnecting();
       await startCall(false);
     }, { once: true });
-    signaling.addEventListener('error', ({ detail }) => {
-      showHomeError(detail.message);
-    }, { once: true });
     signaling.joinRoom(code);
   } catch {
-    showHomeError('Could not connect to signaling server. Is it deployed?');
+    showHomeError(t('err.no_server'));
   }
 });
 
@@ -728,8 +1016,8 @@ ui.joinInput.addEventListener('keydown', e => {
 
 ui.btnCopyCode.addEventListener('click', () => {
   navigator.clipboard.writeText(ui.lobbyCode.textContent);
-  ui.btnCopyCode.textContent = 'Copied!';
-  setTimeout(() => { ui.btnCopyCode.textContent = 'Copy Code'; }, 2000);
+  ui.btnCopyCode.textContent = t('lobby.copied');
+  setTimeout(() => { ui.btnCopyCode.textContent = t('lobby.copy'); }, 2000);
 });
 
 ui.btnLobbyCancel.addEventListener('click', () => {
@@ -744,6 +1032,17 @@ ui.btnScreen.addEventListener('click', toggleScreenShare);
 ui.btnFlip.addEventListener('click', flipCamera);
 ui.btnHangup.addEventListener('click', hangup);
 ui.btnSend.addEventListener('click', sendChat);
+ui.btnRecord?.addEventListener('click', toggleRecording);
+ui.btnClearChat?.addEventListener('click', clearChat);
+ui.btnShareLink?.addEventListener('click', shareLink);
+ui.btnSasOk?.addEventListener('click', () => hideSafetyNumber());
+ui.btnSasBad?.addEventListener('click', () => {
+  appendSystemMessage(t('sys.sas_mismatch'));
+  setTimeout(resetToHome, 800);
+});
+ui.sasPanel?.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); hideSafetyNumber(); }
+});
 
 ui.chatInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
@@ -773,21 +1072,17 @@ ui.btnCustomToggle.addEventListener('click', () => {
 // ─── File Queue ───────────────────────────────────────────────────────────────
 
 async function processFileQueue() {
-  if (fileSending || !fileQueue.length) return;
-  fileSending = true;
+  // Each file gets its own fileId and is sent concurrently — the 8-byte frame
+  // header lets the receiver demultiplex interleaved chunks. DataChannel
+  // backpressure inside sendFile keeps the shared buffer from overflowing.
   while (fileQueue.length > 0) {
     const file = fileQueue.shift();
-    const remaining = fileQueue.length;
-    const prefix = remaining > 0 ? `[${remaining} queued] ` : '';
-    appendSystemMessage(`📤 ${prefix}Sending "${file.name}" (${formatBytes(file.size)})…`);
-    try {
-      await peer.sendFile(file);
-      appendSystemMessage(`✓ Sent "${file.name}".`);
-    } catch (err) {
-      appendSystemMessage(`❌ Send failed: ${err.message}`);
-    }
+    const fileId = (Math.random() * 0xffffffff) >>> 0;
+    appendSystemMessage(`📤 Sending "${file.name}" (${formatBytes(file.size)})…`);
+    peer.sendFile(file, { fileId })
+      .then(() => appendSystemMessage(`✓ Sent "${file.name}".`))
+      .catch(err => appendSystemMessage(`❌ Send failed: ${err.message}`));
   }
-  fileSending = false;
 }
 
 // ─── Connection Quality ───────────────────────────────────────────────────────
@@ -841,6 +1136,13 @@ function startStatsPolling() {
       ui.qualityBadge.className = `badge quality-badge quality-${level}`;
       ui.qualityBadge.textContent = level === 'good' ? '●' : level === 'fair' ? '◐' : '○';
       ui.qualityBadge.title = label;
+
+      // Adaptive bitrate — only nudge the encoder when the level actually changes
+      // (avoids thrashing setParameters every poll).
+      if (level !== lastQualityLevel) {
+        lastQualityLevel = level;
+        peer.setSendQuality(level).catch(() => {});
+      }
     } catch { /* stats unavailable */ }
   }, 2000);
 }
@@ -850,6 +1152,7 @@ function stopStatsPolling() {
   statsInterval = null;
   prevBytesReceived = 0;
   prevTimestamp = 0;
+  lastQualityLevel = 'good';
   ui.qualityBadge.className = 'badge quality-badge';
   ui.qualityBadge.textContent = '●';
   ui.qualityBadge.title = '';
@@ -867,10 +1170,10 @@ async function enterPiP() {
     } else if (video.webkitSupportsPresentationMode?.('picture-in-picture')) {
       video.webkitSetPresentationMode('picture-in-picture');
     } else {
-      appendSystemMessage('⚠️ Picture-in-Picture is not supported on this device.');
+      appendSystemMessage(t('sys.pip_unsupported'));
     }
   } catch {
-    appendSystemMessage('⚠️ Could not enter Picture-in-Picture. Tap the PiP button during the call.');
+    appendSystemMessage(t('sys.pip_error'));
   }
 }
 
@@ -896,68 +1199,293 @@ document.addEventListener('visibilitychange', () => {
   document.hidden ? enterPiP() : exitPiP();
 });
 
-// ─── Draggable Local Video ────────────────────────────────────────────────────
+// ─── Draggable + tap-to-swap video windows ───────────────────────────────────
+//
+// Either feed can be the "stage" (full-bleed) or the "PiP" (small floating
+// window). Tapping the PiP promotes it to the stage and demotes the other feed;
+// dragging repositions it. The PiP is clamped to a safe area so it can never
+// slide behind the controls bar or the status badges.
 
-(function initDraggableVideo() {
-  const wrap = document.querySelector('.local-video-wrap');
-  if (!wrap) return;
-  let dragging = false;
-  let startX, startY, origLeft, origTop;
+(function initVideoStage() {
+  const area       = document.querySelector('.video-area');
+  const localWrap  = document.querySelector('.local-video-wrap');
+  const remoteWrap = document.querySelector('.remote-video-wrap');
+  if (!area || !localWrap || !remoteWrap) return;
 
-  wrap.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
+  let localIsStage = false;
+  const currentPip = () => (localIsStage ? remoteWrap : localWrap);
+
+  function setLocalStage(on) {
+    if (on === localIsStage) return;
+    localIsStage = on;
+    area.classList.toggle('swapped', on);
+    // Clear inline drag positioning so the CSS role rules take over cleanly.
+    for (const el of [localWrap, remoteWrap]) {
+      el.style.top = el.style.left = el.style.right = el.style.bottom = '';
+      el.style.transition = '';
+    }
+  }
+
+  // Reserve space for the controls bar (bottom) and badge row (top-right) so a
+  // parked PiP never overlaps them.
+  const PAD_X = 16;
+  const TOP_PAD_LEFT = 16;
+  const TOP_PAD_RIGHT = 56; // clears the badge row
+  const bottomReserve = () => {
+    const bar = document.querySelector('.controls-bar');
+    return (bar ? bar.getBoundingClientRect().height : 80) + 14;
+  };
+
+  let dragging = false, moved = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+
+  function onPointerDown(e) {
+    const pip = currentPip();
+    if (e.currentTarget !== pip) return;          // only the small window reacts
+    if (e.button != null && e.button !== 0) return;
     e.preventDefault();
     dragging = true;
-    wrap.setPointerCapture(e.pointerId);
-    const rect = wrap.getBoundingClientRect();
-    const parent = wrap.parentElement.getBoundingClientRect();
-    // Convert current position to top/left regardless of how CSS positions it
+    moved = false;
+    pip.setPointerCapture?.(e.pointerId);
+    const rect = pip.getBoundingClientRect();
+    const parent = area.getBoundingClientRect();
     origLeft = rect.left - parent.left;
-    origTop = rect.top - parent.top;
-    // Switch to top/left positioning immediately
-    wrap.style.top = `${origTop}px`;
-    wrap.style.left = `${origLeft}px`;
-    wrap.style.bottom = 'auto';
-    wrap.style.right = 'auto';
-    wrap.style.transition = 'none';
+    origTop  = rect.top  - parent.top;
+    pip.style.top    = `${origTop}px`;
+    pip.style.left   = `${origLeft}px`;
+    pip.style.right  = 'auto';
+    pip.style.bottom = 'auto';
+    pip.style.transition = 'none';
     startX = e.clientX;
     startY = e.clientY;
-  });
+  }
 
-  wrap.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
+  function onPointerMove(e) {
+    if (!dragging || e.currentTarget !== currentPip()) return;
     e.preventDefault();
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    wrap.style.left = `${origLeft + dx}px`;
-    wrap.style.top = `${origTop + dy}px`;
-  });
+    if (Math.hypot(dx, dy) > 6) moved = true;
+    const pip = currentPip();
+    const parent = area.getBoundingClientRect();
+    const maxLeft = parent.width  - pip.offsetWidth  - PAD_X;
+    const maxTop  = parent.height - pip.offsetHeight - bottomReserve();
+    pip.style.left = `${Math.max(PAD_X, Math.min(maxLeft, origLeft + dx))}px`;
+    pip.style.top  = `${Math.max(TOP_PAD_LEFT, Math.min(maxTop, origTop + dy))}px`;
+  }
 
-  wrap.addEventListener('pointerup', (e) => {
-    if (!dragging) return;
+  function onPointerUp(e) {
+    if (!dragging || e.currentTarget !== currentPip()) return;
     dragging = false;
-    wrap.releasePointerCapture(e.pointerId);
-    // Snap to nearest corner
-    const parent = wrap.parentElement.getBoundingClientRect();
-    const rect = wrap.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2 - parent.left;
-    const cy = rect.top + rect.height / 2 - parent.top;
-    const pad = 16;
+    const pip = currentPip();
+    pip.releasePointerCapture?.(e.pointerId);
+
+    if (!moved) { setLocalStage(!localIsStage); return; } // tap → swap roles
+
+    // Snap to the nearest corner within the safe area.
+    const parent = area.getBoundingClientRect();
+    const rect = pip.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    const cx = rect.left + w / 2 - parent.left;
+    const cy = rect.top  + h / 2 - parent.top;
+    const reserve = bottomReserve();
     const snapLeft = cx < parent.width / 2;
-    const snapTop = cy < parent.height / 2;
-    wrap.style.transition = 'top 0.25s ease, left 0.25s ease';
-    wrap.style.left = snapLeft ? `${pad}px` : `${parent.width - rect.width - pad}px`;
-    wrap.style.top = snapTop ? `${pad}px` : `${parent.height - rect.height - pad}px`;
+    const snapTop  = cy < (parent.height - reserve) / 2;
+    pip.style.transition = 'top 0.25s ease, left 0.25s ease';
+    pip.style.left = snapLeft ? `${PAD_X}px` : `${parent.width - w - PAD_X}px`;
+    pip.style.top  = snapTop
+      ? `${snapLeft ? TOP_PAD_LEFT : TOP_PAD_RIGHT}px`
+      : `${parent.height - h - reserve}px`;
+  }
+
+  for (const el of [localWrap, remoteWrap]) {
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointercancel', () => { dragging = false; });
+    el.addEventListener('dragstart', (ev) => ev.preventDefault());
+  }
+})();
+
+// ─── "More" controls dropdown ─────────────────────────────────────────────────
+
+(function initMoreMenu() {
+  const moreBtn = document.getElementById('btn-more');
+  const menu    = document.getElementById('more-menu');
+  const bar     = document.querySelector('.controls-bar');
+  if (!moreBtn || !menu || !bar) return;
+
+  const isOpen = () => menu.classList.contains('open');
+
+  function open() {
+    menu.classList.add('open');
+    menu.setAttribute('aria-hidden', 'false');
+    moreBtn.setAttribute('aria-expanded', 'true');
+    bar.classList.add('menu-open');
+  }
+  function close() {
+    menu.classList.remove('open');
+    menu.setAttribute('aria-hidden', 'true');
+    moreBtn.setAttribute('aria-expanded', 'false');
+    bar.classList.remove('menu-open');
+  }
+
+  moreBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isOpen() ? close() : open();
   });
 
-  wrap.addEventListener('pointercancel', () => { dragging = false; });
-  wrap.addEventListener('dragstart', e => e.preventDefault());
+  // Close after picking an item (its own handler runs first via bubbling).
+  menu.addEventListener('click', () => { if (isOpen()) setTimeout(close, 0); });
+
+  // Dismiss on outside click or Escape.
+  document.addEventListener('click', (e) => {
+    if (isOpen() && !menu.contains(e.target) && !moreBtn.contains(e.target)) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) { close(); moreBtn.focus(); }
+  });
+})();
+
+// ─── Auto-hide call controls ──────────────────────────────────────────────────
+//
+// The controls bar slides away after a few seconds of inactivity for an
+// immersive view. Tapping the video stage toggles it; tapping a control,
+// opening the menu, or moving a mouse keeps it visible.
+
+(function initControlsAutohide() {
+  const area       = document.querySelector('.video-area');
+  const bar        = document.querySelector('.controls-bar');
+  const menu       = document.getElementById('more-menu');
+  const localWrap  = document.querySelector('.local-video-wrap');
+  const remoteWrap = document.querySelector('.remote-video-wrap');
+  if (!area || !bar) return;
+
+  const HIDE_MS = 4000;
+  let hideTimer = null;
+
+  function scheduleHide() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      // Stay visible while the More menu is open; re-check shortly after.
+      if (menu?.classList.contains('open')) { scheduleHide(); return; }
+      area.classList.add('controls-hidden');
+    }, HIDE_MS);
+  }
+  function show() {
+    area.classList.remove('controls-hidden');
+    scheduleHide();
+  }
+  function hide() {
+    clearTimeout(hideTimer);
+    area.classList.add('controls-hidden');
+  }
+
+  // Let the rest of the app reveal controls (e.g. when the call screen opens).
+  revealControls = show;
+
+  area.addEventListener('pointerdown', (e) => {
+    // Touching the controls bar (incl. the More menu) just keeps them alive.
+    if (e.target.closest('.controls-bar')) { show(); return; }
+    // While the menu is open, an outside tap closes it (menu module) — don't
+    // also collapse the controls.
+    if (menu?.classList.contains('open')) { show(); return; }
+    // Tapping the floating PiP swaps feeds (handled elsewhere); reveal controls.
+    const pip = area.classList.contains('swapped') ? remoteWrap : localWrap;
+    if (pip && pip.contains(e.target)) { show(); return; }
+    // A tap on the main stage toggles the controls.
+    area.classList.contains('controls-hidden') ? show() : hide();
+  });
+
+  // Desktop: keep controls up while the mouse moves over the video or hovers
+  // the bar itself.
+  area.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') show(); });
+  bar.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+  bar.addEventListener('mouseleave', scheduleHide);
+})();
+
+// ─── Drag-and-drop & paste to send files ──────────────────────────────────────
+
+function enqueueFiles(files) {
+  const list = Array.from(files);
+  if (!list.length || !peer) return;
+  for (const f of list) fileQueue.push(f);
+  processFileQueue();
+}
+
+(function initFileDropAndPaste() {
+  const callScreen = screens.call;
+  if (!callScreen) return;
+  let dragDepth = 0;
+
+  const showOverlay = () => ui.dropOverlay?.classList.add('visible');
+  const hideOverlay = () => ui.dropOverlay?.classList.remove('visible');
+
+  callScreen.addEventListener('dragenter', (e) => {
+    if (!peer || !e.dataTransfer?.types?.includes('Files')) return;
+    e.preventDefault();
+    dragDepth++;
+    showOverlay();
+  });
+  callScreen.addEventListener('dragover', (e) => {
+    if (!peer) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+  callScreen.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) hideOverlay();
+  });
+  callScreen.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    hideOverlay();
+    if (e.dataTransfer?.files?.length) enqueueFiles(e.dataTransfer.files);
+  });
+
+  // Paste an image/file from the clipboard while on the call screen.
+  document.addEventListener('paste', (e) => {
+    if (!peer || !screens.call.classList.contains('active')) return;
+    // Don't hijack pasting text into the chat box.
+    if (document.activeElement === ui.chatInput) return;
+    const files = Array.from(e.clipboardData?.files || []);
+    if (files.length) { e.preventDefault(); enqueueFiles(files); }
+  });
+})();
+
+// ─── Share-link join code auto-fill ────────────────────────────────────────────
+
+(function initShareLinkAutofill() {
+  const code = decodeURIComponent((location.hash || '').replace(/^#/, '')).trim();
+  if (!code) return;
+  const clean = code.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  if (clean.length >= 4 && clean.length <= 10 && ui.joinInput) {
+    ui.joinInput.value = clean;
+    ui.joinInput.focus();
+  }
 })();
 
 // ─── Ensure AudioContext on first interaction ─────────────────────────────────
-
 document.addEventListener('click', ensureAudioContext, { once: true });
 document.addEventListener('touchstart', ensureAudioContext, { once: true });
+
+// ─── Internationalization ─────────────────────────────────────────────────────
+
+(function initI18n() {
+  setLanguage(getLanguage());           // ensure <html lang> + storage are in sync
+  applyTranslations(document);          // translate all static markup
+  updateConnectionBadge('connecting');  // initial badge text (symbol + translated label)
+  const sel = document.getElementById('lang-select');
+  if (sel) {
+    sel.value = getLanguage();
+    sel.addEventListener('change', () => {
+      setLanguage(sel.value);
+      applyTranslations(document);
+      const label = LANGUAGES.find(l => l.code === sel.value)?.label || sel.value;
+      announce(t('a11y.lang_changed', { lang: label }));
+    });
+  }
+})();
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
