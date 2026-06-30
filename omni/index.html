@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <!-- App is mounted at /omni/ (sibling apps live at the repo root). This base
        makes every relative URL resolve under /omni/ even without a trailing slash. -->
   <base href="/omni/" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss: ws://localhost:*; base-uri 'self'; object-src 'none'; frame-ancestors 'none'" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content, user-scalable=no" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss: ws://localhost:*; base-uri 'self'; object-src 'none'; frame-ancestors 'none'" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content, user-scalable=no" />
   <title>Omni — Encrypted P2P Calls</title>
-  <meta name="description" content="Browser-to-browser encrypted video calls and file sharing. No server ever touches your data." />
+  <meta name="description"
+    content="Browser-to-browser encrypted video calls and file sharing. No server ever touches your data." />
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
@@ -16,15 +20,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Omni" />
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23f4956a'/><text x='90' y='125' font-size='90' font-weight='800' font-family='sans-serif' text-anchor='middle' fill='%230c0a09'>O</text></svg>" />
+  <link rel="apple-touch-icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23f4956a'/><text x='90' y='125' font-size='90' font-weight='800' font-family='sans-serif' text-anchor='middle' fill='%230c0a09'>O</text></svg>" />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
 
   <link rel="stylesheet" href="css/styles.css" />
 </head>
+
 <body>
 
   <!-- ── Home Screen ────────────────────────────────────────────────────── -->
@@ -36,7 +44,8 @@
       <option value="de">Deutsch</option>
       <option value="hi">हिन्दी</option>
     </select>
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" data-i18n-aria-label="home.theme_label">🌙</button>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme"
+      data-i18n-aria-label="home.theme_label">🌙</button>
     <div class="home-grid">
 
       <div class="wordmark">
@@ -49,7 +58,7 @@
       </div>
 
       <div class="home-hero">
-        <h1><span data-i18n="home.h1a">Private calls.</span><br/><em data-i18n="home.h1b">No middleman.</em></h1>
+        <h1><span data-i18n="home.h1a">Private calls.</span><br /><em data-i18n="home.h1b">No middleman.</em></h1>
         <p class="hero-sub" data-i18n="home.hero_sub">
           Your audio, video, and files travel directly between browsers —
           fully encrypted, server-blind, leaving no trace.
@@ -64,60 +73,43 @@
 
         <div class="custom-toggle">
           <button id="btn-custom-toggle" class="btn-link" type="button">
-            <span id="custom-toggle-icon" aria-hidden="true">▸</span> <span data-i18n="home.use_custom">Use a custom code</span>
+            <span id="custom-toggle-icon" aria-hidden="true">▸</span> <span data-i18n="home.use_custom">Use a custom
+              code</span>
           </button>
         </div>
 
         <div id="custom-code-wrap" class="custom-code-wrap" aria-hidden="true">
           <div class="custom-code-inner">
-            <input
-              id="custom-code-input"
-              class="code-input custom-code-input"
-              type="text"
-              maxlength="10"
-              placeholder="YOURCODE"
-              autocomplete="off"
-              autocapitalize="characters"
-              spellcheck="false"
-            />
-            <p class="input-hint" data-i18n="home.custom_hint">4-10 characters · letters &amp; numbers · your friends will use this to join</p>
+            <input id="custom-code-input" class="code-input custom-code-input" type="text" maxlength="10"
+              placeholder="YOURCODE" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+            <p class="input-hint" data-i18n="home.custom_hint">4-10 characters · letters &amp; numbers · your friends
+              will use this to join</p>
           </div>
         </div>
 
         <div class="divider"><span data-i18n="home.divider">or join with a code</span></div>
 
         <div class="join-row">
-          <input
-            id="join-input"
-            class="code-input"
-            type="text"
-            maxlength="10"
-            placeholder="XXXXXX"
-            autocomplete="off"
-            autocapitalize="characters"
-            spellcheck="false"
-          />
+          <input id="join-input" class="code-input" type="text" maxlength="10" placeholder="XXXXXX" autocomplete="off"
+            autocapitalize="characters" spellcheck="false" />
           <button id="btn-join-submit" class="btn btn-secondary" data-i18n="home.join">Join</button>
         </div>
 
         <div class="password-row">
-          <input
-            id="room-password"
-            class="code-input password-input"
-            type="password"
-            placeholder="Room password (optional)"
-            data-i18n-placeholder="home.password_placeholder"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <p class="input-hint" data-i18n="home.password_hint">Both people must enter the same password · strengthens the encryption key</p>
+          <input id="room-password" class="code-input password-input" type="password"
+            placeholder="Room password (optional)" data-i18n-placeholder="home.password_placeholder" autocomplete="off"
+            spellcheck="false" />
+          <p class="input-hint" data-i18n="home.password_hint">Both people must enter the same password · strengthens
+            the encryption key</p>
         </div>
 
         <p id="home-error" class="error-msg" role="alert" style="display:none"></p>
 
         <!-- Connecting progress — shown while WS handshake is in flight -->
         <div id="connecting-state" class="connecting-state" role="status" style="display:none">
-          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
           <p class="connecting-text" id="connecting-text" data-i18n="home.connecting">Connecting to server…</p>
         </div>
       </div>
@@ -126,7 +118,8 @@
         <div class="trust-badges">
           <span class="trust-badge">🔒 DTLS + AES-GCM</span>
           <span class="trust-badge">⚡ WebRTC P2P</span>
-          <span class="trust-badge"><span aria-hidden="true">👁</span> <span data-i18n="home.badge_zero">Zero server data</span></span>
+          <span class="trust-badge"><span aria-hidden="true">👁</span> <span data-i18n="home.badge_zero">Zero server
+              data</span></span>
         </div>
       </footer>
 
@@ -136,19 +129,14 @@
   <!-- ── Lobby Screen (waiting for peer) ────────────────────────────────── -->
   <section id="screen-lobby" class="screen">
     <div class="lobby-container">
-
-      <div class="lobby-header">
-        <span class="wordmark-a small">O</span>
-      </div>
-
       <div class="lobby-card">
         <p class="lobby-label" data-i18n="lobby.share_code">Share this code with your peer</p>
         <div class="lobby-code-display">
           <span id="lobby-code" class="lobby-code">——————</span>
         </div>
+
         <button id="btn-copy-code" class="btn btn-ghost" data-i18n="lobby.copy">Copy Code</button>
-        <p class="lobby-label" data-i18n="lobby.code_changes_1">If the code changes after sharing,</p>
-        <p class="lobby-label" data-i18n="lobby.code_changes_2">use your copied code to join the room</p>
+        <p class="lobby-label">If the code changes after sharing, use your copied code to join the room</p>
 
         <div class="lobby-share">
           <button id="btn-share-link" class="btn btn-ghost" data-i18n="lobby.share_link">Share link</button>
@@ -160,10 +148,11 @@
 
       <div class="lobby-status-row">
         <div class="pulse-dot" aria-hidden="true"></div>
-        <span id="lobby-status" class="lobby-status" role="status" data-i18n="lobby.waiting">Waiting for peer to join…</span>
+        <span id="lobby-status" class="lobby-status" role="status" data-i18n="lobby.waiting">Waiting for peer to
+          join…</span>
       </div>
 
-      <button id="btn-lobby-cancel" class="btn btn-ghost btn-sm" data-i18n="lobby.cancel">Cancel</button>
+      <button id="btn-lobby-cancel" class="btn btn-ghost btn-sm" data-i18n="lobby.cancel">Close</button>
 
     </div>
   </section>
@@ -182,7 +171,13 @@
           </div>
           <video id="remote-video" autoplay playsinline style="display:none"></video>
           <span class="pip-hint" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H9"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h11"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M16 3l4 4-4 4" />
+              <path d="M20 7H9" />
+              <path d="M8 21l-4-4 4-4" />
+              <path d="M4 17h11" />
+            </svg>
           </span>
         </div>
 
@@ -193,16 +188,24 @@
             <div class="mic-meter-fill" id="mic-meter-fill"></div>
           </div>
           <span class="pip-hint" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H9"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h11"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M16 3l4 4-4 4" />
+              <path d="M20 7H9" />
+              <path d="M8 21l-4-4 4-4" />
+              <path d="M4 17h11" />
+            </svg>
           </span>
         </div>
 
         <!-- "You're muted" nudge -->
-        <div id="muted-nudge" class="muted-nudge" role="status"><span aria-hidden="true">🔇</span> <span data-i18n="call.muted">You’re muted</span></div>
+        <div id="muted-nudge" class="muted-nudge" role="status"><span aria-hidden="true">🔇</span> <span
+            data-i18n="call.muted">You’re muted</span></div>
 
         <!-- Safety number (SAS) verification -->
         <div id="sas-panel" class="sas-panel" role="dialog" aria-modal="true" aria-labelledby="sas-title">
-          <p class="sas-title" id="sas-title"><span aria-hidden="true">🔐</span> <span data-i18n="sas.title">Verify your peer</span></p>
+          <p class="sas-title" id="sas-title"><span aria-hidden="true">🔐</span> <span data-i18n="sas.title">Verify your
+              peer</span></p>
           <p class="sas-hint" data-i18n="sas.hint">Compare these out loud. If they match, no one is intercepting.</p>
           <div id="sas-emoji" class="sas-emoji"></div>
           <div id="sas-code" class="sas-code"></div>
@@ -214,95 +217,151 @@
 
         <!-- Drag-and-drop overlay -->
         <div id="drop-overlay" class="drop-overlay" aria-hidden="true">
-          <div class="drop-inner"><span aria-hidden="true">📎</span> <span data-i18n="call.drop">Drop files to send</span></div>
+          <div class="drop-inner"><span aria-hidden="true">📎</span> <span data-i18n="call.drop">Drop files to
+              send</span></div>
         </div>
 
         <!-- Status badges -->
         <div class="video-badges">
           <span id="call-timer" class="badge timer-badge">00:00</span>
-          <span id="quality-badge" class="badge quality-badge" title="Connection quality" data-i18n-title="badge.quality_title">●</span>
+          <span id="quality-badge" class="badge quality-badge" title="Connection quality"
+            data-i18n-title="badge.quality_title">●</span>
           <span id="connection-badge" class="badge connection-badge connecting" role="status">○ Connecting…</span>
-          <span id="encrypted-badge" class="badge encrypted-badge" title="Encryption status" data-i18n-title="badge.enc_title">
+          <span id="encrypted-badge" class="badge encrypted-badge" title="Encryption status"
+            data-i18n-title="badge.enc_title">
             🔒 E2E
           </span>
         </div>
 
-      <!-- Controls bar (inside video-area for overlay positioning) -->
-      <div class="controls-bar" role="toolbar" aria-label="Call controls">
-        <button id="btn-mute" class="ctrl-btn" title="Toggle microphone" data-i18n-title="ctrl.mute_title">
-          <span class="icon" aria-hidden="true">
-            <svg class="i-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>
-            <svg class="i-alt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="3.5" y1="3" x2="20.5" y2="21"/></svg>
-          </span>
-          <span class="ctrl-label" data-i18n="ctrl.mute">Mute</span>
-        </button>
-
-        <button id="btn-camera" class="ctrl-btn" title="Toggle camera" data-i18n-title="ctrl.camera_title">
-          <span class="icon" aria-hidden="true">
-            <svg class="i-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 9.5 22 6v12l-6-3.5"/><rect x="2" y="6" width="14" height="12" rx="3"/></svg>
-            <svg class="i-alt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 9.5 22 6v12l-6-3.5"/><rect x="2" y="6" width="14" height="12" rx="3"/><line x1="2.5" y1="3" x2="21.5" y2="21"/></svg>
-          </span>
-          <span class="ctrl-label" data-i18n="ctrl.camera">Camera</span>
-        </button>
-
-        <button id="btn-flip" class="ctrl-btn" title="Flip camera" data-i18n-title="ctrl.flip_title">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v5h5"/><path d="M3 12a9 9 0 0 1 15-6.7L21 7"/><path d="M21 17v-5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 17"/></svg>
-          </span>
-          <span class="ctrl-label" data-i18n="ctrl.flip">Flip</span>
-        </button>
-
-        <!-- More (infrequent controls) -->
-        <div class="ctrl-more">
-          <button id="btn-more" class="ctrl-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="more-menu" title="More" data-i18n-title="ctrl.more_title">
+        <!-- Controls bar (inside video-area for overlay positioning) -->
+        <div class="controls-bar" role="toolbar" aria-label="Call controls">
+          <button id="btn-mute" class="ctrl-btn" title="Toggle microphone" data-i18n-title="ctrl.mute_title">
             <span class="icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+              <svg class="i-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <line x1="12" y1="18" x2="12" y2="21" />
+              </svg>
+              <svg class="i-alt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <line x1="12" y1="18" x2="12" y2="21" />
+                <line x1="3.5" y1="3" x2="20.5" y2="21" />
+              </svg>
             </span>
-            <span class="ctrl-label" data-i18n="ctrl.more">More</span>
+            <span class="ctrl-label" data-i18n="ctrl.mute">Mute</span>
           </button>
 
-          <div id="more-menu" class="more-menu" role="menu" aria-hidden="true">
-            <button id="btn-screen" class="menu-item" role="menuitem" title="Share screen" data-i18n-title="ctrl.screen_title">
-              <span class="mi-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M12 13V8m0 0-2.2 2.2M12 8l2.2 2.2"/></svg>
+          <button id="btn-camera" class="ctrl-btn" title="Toggle camera" data-i18n-title="ctrl.camera_title">
+            <span class="icon" aria-hidden="true">
+              <svg class="i-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 9.5 22 6v12l-6-3.5" />
+                <rect x="2" y="6" width="14" height="12" rx="3" />
+              </svg>
+              <svg class="i-alt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 9.5 22 6v12l-6-3.5" />
+                <rect x="2" y="6" width="14" height="12" rx="3" />
+                <line x1="2.5" y1="3" x2="21.5" y2="21" />
+              </svg>
+            </span>
+            <span class="ctrl-label" data-i18n="ctrl.camera">Camera</span>
+          </button>
+
+          <button id="btn-flip" class="ctrl-btn" title="Flip camera" data-i18n-title="ctrl.flip_title">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M3 7v5h5" />
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 7" />
+                <path d="M21 17v-5h-5" />
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 17" />
+              </svg>
+            </span>
+            <span class="ctrl-label" data-i18n="ctrl.flip">Flip</span>
+          </button>
+
+          <!-- More (infrequent controls) -->
+          <div class="ctrl-more">
+            <button id="btn-more" class="ctrl-btn" type="button" aria-haspopup="true" aria-expanded="false"
+              aria-controls="more-menu" title="More" data-i18n-title="ctrl.more_title">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <circle cx="5" cy="12" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="19" cy="12" r="2" />
+                </svg>
               </span>
-              <span class="ctrl-label" data-i18n="ctrl.screen">Screen</span>
+              <span class="ctrl-label" data-i18n="ctrl.more">More</span>
             </button>
 
-            <button id="btn-pip" class="menu-item" role="menuitem" title="Picture in Picture" data-i18n-title="ctrl.pip_title">
-              <span class="mi-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="5" rx="1" fill="currentColor" stroke="none"/></svg>
-              </span>
-              <span class="ctrl-label" data-i18n="ctrl.pip">PiP</span>
-            </button>
+            <div id="more-menu" class="more-menu" role="menu" aria-hidden="true">
+              <button id="btn-screen" class="menu-item" role="menuitem" title="Share screen"
+                data-i18n-title="ctrl.screen_title">
+                <span class="mi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="13" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
+                    <path d="M12 13V8m0 0-2.2 2.2M12 8l2.2 2.2" />
+                  </svg>
+                </span>
+                <span class="ctrl-label" data-i18n="ctrl.screen">Screen</span>
+              </button>
 
-            <button id="btn-record" class="menu-item" role="menuitem" title="Record call (saved locally)" data-i18n-title="ctrl.record_title">
-              <span class="mi-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
-              </span>
-              <span class="ctrl-label" data-i18n="ctrl.record">Record</span>
-            </button>
+              <button id="btn-pip" class="menu-item" role="menuitem" title="Picture in Picture"
+                data-i18n-title="ctrl.pip_title">
+                <span class="mi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="14" rx="2" />
+                    <rect x="12" y="11" width="7" height="5" rx="1" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
+                <span class="ctrl-label" data-i18n="ctrl.pip">PiP</span>
+              </button>
 
-            <label class="menu-item" role="menuitem" title="Send files" data-i18n-title="ctrl.file_title">
-              <span class="mi-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7.5-7.5"/></svg>
-              </span>
-              <span class="ctrl-label" data-i18n="ctrl.file">File</span>
-              <input id="file-input" type="file" multiple style="display:none" />
-            </label>
+              <button id="btn-record" class="menu-item" role="menuitem" title="Record call (saved locally)"
+                data-i18n-title="ctrl.record_title">
+                <span class="mi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
+                <span class="ctrl-label" data-i18n="ctrl.record">Record</span>
+              </button>
+
+              <label class="menu-item" role="menuitem" title="Send files" data-i18n-title="ctrl.file_title">
+                <span class="mi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7.5-7.5" />
+                  </svg>
+                </span>
+                <span class="ctrl-label" data-i18n="ctrl.file">File</span>
+                <input id="file-input" type="file" multiple style="display:none" />
+              </label>
+            </div>
           </div>
+
+          <button id="btn-hangup" class="ctrl-btn danger" title="End call" data-i18n-title="ctrl.end_title">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path
+                  d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2Z" />
+              </svg>
+            </span>
+            <span class="ctrl-label" data-i18n="ctrl.end">End</span>
+          </button>
+
+          <button id="btn-file" style="display:none"></button>
+
         </div>
-
-        <button id="btn-hangup" class="ctrl-btn danger" title="End call" data-i18n-title="ctrl.end_title">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2Z"/></svg>
-          </span>
-          <span class="ctrl-label" data-i18n="ctrl.end">End</span>
-        </button>
-
-        <button id="btn-file" style="display:none"></button>
-
-      </div>
       </div> <!-- /video-area -->
 
       <!-- Chat sidebar -->
@@ -310,11 +369,13 @@
         <div class="chat-header">
           <span data-i18n="chat.title">Chat</span>
           <span id="file-progress" class="file-progress-text" role="status"></span>
-          <button id="btn-clear-chat" class="btn-clear-chat" title="Clear chat" data-i18n="chat.clear" data-i18n-title="chat.clear_title">Clear</button>
+          <button id="btn-clear-chat" class="btn-clear-chat" title="Clear chat" data-i18n="chat.clear"
+            data-i18n-title="chat.clear_title">Clear</button>
         </div>
 
         <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
-          <div class="message system" data-i18n="chat.establishing">Connection establishing… chat will be available once encrypted channel is ready.</div>
+          <div class="message system" data-i18n="chat.establishing">Connection establishing… chat will be available once
+            encrypted channel is ready.</div>
         </div>
 
         <div id="typing-indicator" class="typing-indicator" style="display:none">
@@ -323,16 +384,11 @@
         </div>
 
         <div class="chat-input-row">
-          <textarea
-            id="chat-input"
-            class="chat-input"
-            rows="1"
-            placeholder="Type a message… (Enter to send)"
-            data-i18n-placeholder="chat.placeholder"
-            aria-label="Type a message"
-            data-i18n-aria-label="chat.placeholder"
-          ></textarea>
-          <button id="btn-send" class="btn btn-send" aria-label="Send message" data-i18n-aria-label="ctrl.send_label"><span aria-hidden="true">↑</span></button>
+          <textarea id="chat-input" class="chat-input" rows="1" placeholder="Type a message… (Enter to send)"
+            data-i18n-placeholder="chat.placeholder" aria-label="Type a message"
+            data-i18n-aria-label="chat.placeholder"></textarea>
+          <button id="btn-send" class="btn btn-send" aria-label="Send message"
+            data-i18n-aria-label="ctrl.send_label"><span aria-hidden="true">↑</span></button>
         </div>
       </div>
 
@@ -347,4 +403,5 @@
   <!-- Theme toggle & Service Worker -->
   <script src="js/boot.js"></script>
 </body>
+
 </html>

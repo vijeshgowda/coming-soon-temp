@@ -98,6 +98,10 @@ html, body {
 .screen.active {
   display: flex;
   opacity: 1;
+  /* Allow the active screen to scroll internally on small/short viewports
+     without enabling document-level scrolling (keeps PWA app-like feel). */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -384,10 +388,12 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 12px;
   max-width: 400px;
   width: 100%;
   padding: 32px 24px;
+  /* Ensure there's room for bottom safe area and for the cancel button */
+  padding-bottom: calc(32px + var(--safe-bottom));
 }
 
 .lobby-header { margin-bottom: -8px; }
@@ -404,9 +410,17 @@ html, body {
   width: 100%;
 }
 
+/* Reduce padding/spacing on short viewports so content fits better */
+@media (max-height: 640px) {
+  .lobby-container { gap: 18px; padding: 18px 18px calc(18px + var(--safe-bottom)); }
+  .lobby-card { padding: 18px; }
+  .lobby-code { font-size: 1.6rem; }
+}
+
 .lobby-label {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
+  text-align: center;
   letter-spacing: 0.1em;
   color: var(--text-3);
 }
@@ -430,7 +444,7 @@ html, body {
 .lobby-status-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .pulse-dot {
@@ -1248,7 +1262,7 @@ html.theme-transitioning *::after {
 
 /* Lobby share + QR */
 .lobby-share {
-  margin-top: 18px;
+  margin-top: 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
