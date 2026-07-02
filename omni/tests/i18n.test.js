@@ -24,8 +24,8 @@ const CODES = LANGUAGES.map(l => l.code);
 const placeholders = (s) => (String(s).match(/\{[a-z]+\}/gi) || []).sort();
 
 describe('i18n: language set', () => {
-  test('exposes the five supported languages', () => {
-    assert.deepEqual(CODES, ['en', 'es', 'fr', 'de', 'hi']);
+  test('exposes the six supported languages', () => {
+    assert.deepEqual(CODES, ['en', 'kn', 'es', 'fr', 'de', 'hi']);
   });
 
   test('every language has a non-empty label', () => {

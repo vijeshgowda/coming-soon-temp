@@ -1,18 +1,29 @@
 <div align="center">
 
-# Omni
+<!-- Animated banner -->
+<img src="https://capsule-render.vercel.app/api?type=venom&color=0:3a2a20,45:b8542f,100:d97757&height=240&text=Omni&fontSize=100&fontColor=f6f4ec&fontAlignY=44&desc=Private%20calls.%20No%20middleman.&descSize=22&descAlignY=66&descColor=f6f4ec&animation=fadeIn" alt="Omni" width="100%" />
 
-### Private calls. No middleman.
+<!-- Typing tagline animation -->
+<a href="#-how-it-works">
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=22&pause=1000&color=D97757&center=true&vCenter=true&width=640&lines=End-to-end+encrypted+video%2C+voice+%26+chat;Browser-to-browser+%E2%80%94+no+media+server;The+server+is+architecturally+blind" alt="Typing tagline" />
+</a>
 
-Browser-to-browser **end-to-end encrypted** video, voice, chat &amp; file sharing.
-Your media travels **directly** between browsers — the server is architecturally blind to it.
+<p>
+  Browser-to-browser <b>end-to-end encrypted</b> video, voice, chat &amp; file sharing.<br/>
+  Your media travels <b>directly</b> between browsers — the server is architecturally blind to it.
+</p>
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-22a65a.svg)](#-license)
-[![Tests](https://img.shields.io/badge/tests-119%20passing-3fb950.svg)](#-development)
-[![Client deps](https://img.shields.io/badge/client%20deps-0-3fb950.svg)](#-tech-stack)
-[![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8.svg)](#-progressive-web-app)
-[![WebRTC](https://img.shields.io/badge/WebRTC-peer--to--peer-f4956a.svg)](#-how-it-works)
-[![Encryption](https://img.shields.io/badge/end--to--end-AES--GCM--256-3fb950.svg)](#-encryption)
+<!-- Badges -->
+<p>
+  <a href="#-license"><img src="https://img.shields.io/badge/license-MIT-22a65a.svg?style=for-the-badge&labelColor=0d1117" alt="License: MIT" /></a>
+  <a href="#-development"><img src="https://img.shields.io/badge/tests-119%20passing-3fb950.svg?style=for-the-badge&labelColor=0d1117" alt="Tests" /></a>
+  <a href="#-tech-stack"><img src="https://img.shields.io/badge/client%20deps-0-3fb950.svg?style=for-the-badge&labelColor=0d1117" alt="Client deps" /></a>
+</p>
+<p>
+  <a href="#-progressive-web-app"><img src="https://img.shields.io/badge/PWA-installable-5a0fc8.svg?style=for-the-badge&labelColor=0d1117" alt="PWA" /></a>
+  <a href="#-how-it-works"><img src="https://img.shields.io/badge/WebRTC-peer--to--peer-f4956a.svg?style=for-the-badge&labelColor=0d1117" alt="WebRTC" /></a>
+  <a href="#-encryption"><img src="https://img.shields.io/badge/end--to--end-AES--GCM--256-3fb950.svg?style=for-the-badge&labelColor=0d1117" alt="Encryption" /></a>
+</p>
 
 </div>
 
@@ -20,7 +31,7 @@ Your media travels **directly** between browsers — the server is architectural
 > (or a QR), the other joins — and a direct, encrypted channel opens between the two browsers.
 > The server only ever relays room codes and opaque connection handshakes.
 
----
+<img src="https://capsule-render.vercel.app/api?type=rect&color=gradient&customColorList=6,11,20&height=2" width="100%" alt="" />
 
 ## ✨ Features
 
@@ -237,4 +248,12 @@ PRs welcome — the codebase is intentionally small and dependency-light. No bui
 
 ## 📜 License
 
-[MIT](#-license) — built with care by **Vijesh Gowda**.
+<div align="center">
+
+Released under the **[MIT License](#-license)** — free to use, modify &amp; share.
+
+<sub>No accounts · No tracking · No middleman</sub>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:d97757,50:b8542f,100:3a2a20&height=140&section=footer&text=Built%20with%20%E2%99%A5%20by%20Vijesh%20Gowda&fontSize=22&fontColor=f6f4ec&fontAlignY=78&animation=fadeIn" width="100%" alt="Built with love by Vijesh Gowda" />
+
+</div>
