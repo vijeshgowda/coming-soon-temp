@@ -113,7 +113,7 @@ Both peers derive the same key independently. The server never sees any key mate
 **1. Clone**
 
 ```bash
-git clone https://github.com/yourusername/omni
+git clone https://github.com/vijeshgowda/coming-soon-temp
 cd omni
 ```
 
