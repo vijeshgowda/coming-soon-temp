@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Work · vije.sh · 17 Riso Red</title>
+<meta name="description" content="Career, case study, principles and writing of Vijesh, software engineer. Variation 17: a risograph zine.">
+<script>try{var d=document.documentElement,p=JSON.parse(localStorage.getItem('vije-riso-red-paper')),k=JSON.parse(localStorage.getItem('vije-riso-red-inks'));if(p)d.dataset.paper=p;if(k==='pb')d.dataset.inks=k}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="riso.css">
+</head>
+<body data-page="work">
+<div class="roller" aria-hidden="true"></div>
+<nav class="nav" aria-label="Main">
+  <a class="logo" href="index.html">vije.sh <small>Nº 08</small></a>
+  <ul class="links"><li><a href="index.html">About</a></li><li><a href="work.html" aria-current="page">Work</a></li><li><a href="blog.html">Blog</a></li><li><a href="forum.html">Forum</a></li></ul>
+  <div class="nav-end">
+    <div class="stock" role="group" aria-label="Paper stock"><button type="button" data-paper="cream" style="--c:#f3eee3" aria-label="Cream paper"></button><button type="button" data-paper="kraft" style="--c:#dcc7a4" aria-label="Kraft paper"></button><button type="button" data-paper="black" style="--c:#17161b" aria-label="Black paper"></button></div>
+    <div class="drums" role="group" aria-label="Ink drums"><button type="button" data-inks="red" aria-label="Red and black inks"><i style="--a:#e30613;--b:#161414"></i></button><button type="button" data-inks="pb" aria-label="Pink and blue inks"><i style="--a:#ff48b0;--b:#0078bf"></i></button></div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="page-head">
+    <p class="kicker">Issue Nº 08 · Work · the centrefold</p>
+    <h1><span class="riso" data-text="Work">Work</span></h1>
+    <p>Eight years of service platforms, gateways and access control, pressed into one pull-out. Names, employers and metrics are samples for now.</p>
+    <div class="ctas no-print"><button class="btn solid" id="printCv" type="button">Print the CV</button><a class="btn" href="#run">Jump to the career</a></div>
+  </header>
+
+  <section class="sec print-in" aria-label="In numbers" style="padding-top:10px">
+    <div class="kpis">
+      <div><b><span class="riso" data-text="8">8</span></b><span>years building production systems</span></div>
+      <div><b><span class="riso" data-text="MSc">MSc</span></b><span>advanced computer science, ML and AI</span></div>
+      <div><b><span class="riso" data-text="38%">38%</span></b><span>lower p95 latency on the core API</span></div>
+      <div><b><span class="riso" data-text="40+">40+</span></b><span>services moved to one access model</span></div>
+    </div>
+  </section>
+
+  <section class="sec" id="run" aria-labelledby="runH">
+    <div class="sec-head print-in"><span class="num" aria-hidden="true">01</span><h2 id="runH"><span class="riso" data-text="The print run">The print run</span></h2><p>Every role so far, newest first.</p></div>
+    <ol class="run">
+      <li class="job print-in"><p class="yrs">2023<small>to now</small></p><div><h3>Senior Software Engineer</h3><span class="co">Meridian Systems</span><ul><li>Own the service platform and API gateway layer used by every product team.</li><li>Led the move to two-layer access control, coarse rules at the gateway and fine rules in each service.</li><li>Mentor four engineers and run the architecture review for new services.</li></ul></div><p class="stickies"><span style="--r:-4deg">GKE</span><span style="--r:3deg">Istio</span><span style="--r:-2deg">Apigee</span><span style="--r:5deg">Node.js</span></p></li>
+      <li class="job print-in"><p class="yrs">2020<small>to 2023</small></p><div><h3>Software Engineer</h3><span class="co">Harbor Labs</span><ul><li>Built event-driven pipelines on Pub/Sub that process large file batches.</li><li>Shipped shared developer tooling adopted across the company.</li></ul></div><p class="stickies"><span style="--r:3deg">Pub/Sub</span><span style="--r:-3deg">GCS</span><span style="--r:2deg">TypeScript</span></p></li>
+      <li class="job print-in"><p class="yrs">2018<small>to 2020</small></p><div><h3>Software Engineer</h3><span class="co">Kite Analytics</span><ul><li>Full-stack React and Node.js features, including ML-powered recommendations.</li><li>Introduced code review and CI practices for a team of six.</li></ul></div><p class="stickies"><span style="--r:-3deg">React</span><span style="--r:4deg">Node.js</span><span style="--r:-1deg">Python</span></p></li>
+      <li class="job print-in"><p class="yrs">2017<small>to 2018</small></p><div><h3>MSc, Advanced Computer Science</h3><span class="co">University name here</span><ul><li>Specialised in machine learning and AI.</li><li>Thesis topic here, for example efficient inference for small language models.</li></ul></div><p class="stickies"><span style="--r:2deg">ML</span><span style="--r:-4deg">AI</span></p></li>
+    </ol>
+  </section>
+
+  <section class="sec" aria-labelledby="caseH">
+    <div class="sec-head print-in"><span class="num" aria-hidden="true">02</span><h2 id="caseH"><span class="riso" data-text="Case study: access in two places">Case study: access in two places</span></h2><p>One decision, start to finish. Sample.</p></div>
+    <div class="case print-in">
+      <div><b>Context</b><p>Dozens of services each re-implemented their own permission checks.</p></div>
+      <div><b>Options</b><p>Check only at the gateway, only in services, or in both places.</p></div>
+      <div><b>Decision</b><p>Both: coarse rules at the gateway, fine-grained rules inside each service.</p></div>
+      <div><b>Outcome</b><p>Fewer bypass paths and one place to audit.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="howH">
+    <div class="sec-head print-in"><span class="num" aria-hidden="true">03</span><h2 id="howH"><span class="riso" data-text="How I work">How I work</span></h2><p>Four posters for the office wall, each screened fresh in your browser.</p></div>
+    <ul class="posters">
+      <li class="poster" style="--rot:-1.5deg"><canvas data-poster="Design before code" aria-hidden="true"></canvas><div><h3>Design before code</h3><p>Write down the problem, the options and the trade-offs. Decisions outlive the people who made them.</p></div></li>
+      <li class="poster" style="--rot:1.2deg"><canvas data-poster="Clear boundaries" aria-hidden="true"></canvas><div><h3>Clear boundaries</h3><p>Explicit service, data and ownership lines. Simple parts that fail in predictable ways.</p></div></li>
+      <li class="poster" style="--rot:-.8deg"><canvas data-poster="Security by design" aria-hidden="true"></canvas><div><h3>Security by design</h3><p>Identity and access enforced in layers, never bolted on at the end.</p></div></li>
+      <li class="poster" style="--rot:1.8deg"><canvas data-poster="Raise the floor" aria-hidden="true"></canvas><div><h3>Raise the floor</h3><p>Internal tooling, docs and reviews that make the whole team faster.</p></div></li>
+    </ul>
+  </section>
+
+  <section class="sec" aria-labelledby="strH">
+    <div class="sec-head print-in"><span class="num" aria-hidden="true">04</span><h2 id="strH"><span class="riso" data-text="Strengths">Strengths</span></h2></div>
+    <ul class="strengths">
+      <li><b>A</b><div><h3>Systems</h3><p>Service meshes, messaging, data stores and failure modes.</p></div></li>
+      <li><b>B</b><div><h3>Security</h3><p>Identity, access control and defence in layers.</p></div></li>
+      <li><b>C</b><div><h3>Machine learning</h3><p>Small and low-bit models, evaluation and fine-tuning.</p></div></li>
+      <li><b>D</b><div><h3>Leadership</h3><p>Design reviews, mentoring and writing decisions down.</p></div></li>
+    </ul>
+  </section>
+
+  <section class="sec" aria-labelledby="talkH">
+    <div class="sec-head print-in"><span class="num" aria-hidden="true">05</span><h2 id="talkH"><span class="riso" data-text="Writing &amp; talks">Writing &amp; talks</span></h2><p>Sample titles; essays link to the blog.</p></div>
+    <ol class="talks">
+      <li><a href="blog.html#enforcing-access-in-two-places"><b>01</b><i>Essay</i><strong>Enforcing access in two places</strong><em>Read →</em></a></li>
+      <li><a href="blog.html#quality-per-gb"><b>02</b><i>Essay</i><strong>Quality per GB</strong><em>Read →</em></a></li>
+      <li><span class="t"><b>03</b><i>Talk</i><strong>Notes from running a service mesh</strong><em>Slides soon</em></span></li>
+    </ol>
+  </section>
+
+  <footer class="colophon">
+    <p><b>Colophon.</b> The CV prints in one ink on plain paper. Career details are sample content. Variation 17 · Riso Red. <a href="../index.html">← all variations</a></p>
+    <span class="swatches" aria-hidden="true"><i style="--c:var(--red)"></i><i style="--c:var(--key)"></i></span>
+  </footer>
+</main>
+
+<script src="../shared/content.js"></script>
+<script src="press.js"></script>
+<script src="riso.js"></script>
+</body>
+</html>
